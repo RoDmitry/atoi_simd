@@ -59,8 +59,8 @@ pub fn parse(s: &str) -> Result<u64, AtoiSimdError> {
 }
 
 pub fn parse_i64(s: &str) -> Result<i64, AtoiSimdError> {
-    if s.starts_with('-') {
-        parse(&s[1..]).map(|v| -(v as i64))
+    if let Some(strip) = s.strip_prefix('-') {
+        parse(strip).map(|v| -(v as i64))
     } else {
         parse(s).map(|v| v as i64)
     }
@@ -88,10 +88,7 @@ mod tests {
 
         assert_eq!(parse("1234567890123456").unwrap(), 1234567890123456);
 
-        assert_eq!(
-            parse("9999999999999999").unwrap(),
-            9_999_999_999_999_999
-        );
+        assert_eq!(parse("9999999999999999").unwrap(), 9_999_999_999_999_999);
     }
 
     #[test]
