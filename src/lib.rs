@@ -72,14 +72,12 @@ mod tests {
 
     #[test]
     fn test_parse() {
-        match parse("") {
-            Ok(_) => panic!("error"),
-            _ => {}
+        if parse("").is_ok() {
+            panic!("error");
         }
 
-        match parse("12345678901234567") {
-            Ok(_) => panic!("error"),
-            _ => {}
+        if parse("12345678901234567").is_ok() {
+            panic!("error");
         }
 
         assert_eq!(parse("0").unwrap(), 0);
@@ -93,14 +91,12 @@ mod tests {
 
     #[test]
     fn test_parse_i64() {
-        match parse_i64("") {
-            Ok(_) => panic!("error"),
-            _ => {}
+        if parse_i64("").is_ok() {
+            panic!("error");
         }
 
-        match parse_i64("12345678901234567") {
-            Ok(_) => panic!("error"),
-            _ => {}
+        if parse_i64("12345678901234567").is_ok() {
+            panic!("error");
         }
 
         assert_eq!(parse_i64("0").unwrap(), 0);
