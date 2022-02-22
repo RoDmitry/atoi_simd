@@ -1,4 +1,4 @@
-# Rust fast `&str` to `i64` parser (x86_64 simd, sse2)
+# Rust fast `&str` to `i64` parser (x86_64 SIMD, SSE4.1)
 
 Modified [this](https://rust-malaysia.github.io/code/2020/07/11/faster-integer-parsing.html) version to support various string length and negative values.
 
