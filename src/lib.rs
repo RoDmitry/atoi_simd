@@ -1,3 +1,18 @@
+//! # Rust fast `&str` to `i64` parser (x86_64 SIMD, SSE4.1)
+//!
+//! Must be used when you are certain that the string contains only digits.
+//! If you pass not only digits, it will give you the wrong output (not error).
+//!
+//! # Examples
+//!
+//! ```
+//! assert_eq!(atoi_simd::parse("0").unwrap(), 0_u64);
+//! assert_eq!(atoi_simd::parse("1234").unwrap(), 1234_u64);
+//!
+//! assert_eq!(atoi_simd::parse_i64("2345").unwrap(), 2345_i64);
+//! assert_eq!(atoi_simd::parse_i64("-2345").unwrap(), -2345_i64);
+//! ```
+
 use core::arch::x86_64::{
     __m128i, _mm_and_si128, _mm_bslli_si128, _mm_cvtsi128_si64, _mm_lddqu_si128, _mm_madd_epi16,
     _mm_maddubs_epi16, _mm_packus_epi32, _mm_set1_epi8, _mm_set_epi16, _mm_set_epi8,
@@ -35,6 +50,7 @@ unsafe fn bslli_si128(chunk: __m128i, s_len: usize) -> Result<__m128i, AtoiSimdE
     })
 }
 
+/// Parses string of *only* digits. String length must be 1..=16.
 pub fn parse(s: &str) -> Result<u64, AtoiSimdError> {
     unsafe {
         let mut chunk = _mm_lddqu_si128(std::mem::transmute_copy(&s));
@@ -58,6 +74,9 @@ pub fn parse(s: &str) -> Result<u64, AtoiSimdError> {
     }
 }
 
+/// Parses string of *only* digits and first '-' char.
+/// String length (except '-' char) must be 1..=16.
+/// This function is slower than `parse()`, because it checks for '-' sign.
 pub fn parse_i64(s: &str) -> Result<i64, AtoiSimdError> {
     if let Some(strip) = s.strip_prefix('-') {
         parse(strip).map(|v| -(v as i64))
