@@ -1,6 +1,6 @@
 [package]
 name = "atoi_simd"
-version = "0.0.3"
+version = "0.1.0"
 authors = ["Dmitry Rodionov <18184039+RoDmitry@users.noreply.github.com>"]
 description = "Rust fast `&str` to `i64` parser (x86_64 SIMD, SSE4.1)"
 repository = "https://github.com/RoDmitry/atoi_simd"
@@ -14,3 +14,10 @@ edition = "2018"
 [lib]
 name = "atoi_simd"
 path = "src/lib.rs"
+
+[dev-dependencies]
+criterion = "0.3"
+
+[[bench]]
+name = "benchmark"
+harness = false

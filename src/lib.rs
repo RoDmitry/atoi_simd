@@ -3,6 +3,8 @@
 //! Must be used when you are certain that the string contains only digits.
 //! If you pass not only digits, it will give you the wrong output (not error).
 //!
+//! Max string length is 16 numbers (17 with sign).
+//!
 //! # Examples
 //!
 //! ```
@@ -99,13 +101,16 @@ mod tests {
             panic!("error");
         }
 
-        assert_eq!(parse("0").unwrap(), 0);
+        assert_eq!(parse("0").unwrap(), 0_u64);
 
-        assert_eq!(parse("12345").unwrap(), 12345);
+        assert_eq!(parse("12345").unwrap(), 12345_u64);
 
-        assert_eq!(parse("1234567890123456").unwrap(), 1234567890123456);
+        assert_eq!(parse("1234567890123456").unwrap(), 1234567890123456_u64);
 
-        assert_eq!(parse("9999999999999999").unwrap(), 9_999_999_999_999_999);
+        assert_eq!(
+            parse("9999999999999999").unwrap(),
+            9_999_999_999_999_999_u64
+        );
     }
 
     #[test]
@@ -118,26 +123,29 @@ mod tests {
             panic!("error");
         }
 
-        assert_eq!(parse_i64("0").unwrap(), 0);
+        assert_eq!(parse_i64("0").unwrap(), 0_i64);
 
-        assert_eq!(parse_i64("-0").unwrap(), 0);
+        assert_eq!(parse_i64("-0").unwrap(), 0_i64);
 
-        assert_eq!(parse_i64("12345").unwrap(), 12345);
+        assert_eq!(parse_i64("12345").unwrap(), 12345_i64);
 
-        assert_eq!(parse_i64("-12345").unwrap(), -12345);
+        assert_eq!(parse_i64("-12345").unwrap(), -12345_i64);
 
-        assert_eq!(parse_i64("1234567890123456").unwrap(), 1234567890123456);
+        assert_eq!(parse_i64("1234567890123456").unwrap(), 1234567890123456_i64);
 
-        assert_eq!(parse_i64("-1234567890123456").unwrap(), -1234567890123456);
+        assert_eq!(
+            parse_i64("-1234567890123456").unwrap(),
+            -1234567890123456_i64
+        );
 
         assert_eq!(
             parse_i64("-9999999999999999").unwrap(),
-            -9_999_999_999_999_999
+            -9_999_999_999_999_999_i64
         );
 
         assert_eq!(
             parse_i64("9999999999999999").unwrap(),
-            9_999_999_999_999_999
+            9_999_999_999_999_999_i64
         );
     }
 }
