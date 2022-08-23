@@ -80,8 +80,8 @@ fn benchmark(c: &mut Criterion) {
     for i in '5'..='6' {
         str.push(i);
         bench_64(&mut bench_group, &str);
+        bench_128(&mut bench_group, &str);
     }
-    bench_128(&mut bench_group, &str);
 
     str = "12345678901234567".to_owned();
     bench_128(&mut bench_group, &str);
