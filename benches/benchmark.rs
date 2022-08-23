@@ -1,134 +1,102 @@
-use atoi_simd::{parse, parse_i64};
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use atoi_simd::{parse, parse_i128, parse_i64, parse_u128};
+use criterion::{
+    criterion_group, criterion_main, measurement::WallTime, BenchmarkGroup, BenchmarkId, Criterion,
+};
 
-const LONG_STRING: &str = "1234567890123456";
-const LONG_STRING_NEG: &str = "-1234567890123456";
-const SHORT_STRING: &str = "1";
-const SHORT_STRING_NEG: &str = "-1";
-const FIFTEEN_STRING: &str = "123456789012345";
-const FIFTEEN_STRING_NEG: &str = "-123456789012345";
+fn bench_64(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
+    let str_neg = "-".to_owned() + str;
 
-fn benchmark_long_std(c: &mut Criterion) {
-    c.bench_function(
-        &("long string std u64                  ".to_owned() + LONG_STRING),
-        |b| b.iter(|| black_box(LONG_STRING).parse::<u64>().unwrap()),
+    bench_group.bench_with_input(BenchmarkId::new("std u64", str.len()), str, |b, val| {
+        b.iter(|| val.parse::<u64>().unwrap())
+    });
+    bench_group.bench_with_input(BenchmarkId::new("std i64", str.len()), str, |b, val| {
+        b.iter(|| val.parse::<i64>().unwrap())
+    });
+    bench_group.bench_with_input(
+        BenchmarkId::new("std neg i64", str.len()),
+        &str_neg,
+        |b, val| b.iter(|| val.parse::<i64>().unwrap()),
+    );
+
+    bench_group.bench_with_input(BenchmarkId::new("u64", str.len()), str, |b, val| {
+        b.iter(|| parse(val).unwrap())
+    });
+    bench_group.bench_with_input(BenchmarkId::new("i64", str.len()), str, |b, val| {
+        b.iter(|| parse_i64(val).unwrap())
+    });
+    bench_group.bench_with_input(
+        BenchmarkId::new("neg i64", str.len()),
+        &str_neg,
+        |b, val| b.iter(|| parse_i64(val).unwrap()),
     );
 }
 
-fn benchmark_long_neg_std(c: &mut Criterion) {
-    c.bench_function(
-        &("long string negative std i64         ".to_owned() + LONG_STRING_NEG),
-        |b| b.iter(|| black_box(LONG_STRING_NEG).parse::<i64>().unwrap()),
+fn bench_128(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
+    let str_neg = "-".to_owned() + str;
+
+    bench_group.bench_with_input(BenchmarkId::new("std u128", str.len()), str, |b, val| {
+        b.iter(|| val.parse::<u128>().unwrap())
+    });
+    bench_group.bench_with_input(BenchmarkId::new("std i128", str.len()), str, |b, val| {
+        b.iter(|| val.parse::<i128>().unwrap())
+    });
+    bench_group.bench_with_input(
+        BenchmarkId::new("std neg i128", str.len()),
+        &str_neg,
+        |b, val| b.iter(|| val.parse::<i128>().unwrap()),
+    );
+
+    bench_group.bench_with_input(BenchmarkId::new("u128", str.len()), str, |b, val| {
+        b.iter(|| parse_u128(val).unwrap())
+    });
+    bench_group.bench_with_input(BenchmarkId::new("i128", str.len()), str, |b, val| {
+        b.iter(|| parse_i128(val).unwrap())
+    });
+    bench_group.bench_with_input(
+        BenchmarkId::new("neg i128", str.len()),
+        &str_neg,
+        |b, val| b.iter(|| parse_i128(val).unwrap()),
     );
 }
 
-fn benchmark_long_u64(c: &mut Criterion) {
-    c.bench_function(
-        &("long string u64                      ".to_owned() + LONG_STRING),
-        |b| b.iter(|| parse(black_box(LONG_STRING)).unwrap()),
-    );
+fn benchmark(c: &mut Criterion) {
+    let mut bench_group = c.benchmark_group("benchmark");
+    let mut str = String::new();
+    for i in '1'..='3' {
+        str.push(i);
+        bench_64(&mut bench_group, &str);
+        bench_128(&mut bench_group, &str);
+    }
+
+    str = "12345".to_owned();
+    bench_64(&mut bench_group, &str);
+    bench_128(&mut bench_group, &str);
+
+    str = "1234567890".to_owned();
+    bench_64(&mut bench_group, &str);
+    bench_128(&mut bench_group, &str);
+
+    str = "12345678901234".to_owned();
+    for i in '5'..='6' {
+        str.push(i);
+        bench_64(&mut bench_group, &str);
+    }
+    bench_128(&mut bench_group, &str);
+
+    str = "12345678901234567".to_owned();
+    bench_128(&mut bench_group, &str);
+
+    str = "1234567890123456789012345".to_owned();
+    bench_128(&mut bench_group, &str);
+
+    str = "123456789012345678901234567890".to_owned();
+    bench_128(&mut bench_group, &str);
+
+    str = "12345678901234567890123456789012".to_owned();
+    bench_128(&mut bench_group, &str);
+
+    bench_group.finish();
 }
 
-fn benchmark_long_i64(c: &mut Criterion) {
-    c.bench_function(
-        &("long string i64                      ".to_owned() + LONG_STRING),
-        |b| b.iter(|| parse_i64(black_box(LONG_STRING)).unwrap()),
-    );
-}
-
-fn benchmark_long_neg_i64(c: &mut Criterion) {
-    c.bench_function(
-        &("long string negative i64             ".to_owned() + LONG_STRING_NEG),
-        |b| b.iter(|| parse_i64(black_box(LONG_STRING_NEG)).unwrap()),
-    );
-}
-
-fn benchmark_short_std(c: &mut Criterion) {
-    c.bench_function(
-        &("short string std u64                       ".to_owned() + SHORT_STRING),
-        |b| b.iter(|| black_box(SHORT_STRING).parse::<u64>().unwrap()),
-    );
-}
-
-fn benchmark_short_neg_std(c: &mut Criterion) {
-    c.bench_function(
-        &("short string negative std i64              ".to_owned() + SHORT_STRING_NEG),
-        |b| b.iter(|| black_box(SHORT_STRING_NEG).parse::<i64>().unwrap()),
-    );
-}
-
-fn benchmark_short_u64(c: &mut Criterion) {
-    c.bench_function(
-        &("short string u64                           ".to_owned() + SHORT_STRING),
-        |b| b.iter(|| parse(black_box(SHORT_STRING)).unwrap()),
-    );
-}
-
-fn benchmark_short_i64(c: &mut Criterion) {
-    c.bench_function(
-        &("short string i64                           ".to_owned() + SHORT_STRING),
-        |b| b.iter(|| parse_i64(black_box(SHORT_STRING)).unwrap()),
-    );
-}
-
-fn benchmark_short_neg_i64(c: &mut Criterion) {
-    c.bench_function(
-        &("short string negative i64                  ".to_owned() + SHORT_STRING_NEG),
-        |b| b.iter(|| parse_i64(black_box(SHORT_STRING_NEG)).unwrap()),
-    );
-}
-
-fn benchmark_long15_std(c: &mut Criterion) {
-    c.bench_function(
-        &("15 chars string std u64              ".to_owned() + FIFTEEN_STRING),
-        |b| b.iter(|| black_box(FIFTEEN_STRING).parse::<u64>().unwrap()),
-    );
-}
-
-fn benchmark_long15_neg_std(c: &mut Criterion) {
-    c.bench_function(
-        &("15 chars string negative std i64     ".to_owned() + FIFTEEN_STRING_NEG),
-        |b| b.iter(|| black_box(FIFTEEN_STRING_NEG).parse::<i64>().unwrap()),
-    );
-}
-
-fn benchmark_long15_u64(c: &mut Criterion) {
-    c.bench_function(
-        &("15 chars string u64                  ".to_owned() + FIFTEEN_STRING),
-        |b| b.iter(|| parse(black_box(FIFTEEN_STRING)).unwrap()),
-    );
-}
-
-fn benchmark_long15_i64(c: &mut Criterion) {
-    c.bench_function(
-        &("15 chars string i64                  ".to_owned() + FIFTEEN_STRING),
-        |b| b.iter(|| parse_i64(black_box(FIFTEEN_STRING)).unwrap()),
-    );
-}
-
-fn benchmark_long15_neg_i64(c: &mut Criterion) {
-    c.bench_function(
-        &("15 chars string negative i64         ".to_owned() + FIFTEEN_STRING_NEG),
-        |b| b.iter(|| parse_i64(black_box(FIFTEEN_STRING_NEG)).unwrap()),
-    );
-}
-
-criterion_group!(
-    benches,
-    benchmark_long_std,
-    benchmark_long_neg_std,
-    benchmark_long_u64,
-    benchmark_long_i64,
-    benchmark_long_neg_i64,
-    benchmark_short_std,
-    benchmark_short_neg_std,
-    benchmark_short_u64,
-    benchmark_short_i64,
-    benchmark_short_neg_i64,
-    benchmark_long15_std,
-    benchmark_long15_neg_std,
-    benchmark_long15_u64,
-    benchmark_long15_i64,
-    benchmark_long15_neg_i64
-);
+criterion_group!(benches, benchmark);
 criterion_main!(benches);

@@ -1,4 +1,4 @@
-# Rust fast `&str` to `i64` parser (x86_64 SIMD, SSE4.1)
+# Rust fast `&str` to integer parser (x86_64 SIMD, SSE4.1, AVX2)
 
 [![Crate](https://img.shields.io/crates/v/atoi_simd.svg)](https://crates.io/crates/atoi_simd)
 [![API](https://docs.rs/atoi_simd/badge.svg)](https://docs.rs/atoi_simd)
@@ -8,17 +8,19 @@ Modified [this](https://github.com/pickfire/parseint) version (from [article](ht
 Must be used when you are certain that the string contains only digits.
 If you pass not only digits, it will give you the wrong output (not error).
 
-Max string length is 16 numbers (17 with sign).
+The 64 bit functions use SSE4.1, max string length is 16 numbers (17 with sign).
+
+The 128 bit functions use AVX2, max string length is 32 numbers (33 with sign).
 
 It needs the `target-feature` or `target-cpu` flags for it to build with optimized performance. By default the `target-feature` is set in ./.cargo/config.toml
 
 Also you can use one of the following environment variables:
 
--   `RUSTFLAGS="-C target-feature=+sse2,+sse3,+sse4.1,+ssse3"`
+-   `RUSTFLAGS="-C target-feature=+sse2,+sse3,+sse4.1,+ssse3,+avx,+avx2"`
 
 -   `RUSTFLAGS="-C target-cpu=native"`
 
-For Windows PowerShell you can set it with `$Env:RUSTFLAGS='-C target-feature=+sse2,+sse3,+sse4.1,+ssse3'`
+For Windows PowerShell you can set it with `$Env:RUSTFLAGS='-C target-feature=+sse2,+sse3,+sse4.1,+ssse3,+avx,+avx2'`
 
 ## Examples
 
@@ -28,18 +30,69 @@ assert_eq!(atoi_simd::parse("1234").unwrap(), 1234_u64);
 
 assert_eq!(atoi_simd::parse_i64("2345").unwrap(), 2345_i64);
 assert_eq!(atoi_simd::parse_i64("-2345").unwrap(), -2345_i64);
+
+assert_eq!(atoi_simd::parse_u128("1234").unwrap(), 1234_u128);
+
+assert_eq!(atoi_simd::parse_i128("2345").unwrap(), 2345_i128);
+assert_eq!(atoi_simd::parse_i128("-1234").unwrap(), -1234_i128);
 ```
 
 ## Benchmarks
+
+You can run `cargo bench` on your machine.
+
+### Results
+
+<details open><summary>v0.2.x</summary>
+
+More information you can find [here](https://rodmitry.github.io/atoi_simd_benchmark).
+
+<details open><summary><b>Rust 1.63</b>, Windows 10, Intel i7 9700K, "target-feature" set</summary>
+
+![all](https://rodmitry.github.io/atoi_simd_benchmark/report/lines.svg)
+
+#### `parse()` u64
+
+![parse() u64](https://rodmitry.github.io/atoi_simd_benchmark/u64/report/lines.svg)
+
+#### `std::parse::<u64>()`
+
+![std::parse::<u64>()](https://rodmitry.github.io/atoi_simd_benchmark/std%20u64/report/lines.svg)
+
+#### `parse_i64()`
+
+![parse_i64()](https://rodmitry.github.io/atoi_simd_benchmark/i64/report/lines.svg)
+
+#### `std::parse::<i64>()`
+
+![std::parse::<i64>()](https://rodmitry.github.io/atoi_simd_benchmark/std%20i64/report/lines.svg)
+
+#### `parse_u128()`
+
+![parse_u128()](https://rodmitry.github.io/atoi_simd_benchmark/u128/report/lines.svg)
+
+#### `std::parse::<u128>()`
+
+![std::parse::<u128>()](https://rodmitry.github.io/atoi_simd_benchmark/std%20u128/report/lines.svg)
+
+#### `parse_i128()`
+
+![parse_i128()](https://rodmitry.github.io/atoi_simd_benchmark/i128/report/lines.svg)
+
+#### `std::parse::<i128>()`
+
+![std::parse::<i128>()](https://rodmitry.github.io/atoi_simd_benchmark/std%20i128/report/lines.svg)
+
+</details>
+
+</details>
+
+<details><summary>v0.1.x</summary>
 
 ### What was noticed
 
 -   It's around <b>7 times faster than the standard parse</b> (for long string, Rust 1.60)
 -   The performance is constant (the same) for strings of different lengths
-
-You can run `cargo bench` on your machine.
-
-### Results
 
 <details open><summary><b>Rust 1.63</b>, Windows 10, Intel i7 9700K, "target-feature" set</summary>
 
@@ -367,4 +420,5 @@ Found 15 outliers among 100 measurements (15.00%)
   10 (10.00%) high severe
 ```
 
+</details>
 </details>

@@ -12,3 +12,4 @@ Cargo.lock
 .DS_Store
 
 Makefile
+src/main.rs
