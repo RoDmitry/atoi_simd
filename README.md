@@ -49,39 +49,39 @@ More information you can find [here](https://rodmitry.github.io/atoi_simd_benchm
 
 <details open><summary><b>Rust 1.63</b>, Windows 10, Intel i7 9700K, "target-feature" set</summary>
 
-![all](https://rodmitry.github.io/atoi_simd_benchmark/report/lines.svg)
+![all](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.2.0/report/lines.svg?raw=true)
 
 #### `parse()` u64
 
-![parse() u64](https://rodmitry.github.io/atoi_simd_benchmark/u64/report/lines.svg)
+![parse() u64](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.2.0/u64/report/lines.svg?raw=true)
 
 #### `std::parse::<u64>()`
 
-![std::parse::<u64>()](https://rodmitry.github.io/atoi_simd_benchmark/std%20u64/report/lines.svg)
+![std::parse::<u64>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.2.0/std%20u64/report/lines.svg?raw=true)
 
 #### `parse_i64()`
 
-![parse_i64()](https://rodmitry.github.io/atoi_simd_benchmark/i64/report/lines.svg)
+![parse_i64()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.2.0/i64/report/lines.svg?raw=true)
 
 #### `std::parse::<i64>()`
 
-![std::parse::<i64>()](https://rodmitry.github.io/atoi_simd_benchmark/std%20i64/report/lines.svg)
+![std::parse::<i64>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.2.0/std%20i64/report/lines.svg?raw=true)
 
 #### `parse_u128()`
 
-![parse_u128()](https://rodmitry.github.io/atoi_simd_benchmark/u128/report/lines.svg)
+![parse_u128()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.2.0/u128/report/lines.svg?raw=true)
 
 #### `std::parse::<u128>()`
 
-![std::parse::<u128>()](https://rodmitry.github.io/atoi_simd_benchmark/std%20u128/report/lines.svg)
+![std::parse::<u128>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.2.0/std%20u128/report/lines.svg?raw=true)
 
 #### `parse_i128()`
 
-![parse_i128()](https://rodmitry.github.io/atoi_simd_benchmark/i128/report/lines.svg)
+![parse_i128()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.2.0/i128/report/lines.svg?raw=true)
 
 #### `std::parse::<i128>()`
 
-![std::parse::<i128>()](https://rodmitry.github.io/atoi_simd_benchmark/std%20i128/report/lines.svg)
+![std::parse::<i128>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.2.0/std%20i128/report/lines.svg?raw=true)
 
 </details>
 
