@@ -15,19 +15,20 @@
 //!
 //! assert_eq!(atoi_simd::parse_i64("2345").unwrap(), 2345_i64);
 //! assert_eq!(atoi_simd::parse_i64("-2345").unwrap(), -2345_i64);
-//! 
+//!
 //! assert_eq!(atoi_simd::parse_u128("1234").unwrap(), 1234_u128);
-//! 
+//!
 //! assert_eq!(atoi_simd::parse_i128("2345").unwrap(), 2345_i128);
 //! assert_eq!(atoi_simd::parse_i128("-1234").unwrap(), -1234_i128);
 //! ```
 
 use core::arch::x86_64::{
-    __m128i, __m256i, _mm256_add_epi64, _mm256_and_si256, _mm256_lddqu_si256, _mm256_madd_epi16,
-    _mm256_maddubs_epi16, _mm256_mul_epu32, _mm256_packus_epi32, _mm256_set1_epi8,
-    _mm256_set_epi16, _mm256_set_epi32, _mm256_set_epi8, _mm256_srli_epi64, _mm_and_si128,
-    _mm_bslli_si128, _mm_bsrli_si128, _mm_cvtsi128_si64, _mm_lddqu_si128, _mm_madd_epi16,
-    _mm_maddubs_epi16, _mm_packus_epi32, _mm_set1_epi8, _mm_set_epi16, _mm_set_epi8,
+    __m128i, __m256i, _mm256_add_epi64, _mm256_and_si256, _mm256_bslli_epi128, _mm256_bsrli_epi128,
+    _mm256_lddqu_si256, _mm256_madd_epi16, _mm256_maddubs_epi16, _mm256_mul_epu32, _mm256_or_si256,
+    _mm256_packus_epi32, _mm256_permute2x128_si256, _mm256_set1_epi8, _mm256_set_epi16,
+    _mm256_set_epi32, _mm256_set_epi8, _mm256_srli_epi64, _mm_and_si128, _mm_bslli_si128,
+    _mm_cvtsi128_si64, _mm_lddqu_si128, _mm_madd_epi16, _mm_maddubs_epi16, _mm_packus_epi32,
+    _mm_set1_epi8, _mm_set_epi16, _mm_set_epi64x, _mm_set_epi8,
 };
 use std::fmt;
 
@@ -45,11 +46,8 @@ unsafe fn read(s: &str) -> __m128i {
     _mm_lddqu_si128(std::mem::transmute_copy(&s))
 }
 
-/// it's actually slow
 unsafe fn read_avx(s: &str) -> __m256i {
-    let mut arr = [0u8; 32];
-    arr[32 - s.len()..32].copy_from_slice(s.as_bytes());
-    _mm256_lddqu_si256(&arr as *const [u8; 32] as *const __m256i)
+    _mm256_lddqu_si256(std::mem::transmute_copy(&s))
 }
 
 /// converts chars  [ 0x36353433323130393837363534333231 ]
@@ -57,6 +55,10 @@ unsafe fn read_avx(s: &str) -> __m256i {
 unsafe fn to_numbers(chunk: __m128i) -> __m128i {
     // _mm_unpacklo_epi8 for hex decoding?
     _mm_and_si128(chunk, _mm_set1_epi8(0xf))
+}
+
+unsafe fn to_numbers_val(chunk: __m128i, lval: i64) -> __m128i {
+    _mm_and_si128(chunk, _mm_set_epi64x(0, lval))
 }
 
 /// combine numbers [ 0x0038 | 0x0022 | 0x000c | 0x005a | 0x004e | 0x0038 | 0x0022 | 0x000c ( 56 | 34 | 12 | 90 | 78 | 56 | 34 | 12 ) ]
@@ -81,7 +83,6 @@ unsafe fn to_u32x4(chunk: __m128i) -> [u32; 4] {
 }
 
 unsafe fn process_internal(mut chunk: __m128i) -> __m128i {
-    chunk = to_numbers(chunk);
     chunk = mult_10(chunk);
     chunk = mult_100(chunk);
 
@@ -95,23 +96,23 @@ unsafe fn process_internal(mut chunk: __m128i) -> __m128i {
 }
 
 unsafe fn process_small(mut chunk: __m128i) -> u64 {
-    chunk = to_numbers(chunk);
+    chunk = to_numbers_val(chunk, 0xF0F0F0F);
     chunk = mult_10(chunk);
     chunk = mult_100(chunk);
-    chunk = _mm_bsrli_si128(chunk, 12);
 
     to_u64(chunk)
     // std::mem::transmute::<__m128i, [u32; 4]>(chunk)[3] as u64 // same performance
 }
 
 unsafe fn process_medium(mut chunk: __m128i) -> u64 {
+    chunk = to_numbers_val(chunk, 0xF0F0F0F0F0F0F0F);
     chunk = process_internal(chunk);
-    chunk = _mm_bsrli_si128(chunk, 4);
 
     to_u64(chunk)
 }
 
 unsafe fn process_big(mut chunk: __m128i) -> u64 {
+    chunk = to_numbers(chunk);
     chunk = process_internal(chunk);
 
     // let chunk = to_u64(chunk);
@@ -129,43 +130,33 @@ pub fn parse(s: &str) -> Result<u64, AtoiSimdError> {
             1 => (*s.as_bytes().first().unwrap() & 0xf) as u64,
             2 => {
                 let mut chunk = read(s);
-                chunk = _mm_bslli_si128(chunk, 14);
-                chunk = to_numbers(chunk);
+                chunk = to_numbers_val(chunk, 0xF0F);
                 chunk = mult_10(chunk);
-                chunk = _mm_bsrli_si128(chunk, 14);
                 to_u64(chunk)
                 // std::mem::transmute::<__m128i, [u16; 8]>(chunk)[7] as u64 // same performance
             }
             3 => {
                 let mut chunk = read(s);
-                chunk = _mm_bslli_si128(chunk, 13);
+                chunk = _mm_bslli_si128(chunk, 1);
                 process_small(chunk)
             }
-            4 => {
-                let mut chunk = read(s);
-                chunk = _mm_bslli_si128(chunk, 12);
-                process_small(chunk)
-            }
+            4 => process_small(read(s)),
             5 => {
                 let mut chunk = read(s);
-                chunk = _mm_bslli_si128(chunk, 11);
+                chunk = _mm_bslli_si128(chunk, 3);
                 process_medium(chunk)
             }
             6 => {
                 let mut chunk = read(s);
-                chunk = _mm_bslli_si128(chunk, 10);
+                chunk = _mm_bslli_si128(chunk, 2);
                 process_medium(chunk)
             }
             7 => {
                 let mut chunk = read(s);
-                chunk = _mm_bslli_si128(chunk, 9);
+                chunk = _mm_bslli_si128(chunk, 1);
                 process_medium(chunk)
             }
-            8 => {
-                let mut chunk = read(s);
-                chunk = _mm_bslli_si128(chunk, 8);
-                process_medium(chunk)
-            }
+            8 => process_medium(read(s)),
             9 => {
                 let mut chunk = read(s);
                 chunk = _mm_bslli_si128(chunk, 7);
@@ -202,14 +193,13 @@ pub fn parse(s: &str) -> Result<u64, AtoiSimdError> {
                 process_big(chunk)
             }
             16 => process_big(read(s)),
-            val => return Err(AtoiSimdError(val)),
+            s_len => return Err(AtoiSimdError(s_len)),
         })
     }
 }
 
 /// Uses AVX/AVX2 intrinsics
-unsafe fn process_m256i_to_u128x2(s: &str) -> [u128; 2] {
-    let mut chunk = read_avx(s);
+unsafe fn process_avx(mut chunk: __m256i) -> u128 {
     // to numbers
     chunk = _mm256_and_si256(chunk, _mm256_set1_epi8(0xf));
 
@@ -233,7 +223,7 @@ unsafe fn process_m256i_to_u128x2(s: &str) -> [u128; 2] {
     // move by 64 bits ( unused | unused | third [191:128] | first [63:0] )
     // chunk = _mm256_permute4x64_epi64(chunk, 8);
 
-    let mut mult = _mm256_set_epi16(
+    mult = _mm256_set_epi16(
         0, 0, 0, 0, 1, 10000, 1, 10000, 0, 0, 0, 0, 1, 10000, 1, 10000,
     );
     // mult 10000
@@ -246,14 +236,13 @@ unsafe fn process_m256i_to_u128x2(s: &str) -> [u128; 2] {
     let sum_chunk = _mm256_srli_epi64(chunk, 32);
     chunk = _mm256_add_epi64(sum_chunk, mult);
 
-    // get lowest 128 bits
-    // let chunk = _mm256_extracti128_si256(chunk, 0);
+    let arr = std::mem::transmute::<__m256i, [u128; 2]>(chunk);
 
-    std::mem::transmute::<__m256i, [u128; 2]>(chunk)
+    arr[0] * 10_000_000_000_000_000 + arr[1]
 }
 
 /*
-/// SSE intrinsics for the previous function `process_m256i_to_u128x2()`
+/// SSE intrinsics for the previous function `process_avx()`
 unsafe fn process_u128(s: &str) -> u128 {
     let mut chunk = process_m256i_to_m128i(s);
 
@@ -271,19 +260,122 @@ unsafe fn process_u128(s: &str) -> u128 {
     std::mem::transmute::<__m128i, u128>(chunk)
 } */
 
+unsafe fn process_avx_permute2x128(chunk: __m256i) -> __m256i {
+    _mm256_permute2x128_si256(chunk, chunk, 8)
+}
+
+unsafe fn process_avx_or(chunk: __m256i, mult: __m256i) -> __m256i {
+    _mm256_or_si256(chunk, mult)
+}
+
 /// Parses string of *only* digits. String length must be 1..=32.
 /// Uses AVX/AVX2 intrinsics
 pub fn parse_u128(s: &str) -> Result<u128, AtoiSimdError> {
-    if s.len() < 17 {
-        parse(s).map(|v| v as u128)
-    } else if s.len() < 33 {
-        unsafe {
-            let arr = process_m256i_to_u128x2(s);
+    unsafe {
+        let mut chunk = read_avx(s);
 
-            Ok(arr[0] * 10_000_000_000_000_000 + arr[1])
+        match s.len() {
+            17 => {
+                let mut mult = process_avx_permute2x128(chunk);
+                mult = _mm256_bsrli_epi128(mult, 1);
+                chunk = _mm256_bslli_epi128(chunk, 15);
+                chunk = process_avx_or(chunk, mult);
+            }
+            18 => {
+                let mut mult = process_avx_permute2x128(chunk);
+                mult = _mm256_bsrli_epi128(mult, 2);
+                chunk = _mm256_bslli_epi128(chunk, 14);
+                chunk = process_avx_or(chunk, mult);
+            }
+            19 => {
+                let mut mult = process_avx_permute2x128(chunk);
+                mult = _mm256_bsrli_epi128(mult, 3);
+                chunk = _mm256_bslli_epi128(chunk, 13);
+                chunk = process_avx_or(chunk, mult);
+            }
+            20 => {
+                // maybe can be optimized even further with _mm256_permutevar8x32_epi32
+                let mut mult = process_avx_permute2x128(chunk);
+                mult = _mm256_bsrli_epi128(mult, 4);
+                chunk = _mm256_bslli_epi128(chunk, 12);
+                chunk = process_avx_or(chunk, mult);
+            }
+            21 => {
+                let mut mult = process_avx_permute2x128(chunk);
+                mult = _mm256_bsrli_epi128(mult, 5);
+                chunk = _mm256_bslli_epi128(chunk, 11);
+                chunk = process_avx_or(chunk, mult);
+            }
+            22 => {
+                let mut mult = process_avx_permute2x128(chunk);
+                mult = _mm256_bsrli_epi128(mult, 6);
+                chunk = _mm256_bslli_epi128(chunk, 10);
+                chunk = process_avx_or(chunk, mult);
+            }
+            23 => {
+                let mut mult = process_avx_permute2x128(chunk);
+                mult = _mm256_bsrli_epi128(mult, 7);
+                chunk = _mm256_bslli_epi128(chunk, 9);
+                chunk = process_avx_or(chunk, mult);
+            }
+            24 => {
+                // maybe can be optimized even further with _mm256_permute4x64_epi64
+                let mut mult = process_avx_permute2x128(chunk);
+                mult = _mm256_bsrli_epi128(mult, 8);
+                chunk = _mm256_bslli_epi128(chunk, 8);
+                chunk = process_avx_or(chunk, mult);
+            }
+            25 => {
+                let mut mult = process_avx_permute2x128(chunk);
+                mult = _mm256_bsrli_epi128(mult, 9);
+                chunk = _mm256_bslli_epi128(chunk, 7);
+                chunk = process_avx_or(chunk, mult);
+            }
+            26 => {
+                let mut mult = process_avx_permute2x128(chunk);
+                mult = _mm256_bsrli_epi128(mult, 10);
+                chunk = _mm256_bslli_epi128(chunk, 6);
+                chunk = process_avx_or(chunk, mult);
+            }
+            27 => {
+                let mut mult = process_avx_permute2x128(chunk);
+                mult = _mm256_bsrli_epi128(mult, 11);
+                chunk = _mm256_bslli_epi128(chunk, 5);
+                chunk = process_avx_or(chunk, mult);
+            }
+            28 => {
+                // maybe can be optimized even further with _mm256_permutevar8x32_epi32
+                // let mult = _mm256_set_epi32(6, 5, 4, 3, 2, 1, 0, 0);
+                // chunk = _mm256_permutevar8x32_epi32(chunk, mult);
+                let mut mult = process_avx_permute2x128(chunk);
+                mult = _mm256_bsrli_epi128(mult, 12);
+                chunk = _mm256_bslli_epi128(chunk, 4);
+                chunk = process_avx_or(chunk, mult);
+            }
+            29 => {
+                let mut mult = process_avx_permute2x128(chunk);
+                mult = _mm256_bsrli_epi128(mult, 13);
+                chunk = _mm256_bslli_epi128(chunk, 3);
+                chunk = process_avx_or(chunk, mult);
+            }
+            30 => {
+                let mut mult = process_avx_permute2x128(chunk);
+                mult = _mm256_bsrli_epi128(mult, 14);
+                chunk = _mm256_bslli_epi128(chunk, 2);
+                chunk = process_avx_or(chunk, mult);
+            }
+            31 => {
+                let mut mult = process_avx_permute2x128(chunk);
+                // somehow it'll be bugged, if you move permute after it
+                mult = _mm256_bsrli_epi128(mult, 15);
+                chunk = _mm256_bslli_epi128(chunk, 1);
+                chunk = process_avx_or(chunk, mult);
+            }
+            32 => (),
+            _ => return parse(s).map(|v| v as u128),
         }
-    } else {
-        Err(AtoiSimdError(s.len()))
+
+        Ok(process_avx(chunk))
     }
 }
 

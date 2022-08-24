@@ -43,11 +43,51 @@ You can run `cargo bench` on your machine.
 
 ### Results
 
-<details open><summary>v0.2.x</summary>
-
 More information you can find [here](https://rodmitry.github.io/atoi_simd_benchmark).
 
-<details open><summary><b>Rust 1.63</b>, Windows 10, Intel i7 9700K, "target-feature" set</summary>
+<details open><summary>v0.2.1+</summary>
+
+<b>Rust 1.63</b>, Windows 10, Intel i7 9700K, "target-feature" set
+
+![all](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.2.1/report/lines.svg?raw=true)
+
+#### `parse()` u64
+
+![parse() u64](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.2.1/u64/report/lines.svg?raw=true)
+
+#### `std::parse::<u64>()`
+
+![std::parse::<u64>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.2.1/std%20u64/report/lines.svg?raw=true)
+
+#### `parse_i64()`
+
+![parse_i64()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.2.1/i64/report/lines.svg?raw=true)
+
+#### `std::parse::<i64>()`
+
+![std::parse::<i64>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.2.1/std%20i64/report/lines.svg?raw=true)
+
+#### `parse_u128()`
+
+![parse_u128()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.2.1/u128/report/lines.svg?raw=true)
+
+#### `std::parse::<u128>()`
+
+![std::parse::<u128>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.2.1/std%20u128/report/lines.svg?raw=true)
+
+#### `parse_i128()`
+
+![parse_i128()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.2.1/i128/report/lines.svg?raw=true)
+
+#### `std::parse::<i128>()`
+
+![std::parse::<i128>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.2.1/std%20i128/report/lines.svg?raw=true)
+
+</details>
+
+<details><summary>v0.2.0</summary>
+
+<b>Rust 1.63</b>, Windows 10, Intel i7 9700K, "target-feature" set
 
 ![all](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.2.0/report/lines.svg?raw=true)
 
@@ -82,8 +122,6 @@ More information you can find [here](https://rodmitry.github.io/atoi_simd_benchm
 #### `std::parse::<i128>()`
 
 ![std::parse::<i128>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.2.0/std%20i128/report/lines.svg?raw=true)
-
-</details>
 
 </details>
 

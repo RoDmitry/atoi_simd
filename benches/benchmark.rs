@@ -62,17 +62,20 @@ fn bench_128(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
 fn benchmark(c: &mut Criterion) {
     let mut bench_group = c.benchmark_group("benchmark");
     let mut str = String::new();
-    for i in '1'..='3' {
+    for i in '1'..='5' {
         str.push(i);
         bench_64(&mut bench_group, &str);
         bench_128(&mut bench_group, &str);
     }
 
-    str = "12345".to_owned();
-    bench_64(&mut bench_group, &str);
-    bench_128(&mut bench_group, &str);
+    str = "123456".to_owned();
+    for i in '7'..='9' {
+        str.push(i);
+        bench_64(&mut bench_group, &str);
+        bench_128(&mut bench_group, &str);
+    }
 
-    str = "1234567890".to_owned();
+    str = "123456789012".to_owned();
     bench_64(&mut bench_group, &str);
     bench_128(&mut bench_group, &str);
 
@@ -90,6 +93,9 @@ fn benchmark(c: &mut Criterion) {
     bench_128(&mut bench_group, &str);
 
     str = "123456789012345678901234567890".to_owned();
+    bench_128(&mut bench_group, &str);
+
+    str = "1234567890123456789012345678901".to_owned();
     bench_128(&mut bench_group, &str);
 
     str = "12345678901234567890123456789012".to_owned();
