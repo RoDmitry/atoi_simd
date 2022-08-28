@@ -3,10 +3,7 @@
 [![Crate](https://img.shields.io/crates/v/atoi_simd.svg)](https://crates.io/crates/atoi_simd)
 [![API](https://docs.rs/atoi_simd/badge.svg)](https://docs.rs/atoi_simd)
 
-Modified [this](https://github.com/pickfire/parseint) version (from [article](https://rust-malaysia.github.io/code/2020/07/11/faster-integer-parsing.html)) to support various strings of different lengths and negative values.
-
-Must be used when you are certain that the string contains only digits.
-If you pass not only digits, it will give you the wrong output (not error).
+Modified [this](https://github.com/pickfire/parseint) version (from [article](https://rust-malaysia.github.io/code/2020/07/11/faster-integer-parsing.html)) to perform validation, support various strings of different lengths and negative values.
 
 The 64 bit functions use SSE4.1, max string length is 16 numbers (17 with sign).
 
@@ -45,7 +42,47 @@ You can run `cargo bench` on your machine.
 
 More information you can find [here](https://rodmitry.github.io/atoi_simd_benchmark).
 
-<details open><summary>v0.2.1+</summary>
+<details open><summary>v0.3.0+</summary>
+
+<b>Rust 1.63</b>, Windows 10, Intel i7 9700K, "target-feature" set
+
+![all](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.3.0/report/lines.svg?raw=true)
+
+#### `parse()` u64
+
+![parse() u64](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.3.0/u64/report/lines.svg?raw=true)
+
+#### `std::parse::<u64>()`
+
+![std::parse::<u64>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.3.0/std%20u64/report/lines.svg?raw=true)
+
+#### `parse_i64()`
+
+![parse_i64()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.3.0/i64/report/lines.svg?raw=true)
+
+#### `std::parse::<i64>()`
+
+![std::parse::<i64>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.3.0/std%20i64/report/lines.svg?raw=true)
+
+#### `parse_u128()`
+
+![parse_u128()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.3.0/u128/report/lines.svg?raw=true)
+
+#### `std::parse::<u128>()`
+
+![std::parse::<u128>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.3.0/std%20u128/report/lines.svg?raw=true)
+
+#### `parse_i128()`
+
+![parse_i128()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.3.0/i128/report/lines.svg?raw=true)
+
+#### `std::parse::<i128>()`
+
+![std::parse::<i128>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.3.0/std%20i128/report/lines.svg?raw=true)
+
+</details>
+
+<details><summary>v0.2.1</summary>
 
 <b>Rust 1.63</b>, Windows 10, Intel i7 9700K, "target-feature" set
 
