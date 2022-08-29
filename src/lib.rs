@@ -216,11 +216,11 @@ pub fn parse(s: &str) -> Result<u64, AtoiSimdError> {
     unsafe {
         match s.len() {
             1 => {
-                let val = *s.as_bytes().first().unwrap();
+                let val = *s.as_bytes().first().unwrap() as u64;
                 if val > 0x39 || val < 0x30 {
                     return Err(AtoiSimdError::Invalid(s));
                 }
-                Ok((val & 0xF) as u64)
+                Ok(val & 0xF)
             }
             2 => {
                 let mut chunk = read(s);
@@ -526,8 +526,8 @@ unsafe fn process_avx(
     // mult 100_000_000
     mult = _mm256_mul_epu32(chunk, mult);
 
-    let sum_chunk = _mm256_srli_epi64(chunk, 32);
-    chunk = _mm256_add_epi64(sum_chunk, mult);
+    chunk = _mm256_srli_epi64(chunk, 32);
+    chunk = _mm256_add_epi64(chunk, mult);
 
     let arr = std::mem::transmute::<__m256i, [u128; 2]>(chunk);
 
@@ -943,6 +943,19 @@ pub fn parse_i128(s: &str) -> Result<i128, AtoiSimdError> {
 mod tests {
     use super::*;
 
+    const INVALID_CHARS: [&str; 6] = ["/", ":", "\0", "\x7f", "!", "a"];
+
+    fn test_each_position<T: Copy>(s: &str, func: fn(&str) -> Result<T, AtoiSimdError>) {
+        for j in 0..=s.len() {
+            for &ch_str in INVALID_CHARS.iter() {
+                let s_new = (&s[0..j]).to_owned() + ch_str + &s[j..s.len()];
+                if func(&s_new).is_ok() {
+                    panic!("error {}", s_new);
+                }
+            }
+        }
+    }
+
     #[test]
     fn test_parse() {
         if parse("").is_ok() {
@@ -955,26 +968,16 @@ mod tests {
 
         assert_eq!(parse("0").unwrap(), 0_u64);
 
-        let mut str = String::with_capacity(16);
+        let mut s = String::with_capacity(16);
         for i in '1'..='9' {
-            if parse(&(str.clone() + "!")).is_ok() {
-                panic!("error {}", str);
-            }
-            if parse(&(str.clone() + "a")).is_ok() {
-                panic!("error {}", str);
-            }
-            str.push(i);
-            assert_eq!(parse(&str).unwrap(), str.parse::<u64>().unwrap());
+            test_each_position(&s, parse);
+            s.push(i);
+            assert_eq!(parse(&s).unwrap(), s.parse::<u64>().unwrap());
         }
         for i in '0'..='6' {
-            if parse(&(str.clone() + "!")).is_ok() {
-                panic!("error {}", str);
-            }
-            if parse(&(str.clone() + "a")).is_ok() {
-                panic!("error {}", str);
-            }
-            str.push(i);
-            assert_eq!(parse(&str).unwrap(), str.parse::<u64>().unwrap());
+            test_each_position(&s, parse);
+            s.push(i);
+            assert_eq!(parse(&s).unwrap(), s.parse::<u64>().unwrap());
         }
 
         assert_eq!(
@@ -997,37 +1000,27 @@ mod tests {
 
         assert_eq!(parse_i64("-0").unwrap(), 0_i64);
 
-        let mut str = String::with_capacity(16);
-        let mut str_neg = String::with_capacity(17);
-        str_neg.push('-');
+        let mut s = String::with_capacity(16);
+        let mut s_neg = String::with_capacity(17);
+        s_neg.push('-');
         for i in '1'..='9' {
-            if parse_i64(&(str.clone() + "!")).is_ok() {
-                panic!("error {}", str);
-            }
-            if parse_i64(&(str.clone() + "a")).is_ok() {
-                panic!("error {}", str);
-            }
-            str.push(i);
-            str_neg.push(i);
-            assert_eq!(parse_i64(&str).unwrap(), str.parse::<i64>().unwrap());
+            test_each_position(&s, parse_i64);
+            s.push(i);
+            s_neg.push(i);
+            assert_eq!(parse_i64(&s).unwrap(), s.parse::<i64>().unwrap());
             assert_eq!(
-                parse_i64(&str_neg).unwrap(),
-                str_neg.parse::<i64>().unwrap()
+                parse_i64(&s_neg).unwrap(),
+                s_neg.parse::<i64>().unwrap()
             );
         }
         for i in '0'..='6' {
-            if parse_i64(&(str.clone() + "!")).is_ok() {
-                panic!("error {}", str);
-            }
-            if parse_i64(&(str.clone() + "a")).is_ok() {
-                panic!("error {}", str);
-            }
-            str.push(i);
-            str_neg.push(i);
-            assert_eq!(parse_i64(&str).unwrap(), str.parse::<i64>().unwrap());
+            test_each_position(&s, parse_i64);
+            s.push(i);
+            s_neg.push(i);
+            assert_eq!(parse_i64(&s).unwrap(), s.parse::<i64>().unwrap());
             assert_eq!(
-                parse_i64(&str_neg).unwrap(),
-                str_neg.parse::<i64>().unwrap()
+                parse_i64(&s_neg).unwrap(),
+                s_neg.parse::<i64>().unwrap()
             );
         }
 
@@ -1054,38 +1047,23 @@ mod tests {
 
         assert_eq!(parse_u128("0").unwrap(), 0_u128);
 
-        let mut str = String::with_capacity(32);
+        let mut s = String::with_capacity(32);
         for i in '1'..='9' {
-            if parse_u128(&(str.clone() + "!")).is_ok() {
-                panic!("error {}", str);
-            }
-            if parse_u128(&(str.clone() + "a")).is_ok() {
-                panic!("error {}", str);
-            }
-            str.push(i);
-            assert_eq!(parse_u128(&str).unwrap(), str.parse::<u128>().unwrap());
+            test_each_position(&s, parse_u128);
+            s.push(i);
+            assert_eq!(parse_u128(&s).unwrap(), s.parse::<u128>().unwrap());
         }
         for _ in 0..2 {
             for i in '0'..='9' {
-                if parse_u128(&(str.clone() + "!")).is_ok() {
-                    panic!("error {}", str);
-                }
-                if parse_u128(&(str.clone() + "a")).is_ok() {
-                    panic!("error {}", str);
-                }
-                str.push(i);
-                assert_eq!(parse_u128(&str).unwrap(), str.parse::<u128>().unwrap());
+                test_each_position(&s, parse_u128);
+                s.push(i);
+                assert_eq!(parse_u128(&s).unwrap(), s.parse::<u128>().unwrap());
             }
         }
         for i in '0'..='2' {
-            if parse_u128(&(str.clone() + "!")).is_ok() {
-                panic!("error {}", str);
-            }
-            if parse_u128(&(str.clone() + "a")).is_ok() {
-                panic!("error {}", str);
-            }
-            str.push(i);
-            assert_eq!(parse_u128(&str).unwrap(), str.parse::<u128>().unwrap());
+            test_each_position(&s, parse_u128);
+            s.push(i);
+            assert_eq!(parse_u128(&s).unwrap(), s.parse::<u128>().unwrap());
         }
 
         assert_eq!(
@@ -1108,54 +1086,39 @@ mod tests {
 
         assert_eq!(parse_i128("-0").unwrap(), 0_i128);
 
-        let mut str = String::with_capacity(32);
-        let mut str_neg = String::with_capacity(33);
-        str_neg.push('-');
+        let mut s = String::with_capacity(32);
+        let mut s_neg = String::with_capacity(33);
+        s_neg.push('-');
         for i in '1'..='9' {
-            if parse_i128(&(str.clone() + "!")).is_ok() {
-                panic!("error {}", str);
-            }
-            if parse_i128(&(str.clone() + "a")).is_ok() {
-                panic!("error {}", str);
-            }
-            str.push(i);
-            str_neg.push(i);
-            assert_eq!(parse_i128(&str).unwrap(), str.parse::<i128>().unwrap());
+            test_each_position(&s, parse_i128);
+            s.push(i);
+            s_neg.push(i);
+            assert_eq!(parse_i128(&s).unwrap(), s.parse::<i128>().unwrap());
             assert_eq!(
-                parse_i128(&str_neg).unwrap(),
-                str_neg.parse::<i128>().unwrap()
+                parse_i128(&s_neg).unwrap(),
+                s_neg.parse::<i128>().unwrap()
             );
         }
         for _ in 0..2 {
             for i in '0'..='9' {
-                if parse_i128(&(str.clone() + "!")).is_ok() {
-                    panic!("error {}", str);
-                }
-                if parse_i128(&(str.clone() + "a")).is_ok() {
-                    panic!("error {}", str);
-                }
-                str.push(i);
-                str_neg.push(i);
-                assert_eq!(parse_i128(&str).unwrap(), str.parse::<i128>().unwrap());
+                test_each_position(&s, parse_i128);
+                s.push(i);
+                s_neg.push(i);
+                assert_eq!(parse_i128(&s).unwrap(), s.parse::<i128>().unwrap());
                 assert_eq!(
-                    parse_i128(&str_neg).unwrap(),
-                    str_neg.parse::<i128>().unwrap()
+                    parse_i128(&s_neg).unwrap(),
+                    s_neg.parse::<i128>().unwrap()
                 );
             }
         }
         for i in '0'..='2' {
-            if parse_i128(&(str.clone() + "!")).is_ok() {
-                panic!("error {}", str);
-            }
-            if parse_i128(&(str.clone() + "a")).is_ok() {
-                panic!("error {}", str);
-            }
-            str.push(i);
-            str_neg.push(i);
-            assert_eq!(parse_i128(&str).unwrap(), str.parse::<i128>().unwrap());
+            test_each_position(&s, parse_i128);
+            s.push(i);
+            s_neg.push(i);
+            assert_eq!(parse_i128(&s).unwrap(), s.parse::<i128>().unwrap());
             assert_eq!(
-                parse_i128(&str_neg).unwrap(),
-                str_neg.parse::<i128>().unwrap()
+                parse_i128(&s_neg).unwrap(),
+                s_neg.parse::<i128>().unwrap()
             );
         }
 
