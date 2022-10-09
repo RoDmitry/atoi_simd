@@ -7,8 +7,8 @@
 //! # Examples
 //!
 //! ```
-//! assert_eq!(atoi_simd::parse("0").unwrap(), 0_u64);
-//! assert_eq!(atoi_simd::parse("1234").unwrap(), 1234_u64);
+//! assert_eq!(atoi_simd::parse_u64("0", None).unwrap(), 0_u64);
+//! assert_eq!(atoi_simd::parse_u64("1234", None).unwrap(), 1234_u64);
 //!
 //! assert_eq!(atoi_simd::parse_i64("2345").unwrap(), 2345_i64);
 //! assert_eq!(atoi_simd::parse_i64("-2345").unwrap(), -2345_i64);
@@ -33,14 +33,19 @@ use std::fmt;
 
 #[derive(Debug, Clone)]
 pub enum AtoiSimdError<'a> {
+    Empty,
     Size(usize),
+    Overflow(&'a str, &'a str),
     Invalid(&'a str),
+    I64Min,
 }
 
 impl fmt::Display for AtoiSimdError<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
+            AtoiSimdError::Empty => write!(f, "atoi_simd string is empty"),
             AtoiSimdError::Size(len) => write!(f, "atoi_simd string wrong size: {}", len),
+            AtoiSimdError::Overflow(t, val) => write!(f, "atoi_simd {} overflow: {}", t, val),
             AtoiSimdError::Invalid(val) => {
                 write!(
                     f,
@@ -48,6 +53,7 @@ impl fmt::Display for AtoiSimdError<'_> {
                     val
                 )
             }
+            AtoiSimdError::I64Min => write!(f, "atoi_simd i64::min"),
         }
     }
 }
@@ -210,11 +216,18 @@ unsafe fn process_big(
     Ok((arr[0] as u64 * 100_000_000) + (arr[1] as u64))
 }
 
-/// Parses string of *only* digits. String length must be 1..=16.
-/// Uses SSE4.1 intrinsics
-pub fn parse(s: &str) -> Result<u64, AtoiSimdError> {
+/// Not for public use.
+pub enum ParseType {
+    I64,
+    I64Neg,
+}
+
+/// Parses string of *only* digits. String length must be 1..=20.
+/// Always pass `None` as the second argument, that's just for performance reasons.
+pub fn parse_u64(s: &str, parse_type: Option<ParseType>) -> Result<u64, AtoiSimdError> {
     unsafe {
         match s.len() {
+            0 => Err(AtoiSimdError::Empty),
             1 => {
                 let val = *s.as_bytes().first().unwrap() as u64;
                 if val > 0x39 || val < 0x30 {
@@ -479,7 +492,44 @@ pub fn parse(s: &str) -> Result<u64, AtoiSimdError> {
 
                 process_big(chunk, check_high, check_low, s)
             }
-            s_len => return Err(AtoiSimdError::Size(s_len)),
+            17 => parse_u128(s).map(|v| v as u64),
+            18 => parse_u128(s).map(|v| v as u64),
+            19 => {
+                let val = parse_u128(s)? as u64;
+
+                match parse_type {
+                    Some(ParseType::I64Neg) => {
+                        if val > i64::MIN as u64 {
+                            Err(AtoiSimdError::Overflow("i64", s))
+                        } else if val == i64::MIN as u64 {
+                            Err(AtoiSimdError::I64Min)
+                        } else {
+                            Ok(val)
+                        }
+                    }
+                    Some(ParseType::I64) => {
+                        if val > i64::MAX as u64 {
+                            Err(AtoiSimdError::Overflow("i64", s))
+                        } else {
+                            Ok(val)
+                        }
+                    }
+                    None => Ok(val),
+                }
+            }
+            20 => {
+                if parse_type.is_some() {
+                    return Err(AtoiSimdError::Overflow("i64", s));
+                }
+
+                let val = parse_u128(s)?;
+
+                if val > u64::MAX as u128 {
+                    return Err(AtoiSimdError::Overflow("u64", s));
+                }
+                Ok(val as u64)
+            }
+            s_len => Err(AtoiSimdError::Size(s_len)),
         }
     }
 }
@@ -908,7 +958,7 @@ pub fn parse_u128(s: &str) -> Result<u128, AtoiSimdError> {
                 );
                 check_low = process_avx_gt(cmp, chunk);
             }
-            _ => return parse(s).map(|v| v as u128),
+            _ => return parse_u64(s, None).map(|v| v as u128),
         }
 
         process_avx(chunk, check_high, check_low, s)
@@ -916,14 +966,20 @@ pub fn parse_u128(s: &str) -> Result<u128, AtoiSimdError> {
 }
 
 /// Parses string of digits and first '-' char.
-/// String length (except '-' char) must be 1..=16.
+/// String length (except '-' char) must be 1..=20.
 /// This function is slower than `parse()`, because it checks for '-' sign.
 /// Uses SSE4.1 intrinsics
 pub fn parse_i64(s: &str) -> Result<i64, AtoiSimdError> {
     if let Some(strip) = s.strip_prefix('-') {
-        parse(strip).map(|v| -(v as i64))
+        let res = parse_u64(strip, Some(ParseType::I64Neg)).map(|v| -(v as i64));
+
+        if let Err(AtoiSimdError::I64Min) = res {
+            return Ok(i64::MIN);
+        }
+
+        res
     } else {
-        parse(s).map(|v| v as i64)
+        parse_u64(s, Some(ParseType::I64)).map(|v| v as i64)
     }
 }
 
@@ -956,34 +1012,35 @@ mod tests {
         }
     }
 
+    fn test_each_position_u64(s: &str) {
+        test_each_position(s, |s_new| parse_u64(s_new, None))
+    }
+
     #[test]
-    fn test_parse() {
-        if parse("").is_ok() {
+    fn test_parse_u64() {
+        if parse_u64("", None).is_ok() {
             panic!("error");
         }
 
-        if parse("12345678901234567").is_ok() {
+        if parse_u64("18446744073709551616", None).is_ok() {
             panic!("error");
         }
 
-        assert_eq!(parse("0").unwrap(), 0_u64);
+        assert_eq!(parse_u64("0", None).unwrap(), 0_u64);
 
         let mut s = String::with_capacity(16);
         for i in '1'..='9' {
-            test_each_position(&s, parse);
+            test_each_position_u64(&s);
             s.push(i);
-            assert_eq!(parse(&s).unwrap(), s.parse::<u64>().unwrap());
+            assert_eq!(parse_u64(&s, None).unwrap(), s.parse::<u64>().unwrap());
         }
-        for i in '0'..='6' {
-            test_each_position(&s, parse);
+        for i in '0'..='9' {
+            test_each_position_u64(&s);
             s.push(i);
-            assert_eq!(parse(&s).unwrap(), s.parse::<u64>().unwrap());
+            assert_eq!(parse_u64(&s, None).unwrap(), s.parse::<u64>().unwrap());
         }
 
-        assert_eq!(
-            parse("9999999999999999").unwrap(),
-            9_999_999_999_999_999_u64
-        );
+        assert_eq!(parse_u64("18446744073709551615", None).unwrap(), u64::MAX);
     }
 
     #[test]
@@ -992,7 +1049,10 @@ mod tests {
             panic!("error");
         }
 
-        if parse_i64("12345678901234567").is_ok() {
+        if parse_i64("9223372036854775808").is_ok() {
+            panic!("error");
+        }
+        if parse_i64("-9223372036854775809").is_ok() {
             panic!("error");
         }
 
@@ -1008,31 +1068,19 @@ mod tests {
             s.push(i);
             s_neg.push(i);
             assert_eq!(parse_i64(&s).unwrap(), s.parse::<i64>().unwrap());
-            assert_eq!(
-                parse_i64(&s_neg).unwrap(),
-                s_neg.parse::<i64>().unwrap()
-            );
+            assert_eq!(parse_i64(&s_neg).unwrap(), s_neg.parse::<i64>().unwrap());
         }
-        for i in '0'..='6' {
+        for i in '0'..='9' {
             test_each_position(&s, parse_i64);
             s.push(i);
             s_neg.push(i);
             assert_eq!(parse_i64(&s).unwrap(), s.parse::<i64>().unwrap());
-            assert_eq!(
-                parse_i64(&s_neg).unwrap(),
-                s_neg.parse::<i64>().unwrap()
-            );
+            assert_eq!(parse_i64(&s_neg).unwrap(), s_neg.parse::<i64>().unwrap());
         }
 
-        assert_eq!(
-            parse_i64("-9999999999999999").unwrap(),
-            -9_999_999_999_999_999_i64
-        );
+        assert_eq!(parse_i64("9223372036854775807").unwrap(), i64::MAX);
 
-        assert_eq!(
-            parse_i64("9999999999999999").unwrap(),
-            9_999_999_999_999_999_i64
-        );
+        assert_eq!(parse_i64("-9223372036854775808").unwrap(), i64::MIN);
     }
 
     #[test]
@@ -1094,10 +1142,7 @@ mod tests {
             s.push(i);
             s_neg.push(i);
             assert_eq!(parse_i128(&s).unwrap(), s.parse::<i128>().unwrap());
-            assert_eq!(
-                parse_i128(&s_neg).unwrap(),
-                s_neg.parse::<i128>().unwrap()
-            );
+            assert_eq!(parse_i128(&s_neg).unwrap(), s_neg.parse::<i128>().unwrap());
         }
         for _ in 0..2 {
             for i in '0'..='9' {
@@ -1105,10 +1150,7 @@ mod tests {
                 s.push(i);
                 s_neg.push(i);
                 assert_eq!(parse_i128(&s).unwrap(), s.parse::<i128>().unwrap());
-                assert_eq!(
-                    parse_i128(&s_neg).unwrap(),
-                    s_neg.parse::<i128>().unwrap()
-                );
+                assert_eq!(parse_i128(&s_neg).unwrap(), s_neg.parse::<i128>().unwrap());
             }
         }
         for i in '0'..='2' {
@@ -1116,10 +1158,7 @@ mod tests {
             s.push(i);
             s_neg.push(i);
             assert_eq!(parse_i128(&s).unwrap(), s.parse::<i128>().unwrap());
-            assert_eq!(
-                parse_i128(&s_neg).unwrap(),
-                s_neg.parse::<i128>().unwrap()
-            );
+            assert_eq!(parse_i128(&s_neg).unwrap(), s_neg.parse::<i128>().unwrap());
         }
 
         assert_eq!(

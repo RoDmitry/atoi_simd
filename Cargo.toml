@@ -1,6 +1,6 @@
 [package]
 name = "atoi_simd"
-version = "0.3.0"
+version = "0.4.0"
 authors = ["Dmitry Rodionov <18184039+RoDmitry@users.noreply.github.com>"]
 description = "Rust fast `&str` to integer parser (x86_64 SIMD, SSE4.1, AVX2)"
 repository = "https://github.com/RoDmitry/atoi_simd"
@@ -16,7 +16,7 @@ name = "atoi_simd"
 path = "src/lib.rs"
 
 [dev-dependencies]
-criterion = "0.3"
+criterion = { version = "0.4", features = ["html_reports"] }
 
 [[bench]]
 name = "benchmark"
