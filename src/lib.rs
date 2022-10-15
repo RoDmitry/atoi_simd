@@ -967,7 +967,7 @@ pub fn parse_u128(s: &str) -> Result<u128, AtoiSimdError> {
 
 /// Parses string of digits and first '-' char.
 /// String length (except '-' char) must be 1..=20.
-/// This function is slower than `parse()`, because it checks for '-' sign.
+/// This function is slower than `parse_u64()`, because it checks for '-' sign.
 /// Uses SSE4.1 intrinsics
 pub fn parse_i64(s: &str) -> Result<i64, AtoiSimdError> {
     if let Some(strip) = s.strip_prefix('-') {
