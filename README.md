@@ -50,7 +50,7 @@ More information you can find [here](https://rodmitry.github.io/atoi_simd_benchm
 
 ![benchmark 128](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.4.0/benchmark%20128/report/lines.svg?raw=true)
 
-#### `parse()` u64
+#### `parse_u64()`
 
 ![parse() u64](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.4.0/benchmark%2064/u64/report/lines.svg?raw=true)
 
