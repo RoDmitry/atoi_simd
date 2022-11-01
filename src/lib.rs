@@ -1028,7 +1028,7 @@ mod tests {
 
         assert_eq!(parse_u64("0", None).unwrap(), 0_u64);
 
-        let mut s = String::with_capacity(16);
+        let mut s = String::with_capacity(20);
         for i in '1'..='9' {
             test_each_position_u64(&s);
             s.push(i);
@@ -1039,6 +1039,9 @@ mod tests {
             s.push(i);
             assert_eq!(parse_u64(&s, None).unwrap(), s.parse::<u64>().unwrap());
         }
+        test_each_position_u64(&s);
+        s.push('0');
+        assert_eq!(parse_u64(&s, None).unwrap(), s.parse::<u64>().unwrap());
 
         assert_eq!(parse_u64("18446744073709551615", None).unwrap(), u64::MAX);
     }
@@ -1060,8 +1063,8 @@ mod tests {
 
         assert_eq!(parse_i64("-0").unwrap(), 0_i64);
 
-        let mut s = String::with_capacity(16);
-        let mut s_neg = String::with_capacity(17);
+        let mut s = String::with_capacity(19);
+        let mut s_neg = String::with_capacity(20);
         s_neg.push('-');
         for i in '1'..='9' {
             test_each_position(&s, parse_i64);
