@@ -3,7 +3,7 @@
 [![Crate](https://img.shields.io/crates/v/atoi_simd.svg)](https://crates.io/crates/atoi_simd)
 [![API](https://docs.rs/atoi_simd/badge.svg)](https://docs.rs/atoi_simd)
 
-Modified [this](https://github.com/pickfire/parseint) version (from [article](https://rust-malaysia.github.io/code/2020/07/11/faster-integer-parsing.html)) to perform validation, support various strings of different lengths and negative values.
+Modified [this](https://github.com/pickfire/parseint) version (from [the article](https://rust-malaysia.github.io/code/2020/07/11/faster-integer-parsing.html)) to perform validation, support various strings of different lengths and negative values.
 
 The 64 bit functions use SSE4.1, max string length is 20 numbers (within u64::MAX–0, i64::MAX–i64::MIN).
 
