@@ -2,7 +2,7 @@
 //!
 //! If you have `&str` then use `.as_bytes()`
 //!
-//! The 64 bit functions use SSE4.1, max string length is 16 numbers (17 with sign).
+//! The 64 bit functions use SSE4.1, max string length is 20 numbers (within u64::MAX–0, i64::MAX–i64::MIN).
 //!
 //! The 128 bit functions use AVX2, max string length is 32 numbers (33 with sign).
 //!

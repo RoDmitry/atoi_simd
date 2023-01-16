@@ -5,6 +5,8 @@
 
 Modified [this](https://github.com/pickfire/parseint) version (from [the article](https://rust-malaysia.github.io/code/2020/07/11/faster-integer-parsing.html)) to perform validation, support various strings of different lengths and negative values.
 
+If you have `&str` then use `.as_bytes()`
+
 The 64 bit functions use SSE4.1, max string length is 20 numbers (within u64::MAX–0, i64::MAX–i64::MIN).
 
 The 128 bit functions use AVX2, max string length is 32 numbers (33 with sign).
