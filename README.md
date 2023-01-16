@@ -1,4 +1,4 @@
-# Rust fast `&str` to integer parser (x86_64 SIMD, SSE4.1, AVX2)
+# Rust fast `&[u8]` to integer parser (x86_64 SIMD, SSE4.1, AVX2)
 
 [![Crate](https://img.shields.io/crates/v/atoi_simd.svg)](https://crates.io/crates/atoi_simd)
 [![API](https://docs.rs/atoi_simd/badge.svg)](https://docs.rs/atoi_simd)
@@ -9,7 +9,7 @@ The 64 bit functions use SSE4.1, max string length is 20 numbers (within u64::MA
 
 The 128 bit functions use AVX2, max string length is 32 numbers (33 with sign).
 
-It needs the `target-feature` or `target-cpu` flags for it to build with optimized performance. By default the `target-feature` is set in ./.cargo/config.toml
+It needs the `target-feature` or `target-cpu` flags for it to build with optimized performance. By default the `target-feature` is set in ./.cargo/config.toml, but seems like it works only inside this library.
 
 Also you can use one of the following environment variables:
 
@@ -22,16 +22,16 @@ For Windows PowerShell you can set it with `$Env:RUSTFLAGS='-C target-feature=+s
 ## Examples
 
 ```
-assert_eq!(atoi_simd::parse_u64("0", None).unwrap(), 0_u64);
-assert_eq!(atoi_simd::parse_u64("1234", None).unwrap(), 1234_u64);
+assert_eq!(atoi_simd::parse_u64("0".as_bytes(), None).unwrap(), 0_u64);
+assert_eq!(atoi_simd::parse_u64("1234".as_bytes(), None).unwrap(), 1234_u64);
 
-assert_eq!(atoi_simd::parse_i64("2345").unwrap(), 2345_i64);
-assert_eq!(atoi_simd::parse_i64("-2345").unwrap(), -2345_i64);
+assert_eq!(atoi_simd::parse_i64("2345".as_bytes()).unwrap(), 2345_i64);
+assert_eq!(atoi_simd::parse_i64("-2345".as_bytes()).unwrap(), -2345_i64);
 
-assert_eq!(atoi_simd::parse_u128("1234").unwrap(), 1234_u128);
+assert_eq!(atoi_simd::parse_u128("1234".as_bytes()).unwrap(), 1234_u128);
 
-assert_eq!(atoi_simd::parse_i128("2345").unwrap(), 2345_i128);
-assert_eq!(atoi_simd::parse_i128("-1234").unwrap(), -1234_i128);
+assert_eq!(atoi_simd::parse_i128("2345".as_bytes()).unwrap(), 2345_i128);
+assert_eq!(atoi_simd::parse_i128("-1234".as_bytes()).unwrap(), -1234_i128);
 ```
 
 ## Benchmarks
@@ -42,7 +42,7 @@ You can run `cargo bench` on your machine.
 
 More information you can find [here](https://rodmitry.github.io/atoi_simd_benchmark).
 
-<details open><summary>v0.4.0+</summary>
+<details open><summary>v0.4.0+ (same performance for v0.5+)</summary>
 
 <b>Rust 1.63</b>, Windows 10, Intel i7 9700K, "target-feature" set
 

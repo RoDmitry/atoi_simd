@@ -21,16 +21,16 @@ fn bench_64(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
     }
 
     bench_group.bench_with_input(BenchmarkId::new("u64", str.len()), str, |b, val| {
-        b.iter(|| parse_u64(val, None).unwrap())
+        b.iter(|| parse_u64(val.as_bytes(), None).unwrap())
     });
     if str.len() < 20 {
         bench_group.bench_with_input(BenchmarkId::new("i64", str.len()), str, |b, val| {
-            b.iter(|| parse_i64(val).unwrap())
+            b.iter(|| parse_i64(val.as_bytes()).unwrap())
         });
         bench_group.bench_with_input(
             BenchmarkId::new("neg i64", str.len()),
             &str_neg,
-            |b, val| b.iter(|| parse_i64(val).unwrap()),
+            |b, val| b.iter(|| parse_i64(val.as_bytes()).unwrap()),
         );
     }
 }
@@ -51,15 +51,15 @@ fn bench_128(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
     );
 
     bench_group.bench_with_input(BenchmarkId::new("u128", str.len()), str, |b, val| {
-        b.iter(|| parse_u128(val).unwrap())
+        b.iter(|| parse_u128(val.as_bytes()).unwrap())
     });
     bench_group.bench_with_input(BenchmarkId::new("i128", str.len()), str, |b, val| {
-        b.iter(|| parse_i128(val).unwrap())
+        b.iter(|| parse_i128(val.as_bytes()).unwrap())
     });
     bench_group.bench_with_input(
         BenchmarkId::new("neg i128", str.len()),
         &str_neg,
-        |b, val| b.iter(|| parse_i128(val).unwrap()),
+        |b, val| b.iter(|| parse_i128(val.as_bytes()).unwrap()),
     );
 }
 
