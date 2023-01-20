@@ -72,7 +72,6 @@ impl fmt::Display for AtoiSimdError<'_> {
     }
 }
 
-const HIGH_U64: u64 = 0xFFFF_FFFF_FFFF_FFFF;
 const HIGH: i8 = 0x7F;
 const LOW: i8 = -0x80;
 const CHAR_MAX: i8 = 0x39;
@@ -147,7 +146,7 @@ unsafe fn process_internal(mut chunk: __m128i) -> __m128i {
 unsafe fn checker(check: __m128i, check2: __m128i, s: &[u8]) -> Result<(), AtoiSimdError> {
     let mut chunk = _mm_or_si128(check, check2);
 
-    let mult = _mm_set_epi64x(HIGH_U64 as i64, HIGH_U64 as i64);
+    let mult = _mm_set_epi64x(u64::MAX as i64, u64::MAX as i64 as i64);
     // invert all bits
     chunk = _mm_andnot_si128(chunk, mult);
 
@@ -163,10 +162,10 @@ unsafe fn checker_avx(check: __m256i, check2: __m256i, s: &[u8]) -> Result<(), A
     let chunk = _mm256_or_si256(check, check2);
 
     let mult = _mm256_set_epi64x(
-        HIGH_U64 as i64,
-        HIGH_U64 as i64,
-        HIGH_U64 as i64,
-        HIGH_U64 as i64,
+        u64::MAX as i64,
+        u64::MAX as i64,
+        u64::MAX as i64,
+        u64::MAX as i64,
     );
     // test all zeroes
     let res = _mm256_testz_si256(chunk, mult);
