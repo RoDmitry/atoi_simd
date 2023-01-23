@@ -2,29 +2,21 @@
 //!
 //! If you have `&str` then use `.as_bytes()`
 //!
-//! The 64 bit functions use SSE4.1, max string length is 20 numbers (within u64::MAX–0, i64::MAX–i64::MIN).
+//! Supported output types: u8, i8, u16, i16, u32, i32, u64, i64, u128, i128.
+//! The 128 bit max string length is 32 numbers (33 chars with sign), because it's limited by AVX2.
 //!
-//! The 128 bit functions use AVX2, max string length is 32 numbers (33 with sign).
+//! Has good test coverage, and can be considered safe.
 //!
 //! # Examples
 //!
 //! ```
-//! assert_eq!(atoi_simd::parse_u64("0".as_bytes(), None).unwrap(), 0_u64);
-//! assert_eq!(atoi_simd::parse_u64("1234".as_bytes(), None).unwrap(), 1234_u64);
-//!
-//! assert_eq!(atoi_simd::parse_i64("2345".as_bytes()).unwrap(), 2345_i64);
-//! assert_eq!(atoi_simd::parse_i64("-2345".as_bytes()).unwrap(), -2345_i64);
-//!
-//! assert_eq!(atoi_simd::parse_u128("1234".as_bytes()).unwrap(), 1234_u128);
-//!
-//! assert_eq!(atoi_simd::parse_i128("2345".as_bytes()).unwrap(), 2345_i128);
-//! assert_eq!(atoi_simd::parse_i128("-1234".as_bytes()).unwrap(), -1234_i128);
-//! ```
-//! OR
-//! ```
-//! let val: u64 = parse("1234".as_bytes()).unwrap();
+//! let val: u64 = atoi_simd::parse("1234".as_bytes()).unwrap();
 //! assert_eq!(val, 1234_u64);
+//!
+//! assert_eq!(atoi_simd::parse::<i64>("-2345".as_bytes()).unwrap(), -2345_i64);
 //! ```
+#![allow(clippy::comparison_chain)]
+#![allow(clippy::manual_range_contains)]
 
 use core::arch::x86_64::{
     __m128i, __m256i, _mm256_add_epi64, _mm256_and_si256, _mm256_bslli_epi128, _mm256_bsrli_epi128,
@@ -42,7 +34,7 @@ use std::{fmt, str::from_utf8};
 pub enum AtoiSimdError<'a> {
     Empty,
     Size(usize, &'a [u8]),
-    Overflow(&'a str, &'a [u8]),
+    Overflow(ParseType, &'a [u8]),
     Invalid(&'a [u8]),
     I64Min,
 }
@@ -60,7 +52,7 @@ impl fmt::Display for AtoiSimdError<'_> {
             AtoiSimdError::Overflow(t, val) => {
                 write!(
                     f,
-                    "atoi_simd {} overflow: {}",
+                    "atoi_simd {:?} overflow: {}",
                     t,
                     from_utf8(val).unwrap_or("not string")
                 )
@@ -87,6 +79,7 @@ unsafe fn read(s: &[u8]) -> __m128i {
     _mm_lddqu_si128(std::mem::transmute_copy(&s))
 }
 
+#[inline]
 unsafe fn read_avx(s: &[u8]) -> __m256i {
     _mm256_lddqu_si256(std::mem::transmute_copy(&s))
 }
@@ -127,10 +120,12 @@ unsafe fn mult_100(chunk: __m128i) -> __m128i {
     _mm_madd_epi16(chunk, mult)
 }
 
+#[inline]
 unsafe fn to_u64(chunk: __m128i) -> u64 {
     _mm_cvtsi128_si64(chunk) as u64
 }
 
+#[inline]
 unsafe fn to_u32x4(chunk: __m128i) -> [u32; 4] {
     std::mem::transmute(chunk)
 }
@@ -151,7 +146,7 @@ unsafe fn process_internal(mut chunk: __m128i) -> __m128i {
 unsafe fn checker(check: __m128i, check2: __m128i, s: &[u8]) -> Result<(), AtoiSimdError> {
     let mut chunk = _mm_or_si128(check, check2);
 
-    let mult = _mm_set_epi64x(u64::MAX as i64, u64::MAX as i64 as i64);
+    let mult = _mm_set_epi64x(u64::MAX as i64, u64::MAX as i64);
     // invert all bits
     chunk = _mm_andnot_si128(chunk, mult);
 
@@ -235,14 +230,21 @@ unsafe fn process_big(
 }
 
 /// Not for public use.
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum ParseType {
     I64,
     I64Neg,
+    I32,
+    I32Neg,
+    I16,
+    I16Neg,
+    I8,
+    I8Neg,
+    None,
 }
 
-/// Parses string of *only* digits. String length must be 1..=20.
-/// Always pass `None` as the second argument, that's just for performance reasons.
-pub fn parse_u64(s: &[u8], parse_type: Option<ParseType>) -> Result<u64, AtoiSimdError> {
+/// Parses string of *only* digits
+fn parse_u64(s: &[u8], parse_type: ParseType) -> Result<u64, AtoiSimdError> {
     unsafe {
         match s.len() {
             0 => Err(AtoiSimdError::Empty),
@@ -516,42 +518,46 @@ pub fn parse_u64(s: &[u8], parse_type: Option<ParseType>) -> Result<u64, AtoiSim
                 let val = parse_u128(s)? as u64;
 
                 match parse_type {
-                    Some(ParseType::I64Neg) => {
+                    ParseType::I64Neg => {
                         if val > i64::MIN as u64 {
-                            Err(AtoiSimdError::Overflow("i64", s))
+                            Err(AtoiSimdError::Overflow(parse_type, s))
                         } else if val == i64::MIN as u64 {
                             Err(AtoiSimdError::I64Min)
                         } else {
                             Ok(val)
                         }
                     }
-                    Some(ParseType::I64) => {
+                    ParseType::I64 => {
                         if val > i64::MAX as u64 {
-                            Err(AtoiSimdError::Overflow("i64", s))
+                            Err(AtoiSimdError::Overflow(parse_type, s))
                         } else {
                             Ok(val)
                         }
                     }
-                    None => Ok(val),
+                    _ => Ok(val),
                 }
             }
             20 => {
-                if parse_type.is_some() {
-                    return Err(AtoiSimdError::Overflow("i64", s));
+                if parse_type != ParseType::None {
+                    return Err(AtoiSimdError::Overflow(parse_type, s));
                 }
 
                 let val = parse_u128(s)?;
 
                 if val > u64::MAX as u128 {
-                    return Err(AtoiSimdError::Overflow("u64", s));
+                    return Err(AtoiSimdError::Overflow(parse_type, s));
                 }
                 Ok(val as u64)
             }
             s_len => Err(AtoiSimdError::Size(s_len, s)),
+            // Do not try to separate this function to three,
+            // and chain them with `_ => parse_u32(s).map(|v| v as u64)`,
+            // I've tried it, and the performance is not good (even with #[inline]).
         }
     }
 }
 
+/// Parses string of *only* digits
 /// Uses AVX/AVX2 intrinsics
 unsafe fn process_avx(
     mut chunk: __m256i,
@@ -631,7 +637,7 @@ unsafe fn process_avx_or(chunk: __m256i, mult: __m256i) -> __m256i {
 
 /// Parses string of *only* digits. String length must be 1..=32.
 /// Uses AVX/AVX2 intrinsics
-pub fn parse_u128(s: &[u8]) -> Result<u128, AtoiSimdError> {
+fn parse_u128(s: &[u8]) -> Result<u128, AtoiSimdError> {
     unsafe {
         let mut chunk = read_avx(s);
         let check_high: __m256i;
@@ -976,10 +982,121 @@ pub fn parse_u128(s: &[u8]) -> Result<u128, AtoiSimdError> {
                 );
                 check_low = process_avx_gt(cmp, chunk);
             }
-            _ => return parse_u64(s, None).map(|v| v as u128),
+            _ => return parse_u64(s, ParseType::None).map(|v| v as u128),
         }
 
         process_avx(chunk, check_high, check_low, s)
+    }
+}
+
+#[inline]
+fn parse_u8(s: &[u8], parse_type: ParseType) -> Result<u8, AtoiSimdError> {
+    let val = parse_u64(s, parse_type)?;
+    match parse_type {
+        ParseType::I8 => {
+            if val > i8::MAX as u64 {
+                Err(AtoiSimdError::Overflow(parse_type, s))
+            } else {
+                Ok(val as u8)
+            }
+        }
+        _ => {
+            if val > u8::MAX as u64 {
+                Err(AtoiSimdError::Overflow(parse_type, s))
+            } else {
+                Ok(val as u8)
+            }
+        }
+    }
+}
+
+#[inline]
+fn parse_i8(s: &[u8]) -> Result<i8, AtoiSimdError> {
+    if *s.first().ok_or(AtoiSimdError::Empty)? == b'-' {
+        let val = parse_u64(&s[1..], ParseType::None)?;
+        if val > i8::MAX as u64 + 1 {
+            Err(AtoiSimdError::Overflow(ParseType::I8Neg, s))
+        } else if val == i8::MAX as u64 + 1 {
+            Ok(i8::MIN)
+        } else {
+            Ok(-(val as i8))
+        }
+    } else {
+        parse_u8(s, ParseType::I8).map(|v| v as i8)
+    }
+}
+
+#[inline]
+fn parse_u16(s: &[u8], parse_type: ParseType) -> Result<u16, AtoiSimdError> {
+    let val = parse_u64(s, parse_type)?;
+    match parse_type {
+        ParseType::I16 => {
+            if val > i16::MAX as u64 {
+                Err(AtoiSimdError::Overflow(parse_type, s))
+            } else {
+                Ok(val as u16)
+            }
+        }
+        _ => {
+            if val > u16::MAX as u64 {
+                Err(AtoiSimdError::Overflow(parse_type, s))
+            } else {
+                Ok(val as u16)
+            }
+        }
+    }
+}
+
+#[inline]
+fn parse_i16(s: &[u8]) -> Result<i16, AtoiSimdError> {
+    if *s.first().ok_or(AtoiSimdError::Empty)? == b'-' {
+        let val = parse_u64(&s[1..], ParseType::None)?;
+        if val > i16::MAX as u64 + 1 {
+            Err(AtoiSimdError::Overflow(ParseType::I16Neg, s))
+        } else if val == i16::MAX as u64 + 1 {
+            Ok(i16::MIN)
+        } else {
+            Ok(-(val as i16))
+        }
+    } else {
+        parse_u16(s, ParseType::I16).map(|v| v as i16)
+    }
+}
+
+#[inline]
+fn parse_u32(s: &[u8], parse_type: ParseType) -> Result<u32, AtoiSimdError> {
+    let val = parse_u64(s, parse_type)?;
+    match parse_type {
+        ParseType::I32 => {
+            if val > i32::MAX as u64 {
+                Err(AtoiSimdError::Overflow(parse_type, s))
+            } else {
+                Ok(val as u32)
+            }
+        }
+        _ => {
+            if val > u32::MAX as u64 {
+                Err(AtoiSimdError::Overflow(parse_type, s))
+            } else {
+                Ok(val as u32)
+            }
+        }
+    }
+}
+
+#[inline]
+fn parse_i32(s: &[u8]) -> Result<i32, AtoiSimdError> {
+    if *s.first().ok_or(AtoiSimdError::Empty)? == b'-' {
+        let val = parse_u64(&s[1..], ParseType::None)?;
+        if val > i32::MAX as u64 + 1 {
+            Err(AtoiSimdError::Overflow(ParseType::I32Neg, s))
+        } else if val == i32::MAX as u64 + 1 {
+            Ok(i32::MIN)
+        } else {
+            Ok(-(val as i32))
+        }
+    } else {
+        parse_u32(s, ParseType::I32).map(|v| v as i32)
     }
 }
 
@@ -988,9 +1105,9 @@ pub fn parse_u128(s: &[u8]) -> Result<u128, AtoiSimdError> {
 /// This function is slower than `parse_u64()`, because it checks for '-' sign.
 /// Uses SSE4.1 intrinsics
 #[inline]
-pub fn parse_i64(s: &[u8]) -> Result<i64, AtoiSimdError> {
+fn parse_i64(s: &[u8]) -> Result<i64, AtoiSimdError> {
     if *s.first().ok_or(AtoiSimdError::Empty)? == b'-' {
-        let res = parse_u64(&s[1..], Some(ParseType::I64Neg)).map(|v| -(v as i64));
+        let res = parse_u64(&s[1..], ParseType::I64Neg).map(|v| -(v as i64));
 
         if let Err(AtoiSimdError::I64Min) = res {
             return Ok(i64::MIN);
@@ -998,7 +1115,7 @@ pub fn parse_i64(s: &[u8]) -> Result<i64, AtoiSimdError> {
 
         res
     } else {
-        parse_u64(s, Some(ParseType::I64)).map(|v| v as i64)
+        parse_u64(s, ParseType::I64).map(|v| v as i64)
     }
 }
 
@@ -1007,7 +1124,7 @@ pub fn parse_i64(s: &[u8]) -> Result<i64, AtoiSimdError> {
 /// This function is slower than `parse_u128()`, because it checks for '-' sign.
 /// Uses AVX/AVX2 intrinsics
 #[inline]
-pub fn parse_i128(s: &[u8]) -> Result<i128, AtoiSimdError> {
+fn parse_i128(s: &[u8]) -> Result<i128, AtoiSimdError> {
     if *s.first().ok_or(AtoiSimdError::Empty)? == b'-' {
         parse_u128(&s[1..]).map(|v| -(v as i128))
     } else {
@@ -1019,38 +1136,52 @@ pub trait Parser<T> {
     fn atoi_simd_parser(s: &[u8]) -> Result<T, AtoiSimdError>;
 }
 
+impl Parser<u8> for u8 {
+    #[inline]
+    fn atoi_simd_parser(s: &[u8]) -> Result<u8, AtoiSimdError> {
+        parse_u8(s, ParseType::None)
+    }
+}
+
+impl Parser<i8> for i8 {
+    #[inline]
+    fn atoi_simd_parser(s: &[u8]) -> Result<i8, AtoiSimdError> {
+        parse_i8(s)
+    }
+}
+
 impl Parser<u16> for u16 {
     #[inline]
     fn atoi_simd_parser(s: &[u8]) -> Result<u16, AtoiSimdError> {
-        parse_u64(s, None).map(|v| v as u16)
+        parse_u16(s, ParseType::None)
     }
 }
 
 impl Parser<i16> for i16 {
     #[inline]
     fn atoi_simd_parser(s: &[u8]) -> Result<i16, AtoiSimdError> {
-        parse_i64(s).map(|v| v as i16)
+        parse_i16(s)
     }
 }
 
 impl Parser<u32> for u32 {
     #[inline]
     fn atoi_simd_parser(s: &[u8]) -> Result<u32, AtoiSimdError> {
-        parse_u64(s, None).map(|v| v as u32)
+        parse_u32(s, ParseType::None)
     }
 }
 
 impl Parser<i32> for i32 {
     #[inline]
     fn atoi_simd_parser(s: &[u8]) -> Result<i32, AtoiSimdError> {
-        parse_i64(s).map(|v| v as i32)
+        parse_i32(s)
     }
 }
 
 impl Parser<u64> for u64 {
     #[inline]
     fn atoi_simd_parser(s: &[u8]) -> Result<u64, AtoiSimdError> {
-        parse_u64(s, None)
+        parse_u64(s, ParseType::None)
     }
 }
 
@@ -1097,28 +1228,290 @@ mod tests {
         }
     }
 
+    fn test_each_position_u8(s: &str) {
+        test_each_position(s, |s_new| parse::<u8>(s_new))
+    }
+
+    fn test_each_position_u16(s: &str) {
+        test_each_position(s, |s_new| parse::<u16>(s_new))
+    }
+
+    fn test_each_position_u32(s: &str) {
+        test_each_position(s, |s_new| parse::<u32>(s_new))
+    }
+
     fn test_each_position_u64(s: &str) {
-        test_each_position(s, |s_new| parse_u64(s_new, None))
+        test_each_position(s, |s_new| parse::<u64>(s_new))
+    }
+
+    #[test]
+    fn test_parse_u8() {
+        if parse::<u8>("".as_bytes()).is_ok() {
+            panic!("error");
+        }
+
+        assert_eq!(parse::<u8>("0".as_bytes()).unwrap(), 0_u8);
+
+        let mut s = String::with_capacity(10);
+        for i in '1'..='3' {
+            test_each_position_u8(&s);
+            s.push(i);
+            assert_eq!(parse::<u8>(s.as_bytes()).unwrap(), s.parse::<u8>().unwrap());
+        }
+
+        assert_eq!(parse::<u8>("255".as_bytes()).unwrap(), u8::MAX);
+
+        if parse::<u8>("256".as_bytes()).is_ok() {
+            panic!("error");
+        }
+
+        if parse::<u8>("12345678".as_bytes()).is_ok() {
+            panic!("error");
+        }
+    }
+
+    #[test]
+    fn test_parse_i8() {
+        if parse::<i8>("".as_bytes()).is_ok() {
+            panic!("error");
+        }
+
+        assert_eq!(parse::<i8>("0".as_bytes()).unwrap(), 0_i8);
+
+        assert_eq!(parse::<i8>("-0".as_bytes()).unwrap(), 0_i8);
+
+        let mut s = String::with_capacity(19);
+        let mut s_neg = String::with_capacity(20);
+        s_neg.push('-');
+        for i in '1'..='3' {
+            test_each_position(&s, parse::<i8>);
+            s.push(i);
+            s_neg.push(i);
+            assert_eq!(parse::<i8>(s.as_bytes()).unwrap(), s.parse::<i8>().unwrap());
+            assert_eq!(
+                parse::<i8>(s_neg.as_bytes()).unwrap(),
+                s_neg.parse::<i8>().unwrap()
+            );
+        }
+
+        assert_eq!(parse::<i8>("127".as_bytes()).unwrap(), i8::MAX);
+
+        if parse::<i8>("128".as_bytes()).is_ok() {
+            panic!("error");
+        }
+
+        assert_eq!(parse::<i8>("-128".as_bytes()).unwrap(), i8::MIN);
+
+        if parse::<i8>("-129".as_bytes()).is_ok() {
+            panic!("error");
+        }
+
+        if parse::<i8>("255".as_bytes()).is_ok() {
+            panic!("error");
+        }
+
+        if parse::<i8>("12345678".as_bytes()).is_ok() {
+            panic!("error");
+        }
+
+        if parse::<i8>("-12345678".as_bytes()).is_ok() {
+            panic!("error");
+        }
+    }
+
+    #[test]
+    fn test_parse_u16() {
+        if parse::<u16>("".as_bytes()).is_ok() {
+            panic!("error");
+        }
+
+        assert_eq!(parse::<u16>("0".as_bytes()).unwrap(), 0_u16);
+
+        let mut s = String::with_capacity(10);
+        for i in '1'..='5' {
+            test_each_position_u16(&s);
+            s.push(i);
+            assert_eq!(
+                parse::<u16>(s.as_bytes()).unwrap(),
+                s.parse::<u16>().unwrap()
+            );
+        }
+
+        assert_eq!(parse::<u16>("65535".as_bytes()).unwrap(), u16::MAX);
+
+        if parse::<u16>("65536".as_bytes()).is_ok() {
+            panic!("error");
+        }
+
+        if parse::<u16>("12345678".as_bytes()).is_ok() {
+            panic!("error");
+        }
+    }
+
+    #[test]
+    fn test_parse_i16() {
+        if parse::<i16>("".as_bytes()).is_ok() {
+            panic!("error");
+        }
+
+        assert_eq!(parse::<i16>("0".as_bytes()).unwrap(), 0_i16);
+
+        assert_eq!(parse::<i16>("-0".as_bytes()).unwrap(), 0_i16);
+
+        let mut s = String::with_capacity(19);
+        let mut s_neg = String::with_capacity(20);
+        s_neg.push('-');
+        for i in '1'..='5' {
+            test_each_position(&s, parse::<i16>);
+            s.push(i);
+            s_neg.push(i);
+            assert_eq!(
+                parse::<i16>(s.as_bytes()).unwrap(),
+                s.parse::<i16>().unwrap()
+            );
+            assert_eq!(
+                parse::<i16>(s_neg.as_bytes()).unwrap(),
+                s_neg.parse::<i16>().unwrap()
+            );
+        }
+
+        assert_eq!(parse::<i16>("32767".as_bytes()).unwrap(), i16::MAX);
+
+        if parse::<i16>("32768".as_bytes()).is_ok() {
+            panic!("error");
+        }
+
+        assert_eq!(parse::<i16>("-32768".as_bytes()).unwrap(), i16::MIN);
+
+        if parse::<i16>("-32769".as_bytes()).is_ok() {
+            panic!("error");
+        }
+
+        if parse::<i16>("65535".as_bytes()).is_ok() {
+            panic!("error");
+        }
+
+        if parse::<i16>("12345678".as_bytes()).is_ok() {
+            panic!("error");
+        }
+
+        if parse::<i16>("-12345678".as_bytes()).is_ok() {
+            panic!("error");
+        }
+    }
+
+    #[test]
+    fn test_parse_u32() {
+        if parse::<u32>("".as_bytes()).is_ok() {
+            panic!("error");
+        }
+
+        assert_eq!(parse::<u32>("0".as_bytes()).unwrap(), 0_u32);
+
+        let mut s = String::with_capacity(10);
+        for i in '1'..='9' {
+            test_each_position_u32(&s);
+            s.push(i);
+            assert_eq!(
+                parse::<u32>(s.as_bytes()).unwrap(),
+                s.parse::<u32>().unwrap()
+            );
+        }
+        test_each_position_u32(&s);
+        s.push('0');
+        assert_eq!(
+            parse::<u32>(s.as_bytes()).unwrap(),
+            s.parse::<u32>().unwrap()
+        );
+
+        assert_eq!(parse::<u32>("4294967295".as_bytes()).unwrap(), u32::MAX);
+
+        if parse::<u32>("4294967296".as_bytes()).is_ok() {
+            panic!("error");
+        }
+
+        if parse::<u32>("123456789012345".as_bytes()).is_ok() {
+            panic!("error");
+        }
+    }
+
+    #[test]
+    fn test_parse_i32() {
+        if parse::<i32>("".as_bytes()).is_ok() {
+            panic!("error");
+        }
+
+        assert_eq!(parse::<i32>("0".as_bytes()).unwrap(), 0_i32);
+
+        assert_eq!(parse::<i32>("-0".as_bytes()).unwrap(), 0_i32);
+
+        let mut s = String::with_capacity(19);
+        let mut s_neg = String::with_capacity(20);
+        s_neg.push('-');
+        for i in '1'..='9' {
+            test_each_position(&s, parse::<i32>);
+            s.push(i);
+            s_neg.push(i);
+            assert_eq!(
+                parse::<i32>(s.as_bytes()).unwrap(),
+                s.parse::<i32>().unwrap()
+            );
+            assert_eq!(
+                parse::<i32>(s_neg.as_bytes()).unwrap(),
+                s_neg.parse::<i32>().unwrap()
+            );
+        }
+        test_each_position(&s, parse::<i32>);
+        s.push('0');
+        s_neg.push('0');
+        assert_eq!(
+            parse::<i32>(s.as_bytes()).unwrap(),
+            s.parse::<i32>().unwrap()
+        );
+        assert_eq!(
+            parse::<i32>(s_neg.as_bytes()).unwrap(),
+            s_neg.parse::<i32>().unwrap()
+        );
+
+        assert_eq!(parse::<i32>("2147483647".as_bytes()).unwrap(), i32::MAX);
+
+        if parse::<i32>("2147483648".as_bytes()).is_ok() {
+            panic!("error");
+        }
+
+        assert_eq!(parse::<i32>("-2147483648".as_bytes()).unwrap(), i32::MIN);
+
+        if parse::<i32>("-2147483649".as_bytes()).is_ok() {
+            panic!("error");
+        }
+
+        if parse::<i32>("4294967295".as_bytes()).is_ok() {
+            panic!("error");
+        }
+
+        if parse::<i32>("123456789012345".as_bytes()).is_ok() {
+            panic!("error");
+        }
+
+        if parse::<i32>("-123456789012345".as_bytes()).is_ok() {
+            panic!("error");
+        }
     }
 
     #[test]
     fn test_parse_u64() {
-        if parse_u64("".as_bytes(), None).is_ok() {
+        if parse::<u64>("".as_bytes()).is_ok() {
             panic!("error");
         }
 
-        if parse_u64("18446744073709551616".as_bytes(), None).is_ok() {
-            panic!("error");
-        }
-
-        assert_eq!(parse_u64("0".as_bytes(), None).unwrap(), 0_u64);
+        assert_eq!(parse::<u64>("0".as_bytes()).unwrap(), 0_u64);
 
         let mut s = String::with_capacity(20);
         for i in '1'..='9' {
             test_each_position_u64(&s);
             s.push(i);
             assert_eq!(
-                parse_u64(s.as_bytes(), None).unwrap(),
+                parse::<u64>(s.as_bytes()).unwrap(),
                 s.parse::<u64>().unwrap()
             );
         }
@@ -1126,203 +1519,251 @@ mod tests {
             test_each_position_u64(&s);
             s.push(i);
             assert_eq!(
-                parse_u64(s.as_bytes(), None).unwrap(),
+                parse::<u64>(s.as_bytes()).unwrap(),
                 s.parse::<u64>().unwrap()
             );
         }
         test_each_position_u64(&s);
         s.push('0');
         assert_eq!(
-            parse_u64(s.as_bytes(), None).unwrap(),
+            parse::<u64>(s.as_bytes()).unwrap(),
             s.parse::<u64>().unwrap()
         );
 
         assert_eq!(
-            parse_u64("18446744073709551615".as_bytes(), None).unwrap(),
+            parse::<u64>("18446744073709551615".as_bytes()).unwrap(),
             u64::MAX
         );
+
+        if parse::<u64>("18446744073709551616".as_bytes()).is_ok() {
+            panic!("error");
+        }
+
+        if parse::<u64>("99999999999999999999".as_bytes()).is_ok() {
+            panic!("error");
+        }
     }
 
     #[test]
     fn test_parse_i64() {
-        if parse_i64("".as_bytes()).is_ok() {
+        if parse::<i64>("".as_bytes()).is_ok() {
             panic!("error");
         }
 
-        if parse_i64("9223372036854775808".as_bytes()).is_ok() {
-            panic!("error");
-        }
-        if parse_i64("-9223372036854775809".as_bytes()).is_ok() {
-            panic!("error");
-        }
+        assert_eq!(parse::<i64>("0".as_bytes()).unwrap(), 0_i64);
 
-        assert_eq!(parse_i64("0".as_bytes()).unwrap(), 0_i64);
-
-        assert_eq!(parse_i64("-0".as_bytes()).unwrap(), 0_i64);
+        assert_eq!(parse::<i64>("-0".as_bytes()).unwrap(), 0_i64);
 
         let mut s = String::with_capacity(19);
         let mut s_neg = String::with_capacity(20);
         s_neg.push('-');
         for i in '1'..='9' {
-            test_each_position(&s, parse_i64);
+            test_each_position(&s, parse::<i64>);
             s.push(i);
             s_neg.push(i);
-            assert_eq!(parse_i64(s.as_bytes()).unwrap(), s.parse::<i64>().unwrap());
             assert_eq!(
-                parse_i64(s_neg.as_bytes()).unwrap(),
+                parse::<i64>(s.as_bytes()).unwrap(),
+                s.parse::<i64>().unwrap()
+            );
+            assert_eq!(
+                parse::<i64>(s_neg.as_bytes()).unwrap(),
                 s_neg.parse::<i64>().unwrap()
             );
         }
         for i in '0'..='9' {
-            test_each_position(&s, parse_i64);
+            test_each_position(&s, parse::<i64>);
             s.push(i);
             s_neg.push(i);
-            assert_eq!(parse_i64(s.as_bytes()).unwrap(), s.parse::<i64>().unwrap());
             assert_eq!(
-                parse_i64(s_neg.as_bytes()).unwrap(),
+                parse::<i64>(s.as_bytes()).unwrap(),
+                s.parse::<i64>().unwrap()
+            );
+            assert_eq!(
+                parse::<i64>(s_neg.as_bytes()).unwrap(),
                 s_neg.parse::<i64>().unwrap()
             );
         }
 
         assert_eq!(
-            parse_i64("9223372036854775807".as_bytes()).unwrap(),
+            parse::<i64>("9223372036854775807".as_bytes()).unwrap(),
             i64::MAX
         );
 
+        if parse::<i64>("9223372036854775808".as_bytes()).is_ok() {
+            panic!("error");
+        }
+
         assert_eq!(
-            parse_i64("-9223372036854775808".as_bytes()).unwrap(),
+            parse::<i64>("-9223372036854775808".as_bytes()).unwrap(),
             i64::MIN
         );
+
+        if parse::<i64>("-9223372036854775809".as_bytes()).is_ok() {
+            panic!("error");
+        }
+
+        if parse::<i64>("18446744073709551615".as_bytes()).is_ok() {
+            panic!("error");
+        }
+
+        if parse::<i64>("99999999999999999999".as_bytes()).is_ok() {
+            panic!("error");
+        }
+
+        if parse::<i64>("-99999999999999999999".as_bytes()).is_ok() {
+            panic!("error");
+        }
     }
 
     #[test]
     fn test_parse_u128() {
-        if parse_u128("".as_bytes()).is_ok() {
+        if parse::<u128>("".as_bytes()).is_ok() {
             panic!("error");
         }
 
-        if parse_u128("123456789012345678901234567890123".as_bytes()).is_ok() {
-            panic!("error");
-        }
-
-        assert_eq!(parse_u128("0".as_bytes()).unwrap(), 0_u128);
+        assert_eq!(parse::<u128>("0".as_bytes()).unwrap(), 0_u128);
 
         let mut s = String::with_capacity(32);
         for i in '1'..='9' {
-            test_each_position(&s, parse_u128);
+            test_each_position(&s, parse::<u128>);
             s.push(i);
             assert_eq!(
-                parse_u128(s.as_bytes()).unwrap(),
+                parse::<u128>(s.as_bytes()).unwrap(),
                 s.parse::<u128>().unwrap()
             );
         }
         for _ in 0..2 {
             for i in '0'..='9' {
-                test_each_position(&s, parse_u128);
+                test_each_position(&s, parse::<u128>);
                 s.push(i);
                 assert_eq!(
-                    parse_u128(s.as_bytes()).unwrap(),
+                    parse::<u128>(s.as_bytes()).unwrap(),
                     s.parse::<u128>().unwrap()
                 );
             }
         }
         for i in '0'..='2' {
-            test_each_position(&s, parse_u128);
+            test_each_position(&s, parse::<u128>);
             s.push(i);
             assert_eq!(
-                parse_u128(s.as_bytes()).unwrap(),
+                parse::<u128>(s.as_bytes()).unwrap(),
                 s.parse::<u128>().unwrap()
             );
         }
 
         assert_eq!(
-            parse_u128("9999999999999999".as_bytes()).unwrap(),
+            parse::<u128>("9999999999999999".as_bytes()).unwrap(),
             9_999_999_999_999_999_u128
         );
+
+        assert_eq!(
+            parse::<u128>("12345678901234567890123456789012".as_bytes()).unwrap(),
+            1234567890_1234567890_1234567890_12_u128
+        );
+
+        if parse::<u128>("123456789012345678901234567890123".as_bytes()).is_ok() {
+            panic!("error");
+        }
     }
 
     #[test]
     fn test_parse_i128() {
-        if parse_i128("".as_bytes()).is_ok() {
+        if parse::<i128>("".as_bytes()).is_ok() {
             panic!("error");
         }
 
-        if parse_i128("123456789012345678901234567890123".as_bytes()).is_ok() {
-            panic!("error");
-        }
+        assert_eq!(parse::<i128>("0".as_bytes()).unwrap(), 0_i128);
 
-        assert_eq!(parse_i128("0".as_bytes()).unwrap(), 0_i128);
-
-        assert_eq!(parse_i128("-0".as_bytes()).unwrap(), 0_i128);
+        assert_eq!(parse::<i128>("-0".as_bytes()).unwrap(), 0_i128);
 
         let mut s = String::with_capacity(32);
         let mut s_neg = String::with_capacity(33);
         s_neg.push('-');
         for i in '1'..='9' {
-            test_each_position(&s, parse_i128);
+            test_each_position(&s, parse::<i128>);
             s.push(i);
             s_neg.push(i);
             assert_eq!(
-                parse_i128(s.as_bytes()).unwrap(),
+                parse::<i128>(s.as_bytes()).unwrap(),
                 s.parse::<i128>().unwrap()
             );
             assert_eq!(
-                parse_i128(s_neg.as_bytes()).unwrap(),
+                parse::<i128>(s_neg.as_bytes()).unwrap(),
                 s_neg.parse::<i128>().unwrap()
             );
         }
         for _ in 0..2 {
             for i in '0'..='9' {
-                test_each_position(&s, parse_i128);
+                test_each_position(&s, parse::<i128>);
                 s.push(i);
                 s_neg.push(i);
                 assert_eq!(
-                    parse_i128(s.as_bytes()).unwrap(),
+                    parse::<i128>(s.as_bytes()).unwrap(),
                     s.parse::<i128>().unwrap()
                 );
                 assert_eq!(
-                    parse_i128(s_neg.as_bytes()).unwrap(),
+                    parse::<i128>(s_neg.as_bytes()).unwrap(),
                     s_neg.parse::<i128>().unwrap()
                 );
             }
         }
         for i in '0'..='2' {
-            test_each_position(&s, parse_i128);
+            test_each_position(&s, parse::<i128>);
             s.push(i);
             s_neg.push(i);
             assert_eq!(
-                parse_i128(s.as_bytes()).unwrap(),
+                parse::<i128>(s.as_bytes()).unwrap(),
                 s.parse::<i128>().unwrap()
             );
             assert_eq!(
-                parse_i128(s_neg.as_bytes()).unwrap(),
+                parse::<i128>(s_neg.as_bytes()).unwrap(),
                 s_neg.parse::<i128>().unwrap()
             );
         }
 
         assert_eq!(
-            parse_i128("-9999999999999999".as_bytes()).unwrap(),
+            parse::<i128>("-9999999999999999".as_bytes()).unwrap(),
             -9_999_999_999_999_999_i128
         );
 
         assert_eq!(
-            parse_i128("9999999999999999".as_bytes()).unwrap(),
+            parse::<i128>("9999999999999999".as_bytes()).unwrap(),
             9_999_999_999_999_999_i128
         );
 
         assert_eq!(
-            parse_i128("-99999999999999999999999999999999".as_bytes()).unwrap(),
+            parse::<i128>("-99999999999999999999999999999999".as_bytes()).unwrap(),
             -99_999_999_999_999_999_999_999_999_999_999_i128
         );
 
         assert_eq!(
-            parse_i128("99999999999999999999999999999999".as_bytes()).unwrap(),
+            parse::<i128>("99999999999999999999999999999999".as_bytes()).unwrap(),
             99_999_999_999_999_999_999_999_999_999_999_i128
         );
+
+        assert_eq!(
+            parse::<i128>("12345678901234567890123456789012".as_bytes()).unwrap(),
+            1234567890_1234567890_1234567890_12_i128
+        );
+
+        assert_eq!(
+            parse::<i128>("-12345678901234567890123456789012".as_bytes()).unwrap(),
+            -1234567890_1234567890_1234567890_12_i128
+        );
+
+        if parse::<i128>("123456789012345678901234567890123".as_bytes()).is_ok() {
+            panic!("error");
+        }
     }
 
     #[test]
-    fn test_parse_turbofish() {
+    fn test_parse_types() {
+        let tmp: u8 = parse("123".as_bytes()).unwrap();
+        assert_eq!(tmp, 123_u8);
+
+        let tmp: i8 = parse("-123".as_bytes()).unwrap();
+        assert_eq!(tmp, -123_i8);
+
         let tmp: u16 = parse("1234".as_bytes()).unwrap();
         assert_eq!(tmp, 1234_u16);
 

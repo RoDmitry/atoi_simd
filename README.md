@@ -7,9 +7,10 @@ Modified [this](https://github.com/pickfire/parseint) version (from [the article
 
 If you have `&str` then use `.as_bytes()`
 
-The 64 bit functions use SSE4.1, max string length is 20 numbers (within u64::MAX–0, i64::MAX–i64::MIN).
+Supported output types: u8, i8, u16, i16, u32, i32, u64, i64, u128, i128.
+The 128 bit max string length is 32 numbers (33 chars with sign), because it's limited by AVX2.
 
-The 128 bit functions use AVX2, max string length is 32 numbers (33 with sign).
+Has good test coverage, and can be considered safe.
 
 It needs the `target-feature` or `target-cpu` flags for it to build with optimized performance. By default the `target-feature` is set in ./.cargo/config.toml, but seems like it works only inside this library.
 
@@ -24,21 +25,10 @@ For Windows PowerShell you can set it with `$Env:RUSTFLAGS='-C target-feature=+s
 ## Examples
 
 ```
-assert_eq!(atoi_simd::parse_u64("0".as_bytes(), None).unwrap(), 0_u64);
-assert_eq!(atoi_simd::parse_u64("1234".as_bytes(), None).unwrap(), 1234_u64);
-
-assert_eq!(atoi_simd::parse_i64("2345".as_bytes()).unwrap(), 2345_i64);
-assert_eq!(atoi_simd::parse_i64("-2345".as_bytes()).unwrap(), -2345_i64);
-
-assert_eq!(atoi_simd::parse_u128("1234".as_bytes()).unwrap(), 1234_u128);
-
-assert_eq!(atoi_simd::parse_i128("2345".as_bytes()).unwrap(), 2345_i128);
-assert_eq!(atoi_simd::parse_i128("-1234".as_bytes()).unwrap(), -1234_i128);
-```
-OR
-```
-let val: u64 = parse("1234".as_bytes()).unwrap();
+let val: u64 = atoi_simd::parse("1234".as_bytes()).unwrap();
 assert_eq!(val, 1234_u64);
+
+assert_eq!(atoi_simd::parse::<i64>("-2345".as_bytes()).unwrap(), -2345_i64);
 ```
 
 ## Benchmarks
@@ -49,7 +39,9 @@ You can run `cargo bench` on your machine.
 
 More information you can find [here](https://rodmitry.github.io/atoi_simd_benchmark).
 
-<details open><summary>v0.4.0+ (same performance for v0.5+)</summary>
+v0.6+ is even faster!
+
+<details open><summary>v0.4-v0.5</summary>
 
 <b>Rust 1.63</b>, Windows 10, Intel i7 9700K, "target-feature" set
 
