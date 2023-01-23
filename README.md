@@ -35,6 +35,11 @@ assert_eq!(atoi_simd::parse_u128("1234".as_bytes()).unwrap(), 1234_u128);
 assert_eq!(atoi_simd::parse_i128("2345".as_bytes()).unwrap(), 2345_i128);
 assert_eq!(atoi_simd::parse_i128("-1234".as_bytes()).unwrap(), -1234_i128);
 ```
+OR
+```
+let val: u64 = parse("1234".as_bytes()).unwrap();
+assert_eq!(val, 1234_u64);
+```
 
 ## Benchmarks
 

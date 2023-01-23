@@ -20,6 +20,11 @@
 //! assert_eq!(atoi_simd::parse_i128("2345".as_bytes()).unwrap(), 2345_i128);
 //! assert_eq!(atoi_simd::parse_i128("-1234".as_bytes()).unwrap(), -1234_i128);
 //! ```
+//! OR
+//! ```
+//! let val: u64 = parse("1234".as_bytes()).unwrap();
+//! assert_eq!(val, 1234_u64);
+//! ```
 
 use core::arch::x86_64::{
     __m128i, __m256i, _mm256_add_epi64, _mm256_and_si256, _mm256_bslli_epi128, _mm256_bsrli_epi128,
@@ -982,6 +987,7 @@ pub fn parse_u128(s: &[u8]) -> Result<u128, AtoiSimdError> {
 /// String length (except '-' char) must be 1..=20.
 /// This function is slower than `parse_u64()`, because it checks for '-' sign.
 /// Uses SSE4.1 intrinsics
+#[inline]
 pub fn parse_i64(s: &[u8]) -> Result<i64, AtoiSimdError> {
     if *s.first().ok_or(AtoiSimdError::Empty)? == b'-' {
         let res = parse_u64(&s[1..], Some(ParseType::I64Neg)).map(|v| -(v as i64));
@@ -1000,12 +1006,78 @@ pub fn parse_i64(s: &[u8]) -> Result<i64, AtoiSimdError> {
 /// String length (except '-' char) must be 1..=32.
 /// This function is slower than `parse_u128()`, because it checks for '-' sign.
 /// Uses AVX/AVX2 intrinsics
+#[inline]
 pub fn parse_i128(s: &[u8]) -> Result<i128, AtoiSimdError> {
     if *s.first().ok_or(AtoiSimdError::Empty)? == b'-' {
         parse_u128(&s[1..]).map(|v| -(v as i128))
     } else {
         parse_u128(s).map(|v| v as i128)
     }
+}
+
+pub trait Parser<T> {
+    fn atoi_simd_parser(s: &[u8]) -> Result<T, AtoiSimdError>;
+}
+
+impl Parser<u16> for u16 {
+    #[inline]
+    fn atoi_simd_parser(s: &[u8]) -> Result<u16, AtoiSimdError> {
+        parse_u64(s, None).map(|v| v as u16)
+    }
+}
+
+impl Parser<i16> for i16 {
+    #[inline]
+    fn atoi_simd_parser(s: &[u8]) -> Result<i16, AtoiSimdError> {
+        parse_i64(s).map(|v| v as i16)
+    }
+}
+
+impl Parser<u32> for u32 {
+    #[inline]
+    fn atoi_simd_parser(s: &[u8]) -> Result<u32, AtoiSimdError> {
+        parse_u64(s, None).map(|v| v as u32)
+    }
+}
+
+impl Parser<i32> for i32 {
+    #[inline]
+    fn atoi_simd_parser(s: &[u8]) -> Result<i32, AtoiSimdError> {
+        parse_i64(s).map(|v| v as i32)
+    }
+}
+
+impl Parser<u64> for u64 {
+    #[inline]
+    fn atoi_simd_parser(s: &[u8]) -> Result<u64, AtoiSimdError> {
+        parse_u64(s, None)
+    }
+}
+
+impl Parser<i64> for i64 {
+    #[inline]
+    fn atoi_simd_parser(s: &[u8]) -> Result<i64, AtoiSimdError> {
+        parse_i64(s)
+    }
+}
+
+impl Parser<u128> for u128 {
+    #[inline]
+    fn atoi_simd_parser(s: &[u8]) -> Result<u128, AtoiSimdError> {
+        parse_u128(s)
+    }
+}
+
+impl Parser<i128> for i128 {
+    #[inline]
+    fn atoi_simd_parser(s: &[u8]) -> Result<i128, AtoiSimdError> {
+        parse_i128(s)
+    }
+}
+
+#[inline]
+pub fn parse<T: Parser<T>>(s: &[u8]) -> Result<T, AtoiSimdError> {
+    T::atoi_simd_parser(s)
 }
 
 #[cfg(test)]
@@ -1247,5 +1319,32 @@ mod tests {
             parse_i128("99999999999999999999999999999999".as_bytes()).unwrap(),
             99_999_999_999_999_999_999_999_999_999_999_i128
         );
+    }
+
+    #[test]
+    fn test_parse_turbofish() {
+        let tmp: u16 = parse("1234".as_bytes()).unwrap();
+        assert_eq!(tmp, 1234_u16);
+
+        let tmp: i16 = parse("-1234".as_bytes()).unwrap();
+        assert_eq!(tmp, -1234_i16);
+
+        let tmp: u32 = parse("1234".as_bytes()).unwrap();
+        assert_eq!(tmp, 1234_u32);
+
+        let tmp: i32 = parse("-1234".as_bytes()).unwrap();
+        assert_eq!(tmp, -1234_i32);
+
+        let tmp: u64 = parse("1234".as_bytes()).unwrap();
+        assert_eq!(tmp, 1234_u64);
+
+        let tmp: i64 = parse("-1234".as_bytes()).unwrap();
+        assert_eq!(tmp, -1234_i64);
+
+        let tmp: u128 = parse("999999".as_bytes()).unwrap();
+        assert_eq!(tmp, 999999_u128);
+
+        let tmp: i128 = parse("-999999".as_bytes()).unwrap();
+        assert_eq!(tmp, -999999_i128);
     }
 }
