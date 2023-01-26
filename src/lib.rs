@@ -2,7 +2,7 @@
 //!
 //! If you have `&str` then use `.as_bytes()`
 //!
-//! Supported output types: u8, i8, u16, i16, u32, i32, u64, i64, u128, i128.
+//! Supported output types: u8, i8, u16, i16, u32, i32, u64, i64, u128, i128, usize, isize.
 //! The 128 bit max string length is 32 numbers (33 chars with sign), because it's limited by AVX2.
 //!
 //! Has good test coverage, and can be considered safe.
@@ -1175,6 +1175,38 @@ impl Parser<i32> for i32 {
     #[inline]
     fn atoi_simd_parser(s: &[u8]) -> Result<i32, AtoiSimdError> {
         parse_i32(s)
+    }
+}
+
+#[cfg(target_pointer_width = "32")]
+impl Parser<usize> for usize {
+    #[inline]
+    fn atoi_simd_parser(s: &[u8]) -> Result<usize, AtoiSimdError> {
+        parse_u32(s, ParseType::None).map(|v| v as usize)
+    }
+}
+
+#[cfg(target_pointer_width = "32")]
+impl Parser<isize> for isize {
+    #[inline]
+    fn atoi_simd_parser(s: &[u8]) -> Result<isize, AtoiSimdError> {
+        parse_i32(s).map(|v| v as isize)
+    }
+}
+
+#[cfg(target_pointer_width = "64")]
+impl Parser<usize> for usize {
+    #[inline]
+    fn atoi_simd_parser(s: &[u8]) -> Result<usize, AtoiSimdError> {
+        parse_u64(s, ParseType::None).map(|v| v as usize)
+    }
+}
+
+#[cfg(target_pointer_width = "64")]
+impl Parser<isize> for isize {
+    #[inline]
+    fn atoi_simd_parser(s: &[u8]) -> Result<isize, AtoiSimdError> {
+        parse_i64(s).map(|v| v as isize)
     }
 }
 
