@@ -30,7 +30,7 @@ use core::arch::x86_64::{
 };
 use std::{fmt, str::from_utf8};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub enum AtoiSimdError<'a> {
     Empty,
     Size(usize, &'a [u8]),
@@ -42,14 +42,14 @@ pub enum AtoiSimdError<'a> {
 impl fmt::Display for AtoiSimdError<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            AtoiSimdError::Empty => write!(f, "atoi_simd string is empty"),
-            AtoiSimdError::Size(len, val) => write!(
+            Self::Empty => write!(f, "atoi_simd string is empty"),
+            Self::Size(len, val) => write!(
                 f,
                 "atoi_simd wrong size: {} input: {}",
                 len,
                 from_utf8(val).unwrap_or("not string")
             ),
-            AtoiSimdError::Overflow(t, val) => {
+            Self::Overflow(t, val) => {
                 write!(
                     f,
                     "atoi_simd {:?} overflow: {}",
@@ -57,14 +57,14 @@ impl fmt::Display for AtoiSimdError<'_> {
                     from_utf8(val).unwrap_or("not string")
                 )
             }
-            AtoiSimdError::Invalid(val) => {
+            Self::Invalid(val) => {
                 write!(
                     f,
                     "atoi_simd invalid, it must contain only digits: {}",
                     from_utf8(val).unwrap_or("not string")
                 )
             }
-            AtoiSimdError::I64Min => write!(f, "atoi_simd i64::min"), // internal error
+            Self::I64Min => write!(f, "atoi_simd i64::min"), // internal error
         }
     }
 }
