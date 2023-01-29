@@ -53,33 +53,33 @@ v0.6+ is even faster!
 
 ![parse() u64](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.4.0/benchmark%2064/u64/report/lines.svg?raw=true)
 
-#### `std::parse::<u64>()`
+#### `str::parse::<u64>()`
 
-![std::parse::<u64>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.4.0/benchmark%2064/std%20u64/report/lines.svg?raw=true)
+![str::parse::<u64>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.4.0/benchmark%2064/std%20u64/report/lines.svg?raw=true)
 
 #### `parse_i64()`
 
 ![parse_i64()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.4.0/benchmark%2064/i64/report/lines.svg?raw=true)
 
-#### `std::parse::<i64>()`
+#### `str::parse::<i64>()`
 
-![std::parse::<i64>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.4.0/benchmark%2064/std%20i64/report/lines.svg?raw=true)
+![str::parse::<i64>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.4.0/benchmark%2064/std%20i64/report/lines.svg?raw=true)
 
 #### `parse_u128()`
 
 ![parse_u128()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.4.0/benchmark%20128/u128/report/lines.svg?raw=true)
 
-#### `std::parse::<u128>()`
+#### `str::parse::<u128>()`
 
-![std::parse::<u128>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.4.0/benchmark%20128/std%20u128/report/lines.svg?raw=true)
+![str::parse::<u128>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.4.0/benchmark%20128/std%20u128/report/lines.svg?raw=true)
 
 #### `parse_i128()`
 
 ![parse_i128()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.4.0/benchmark%20128/i128/report/lines.svg?raw=true)
 
-#### `std::parse::<i128>()`
+#### `str::parse::<i128>()`
 
-![std::parse::<i128>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.4.0/benchmark%20128/std%20i128/report/lines.svg?raw=true)
+![str::parse::<i128>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.4.0/benchmark%20128/std%20i128/report/lines.svg?raw=true)
 
 </details>
 
@@ -93,33 +93,33 @@ v0.6+ is even faster!
 
 ![parse() u64](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.3.0/u64/report/lines.svg?raw=true)
 
-#### `std::parse::<u64>()`
+#### `str::parse::<u64>()`
 
-![std::parse::<u64>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.3.0/std%20u64/report/lines.svg?raw=true)
+![str::parse::<u64>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.3.0/std%20u64/report/lines.svg?raw=true)
 
 #### `parse_i64()`
 
 ![parse_i64()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.3.0/i64/report/lines.svg?raw=true)
 
-#### `std::parse::<i64>()`
+#### `str::parse::<i64>()`
 
-![std::parse::<i64>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.3.0/std%20i64/report/lines.svg?raw=true)
+![str::parse::<i64>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.3.0/std%20i64/report/lines.svg?raw=true)
 
 #### `parse_u128()`
 
 ![parse_u128()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.3.0/u128/report/lines.svg?raw=true)
 
-#### `std::parse::<u128>()`
+#### `str::parse::<u128>()`
 
-![std::parse::<u128>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.3.0/std%20u128/report/lines.svg?raw=true)
+![str::parse::<u128>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.3.0/std%20u128/report/lines.svg?raw=true)
 
 #### `parse_i128()`
 
 ![parse_i128()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.3.0/i128/report/lines.svg?raw=true)
 
-#### `std::parse::<i128>()`
+#### `str::parse::<i128>()`
 
-![std::parse::<i128>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.3.0/std%20i128/report/lines.svg?raw=true)
+![str::parse::<i128>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.3.0/std%20i128/report/lines.svg?raw=true)
 
 </details>
 
@@ -133,33 +133,33 @@ v0.6+ is even faster!
 
 ![parse() u64](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.2.1/u64/report/lines.svg?raw=true)
 
-#### `std::parse::<u64>()`
+#### `str::parse::<u64>()`
 
-![std::parse::<u64>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.2.1/std%20u64/report/lines.svg?raw=true)
+![str::parse::<u64>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.2.1/std%20u64/report/lines.svg?raw=true)
 
 #### `parse_i64()`
 
 ![parse_i64()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.2.1/i64/report/lines.svg?raw=true)
 
-#### `std::parse::<i64>()`
+#### `str::parse::<i64>()`
 
-![std::parse::<i64>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.2.1/std%20i64/report/lines.svg?raw=true)
+![str::parse::<i64>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.2.1/std%20i64/report/lines.svg?raw=true)
 
 #### `parse_u128()`
 
 ![parse_u128()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.2.1/u128/report/lines.svg?raw=true)
 
-#### `std::parse::<u128>()`
+#### `str::parse::<u128>()`
 
-![std::parse::<u128>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.2.1/std%20u128/report/lines.svg?raw=true)
+![str::parse::<u128>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.2.1/std%20u128/report/lines.svg?raw=true)
 
 #### `parse_i128()`
 
 ![parse_i128()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.2.1/i128/report/lines.svg?raw=true)
 
-#### `std::parse::<i128>()`
+#### `str::parse::<i128>()`
 
-![std::parse::<i128>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.2.1/std%20i128/report/lines.svg?raw=true)
+![str::parse::<i128>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.2.1/std%20i128/report/lines.svg?raw=true)
 
 </details>
 
@@ -173,33 +173,33 @@ v0.6+ is even faster!
 
 ![parse() u64](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.2.0/u64/report/lines.svg?raw=true)
 
-#### `std::parse::<u64>()`
+#### `str::parse::<u64>()`
 
-![std::parse::<u64>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.2.0/std%20u64/report/lines.svg?raw=true)
+![str::parse::<u64>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.2.0/std%20u64/report/lines.svg?raw=true)
 
 #### `parse_i64()`
 
 ![parse_i64()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.2.0/i64/report/lines.svg?raw=true)
 
-#### `std::parse::<i64>()`
+#### `str::parse::<i64>()`
 
-![std::parse::<i64>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.2.0/std%20i64/report/lines.svg?raw=true)
+![str::parse::<i64>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.2.0/std%20i64/report/lines.svg?raw=true)
 
 #### `parse_u128()`
 
 ![parse_u128()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.2.0/u128/report/lines.svg?raw=true)
 
-#### `std::parse::<u128>()`
+#### `str::parse::<u128>()`
 
-![std::parse::<u128>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.2.0/std%20u128/report/lines.svg?raw=true)
+![str::parse::<u128>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.2.0/std%20u128/report/lines.svg?raw=true)
 
 #### `parse_i128()`
 
 ![parse_i128()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.2.0/i128/report/lines.svg?raw=true)
 
-#### `std::parse::<i128>()`
+#### `str::parse::<i128>()`
 
-![std::parse::<i128>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.2.0/std%20i128/report/lines.svg?raw=true)
+![str::parse::<i128>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.2.0/std%20i128/report/lines.svg?raw=true)
 
 </details>
 
