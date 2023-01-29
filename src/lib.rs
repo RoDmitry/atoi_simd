@@ -81,7 +81,6 @@ unsafe fn read(s: &[u8]) -> __m128i {
     _mm_lddqu_si128(std::mem::transmute_copy(&s))
 }
 
-#[inline]
 unsafe fn read_avx(s: &[u8]) -> __m256i {
     _mm256_lddqu_si256(std::mem::transmute_copy(&s))
 }
@@ -641,12 +640,13 @@ unsafe fn process_avx_or(chunk: __m256i, mult: __m256i) -> __m256i {
 /// Uses AVX/AVX2 intrinsics
 fn parse_u128(s: &[u8]) -> Result<u128, AtoiSimdError> {
     unsafe {
-        let mut chunk = read_avx(s);
+        let mut chunk: __m256i;
         let check_high: __m256i;
         let check_low: __m256i;
 
         match s.len() {
             17 => {
+                chunk = read_avx(s);
                 let cmp = _mm256_set_epi8(
                     HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH,
                     HIGH, HIGH, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
@@ -663,12 +663,12 @@ fn parse_u128(s: &[u8]) -> Result<u128, AtoiSimdError> {
                 check_low = process_avx_gt(cmp, chunk);
 
                 let mut mult = process_avx_permute2x128(chunk);
-
                 mult = _mm256_bsrli_epi128(mult, 1);
                 chunk = _mm256_bslli_epi128(chunk, 15);
                 chunk = process_avx_or(chunk, mult);
             }
             18 => {
+                chunk = read_avx(s);
                 let cmp = _mm256_set_epi8(
                     HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH,
                     HIGH, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
@@ -690,6 +690,7 @@ fn parse_u128(s: &[u8]) -> Result<u128, AtoiSimdError> {
                 chunk = process_avx_or(chunk, mult);
             }
             19 => {
+                chunk = read_avx(s);
                 let cmp = _mm256_set_epi8(
                     HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH,
                     CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
@@ -711,6 +712,7 @@ fn parse_u128(s: &[u8]) -> Result<u128, AtoiSimdError> {
                 chunk = process_avx_or(chunk, mult);
             }
             20 => {
+                chunk = read_avx(s);
                 let cmp = _mm256_set_epi8(
                     HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH,
                     CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
@@ -733,6 +735,7 @@ fn parse_u128(s: &[u8]) -> Result<u128, AtoiSimdError> {
                 chunk = process_avx_or(chunk, mult);
             }
             21 => {
+                chunk = read_avx(s);
                 let cmp = _mm256_set_epi8(
                     HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, CHAR_MAX,
                     CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
@@ -754,6 +757,7 @@ fn parse_u128(s: &[u8]) -> Result<u128, AtoiSimdError> {
                 chunk = process_avx_or(chunk, mult);
             }
             22 => {
+                chunk = read_avx(s);
                 let cmp = _mm256_set_epi8(
                     HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, CHAR_MAX, CHAR_MAX,
                     CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
@@ -775,6 +779,7 @@ fn parse_u128(s: &[u8]) -> Result<u128, AtoiSimdError> {
                 chunk = process_avx_or(chunk, mult);
             }
             23 => {
+                chunk = read_avx(s);
                 let cmp = _mm256_set_epi8(
                     HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, CHAR_MAX, CHAR_MAX,
                     CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
@@ -796,6 +801,7 @@ fn parse_u128(s: &[u8]) -> Result<u128, AtoiSimdError> {
                 chunk = process_avx_or(chunk, mult);
             }
             24 => {
+                chunk = read_avx(s);
                 let cmp = _mm256_set_epi8(
                     HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, CHAR_MAX, CHAR_MAX, CHAR_MAX,
                     CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
@@ -818,6 +824,7 @@ fn parse_u128(s: &[u8]) -> Result<u128, AtoiSimdError> {
                 chunk = process_avx_or(chunk, mult);
             }
             25 => {
+                chunk = read_avx(s);
                 let cmp = _mm256_set_epi8(
                     HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, CHAR_MAX, CHAR_MAX, CHAR_MAX,
                     CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
@@ -839,6 +846,7 @@ fn parse_u128(s: &[u8]) -> Result<u128, AtoiSimdError> {
                 chunk = process_avx_or(chunk, mult);
             }
             26 => {
+                chunk = read_avx(s);
                 let cmp = _mm256_set_epi8(
                     HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
                     CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
@@ -860,6 +868,7 @@ fn parse_u128(s: &[u8]) -> Result<u128, AtoiSimdError> {
                 chunk = process_avx_or(chunk, mult);
             }
             27 => {
+                chunk = read_avx(s);
                 let cmp = _mm256_set_epi8(
                     HIGH, HIGH, HIGH, HIGH, HIGH, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
                     CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
@@ -881,6 +890,7 @@ fn parse_u128(s: &[u8]) -> Result<u128, AtoiSimdError> {
                 chunk = process_avx_or(chunk, mult);
             }
             28 => {
+                chunk = read_avx(s);
                 let cmp = _mm256_set_epi8(
                     HIGH, HIGH, HIGH, HIGH, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
                     CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
@@ -905,6 +915,7 @@ fn parse_u128(s: &[u8]) -> Result<u128, AtoiSimdError> {
                 chunk = process_avx_or(chunk, mult);
             }
             29 => {
+                chunk = read_avx(s);
                 let cmp = _mm256_set_epi8(
                     HIGH, HIGH, HIGH, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
                     CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
@@ -926,6 +937,7 @@ fn parse_u128(s: &[u8]) -> Result<u128, AtoiSimdError> {
                 chunk = process_avx_or(chunk, mult);
             }
             30 => {
+                chunk = read_avx(s);
                 let cmp = _mm256_set_epi8(
                     HIGH, HIGH, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
                     CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
@@ -947,6 +959,7 @@ fn parse_u128(s: &[u8]) -> Result<u128, AtoiSimdError> {
                 chunk = process_avx_or(chunk, mult);
             }
             31 => {
+                chunk = read_avx(s);
                 let cmp = _mm256_set_epi8(
                     HIGH, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
                     CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
@@ -969,6 +982,7 @@ fn parse_u128(s: &[u8]) -> Result<u128, AtoiSimdError> {
                 chunk = process_avx_or(chunk, mult);
             }
             32 => {
+                chunk = read_avx(s);
                 let cmp = _mm256_set_epi8(
                     CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
                     CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
