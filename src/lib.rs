@@ -69,6 +69,8 @@ impl fmt::Display for AtoiSimdError<'_> {
     }
 }
 
+impl std::error::Error for AtoiSimdError<'_> {}
+
 const HIGH: i8 = 0x7F;
 const LOW: i8 = -0x80;
 const CHAR_MAX: i8 = 0x39;
