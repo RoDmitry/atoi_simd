@@ -245,316 +245,315 @@ pub enum ParseType {
 }
 
 /// Parses string of *only* digits
-fn parse_u64(s: &[u8], parse_type: ParseType) -> Result<u64, AtoiSimdError> {
-    unsafe {
-        match s.len() {
-            0 => Err(AtoiSimdError::Empty),
-            1 => {
-                let val = *s.first().unwrap() as u64;
-                if val > 0x39 || val < 0x30 {
-                    return Err(AtoiSimdError::Invalid(s));
-                }
-                Ok(val & 0xF)
+#[target_feature(enable = "sse2,sse3,sse4.1,ssse3,avx,avx2")]
+unsafe fn parse_u64(s: &[u8], parse_type: ParseType) -> Result<u64, AtoiSimdError> {
+    match s.len() {
+        0 => Err(AtoiSimdError::Empty),
+        1 => {
+            let val = *s.first().unwrap() as u64;
+            if val > 0x39 || val < 0x30 {
+                return Err(AtoiSimdError::Invalid(s));
             }
-            2 => {
-                let mut chunk = read(s);
-
-                let cmp = _mm_set_epi8(
-                    HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH,
-                    HIGH, CHAR_MAX, CHAR_MAX,
-                );
-                let check_high = process_gt(chunk, cmp);
-                let cmp = _mm_set_epi8(
-                    LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, CHAR_MIN,
-                    CHAR_MIN,
-                );
-                let check_low = process_gt(cmp, chunk);
-
-                chunk = process_and(chunk, 0xF0F);
-                chunk = mult_10(chunk);
-
-                checker(check_high, check_low, s)?;
-
-                Ok(to_u64(chunk))
-                // std::mem::transmute::<__m128i, [u16; 8]>(chunk)[7] as u64 // same performance
-            }
-            3 => {
-                let mut chunk = read(s);
-
-                let cmp = _mm_set_epi8(
-                    HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH,
-                    CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                );
-                let check_high = process_gt(chunk, cmp);
-                let cmp = _mm_set_epi8(
-                    LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, CHAR_MIN,
-                    CHAR_MIN, CHAR_MIN,
-                );
-                let check_low = process_gt(cmp, chunk);
-
-                chunk = _mm_bslli_si128(chunk, 1);
-                process_small(chunk, check_high, check_low, s)
-            }
-            4 => {
-                let chunk = read(s);
-
-                let cmp = _mm_set_epi8(
-                    HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH,
-                    CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                );
-                let check_high = process_gt(chunk, cmp);
-                let cmp = _mm_set_epi8(
-                    LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, CHAR_MIN, CHAR_MIN,
-                    CHAR_MIN, CHAR_MIN,
-                );
-                let check_low = process_gt(cmp, chunk);
-
-                process_small(chunk, check_high, check_low, s)
-            }
-            5 => {
-                let mut chunk = read(s);
-
-                let cmp = _mm_set_epi8(
-                    HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, CHAR_MAX,
-                    CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                );
-                let check_high = process_gt(chunk, cmp);
-                let cmp = _mm_set_epi8(
-                    LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, CHAR_MIN, CHAR_MIN,
-                    CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                );
-                let check_low = process_gt(cmp, chunk);
-
-                chunk = _mm_bslli_si128(chunk, 3);
-                process_medium(chunk, check_high, check_low, s)
-            }
-            6 => {
-                let mut chunk = read(s);
-
-                let cmp = _mm_set_epi8(
-                    HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, CHAR_MAX, CHAR_MAX,
-                    CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                );
-                let check_high = process_gt(chunk, cmp);
-                let cmp = _mm_set_epi8(
-                    LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                    CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                );
-                let check_low = process_gt(cmp, chunk);
-
-                chunk = _mm_bslli_si128(chunk, 2);
-                process_medium(chunk, check_high, check_low, s)
-            }
-            7 => {
-                let mut chunk = read(s);
-
-                let cmp = _mm_set_epi8(
-                    HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, CHAR_MAX, CHAR_MAX,
-                    CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                );
-                let check_high = process_gt(chunk, cmp);
-                let cmp = _mm_set_epi8(
-                    LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                    CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                );
-                let check_low = process_gt(cmp, chunk);
-
-                chunk = _mm_bslli_si128(chunk, 1);
-                process_medium(chunk, check_high, check_low, s)
-            }
-            8 => {
-                let chunk = read(s);
-
-                let cmp = _mm_set_epi8(
-                    HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                    CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                );
-                let check_high = process_gt(chunk, cmp);
-                let cmp = _mm_set_epi8(
-                    LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                    CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                );
-                let check_low = process_gt(cmp, chunk);
-
-                process_medium(chunk, check_high, check_low, s)
-            }
-            9 => {
-                let mut chunk = read(s);
-
-                let cmp = _mm_set_epi8(
-                    HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                    CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                );
-                let check_high = process_gt(chunk, cmp);
-                let cmp = _mm_set_epi8(
-                    LOW, LOW, LOW, LOW, LOW, LOW, LOW, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                    CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                );
-                let check_low = process_gt(cmp, chunk);
-
-                chunk = _mm_bslli_si128(chunk, 7);
-                process_big(chunk, check_high, check_low, s)
-            }
-            10 => {
-                let mut chunk = read(s);
-
-                let cmp = _mm_set_epi8(
-                    HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                    CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                );
-                let check_high = process_gt(chunk, cmp);
-                let cmp = _mm_set_epi8(
-                    LOW, LOW, LOW, LOW, LOW, LOW, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                    CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                );
-                let check_low = process_gt(cmp, chunk);
-
-                chunk = _mm_bslli_si128(chunk, 6);
-                process_big(chunk, check_high, check_low, s)
-            }
-            11 => {
-                let mut chunk = read(s);
-
-                let cmp = _mm_set_epi8(
-                    HIGH, HIGH, HIGH, HIGH, HIGH, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                    CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                );
-                let check_high = process_gt(chunk, cmp);
-                let cmp = _mm_set_epi8(
-                    LOW, LOW, LOW, LOW, LOW, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                    CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                );
-                let check_low = process_gt(cmp, chunk);
-
-                chunk = _mm_bslli_si128(chunk, 5);
-                process_big(chunk, check_high, check_low, s)
-            }
-            12 => {
-                let mut chunk = read(s);
-
-                let cmp = _mm_set_epi8(
-                    HIGH, HIGH, HIGH, HIGH, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                    CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                );
-                let check_high = process_gt(chunk, cmp);
-                let cmp = _mm_set_epi8(
-                    LOW, LOW, LOW, LOW, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                    CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                );
-                let check_low = process_gt(cmp, chunk);
-
-                chunk = _mm_bslli_si128(chunk, 4);
-                process_big(chunk, check_high, check_low, s)
-            }
-            13 => {
-                let mut chunk = read(s);
-
-                let cmp = _mm_set_epi8(
-                    HIGH, HIGH, HIGH, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                    CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                );
-                let check_high = process_gt(chunk, cmp);
-                let cmp = _mm_set_epi8(
-                    LOW, LOW, LOW, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                    CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                );
-                let check_low = process_gt(cmp, chunk);
-
-                chunk = _mm_bslli_si128(chunk, 3);
-                process_big(chunk, check_high, check_low, s)
-            }
-            14 => {
-                let mut chunk = read(s);
-
-                let cmp = _mm_set_epi8(
-                    HIGH, HIGH, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                    CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                );
-                let check_high = process_gt(chunk, cmp);
-                let cmp = _mm_set_epi8(
-                    LOW, LOW, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                    CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                );
-                let check_low = process_gt(cmp, chunk);
-
-                chunk = _mm_bslli_si128(chunk, 2);
-                process_big(chunk, check_high, check_low, s)
-            }
-            15 => {
-                let mut chunk = read(s);
-
-                let cmp = _mm_set_epi8(
-                    HIGH, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                    CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                );
-                let check_high = process_gt(chunk, cmp);
-                let cmp = _mm_set_epi8(
-                    LOW, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                    CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                );
-                let check_low = process_gt(cmp, chunk);
-
-                chunk = _mm_bslli_si128(chunk, 1);
-                process_big(chunk, check_high, check_low, s)
-            }
-            16 => {
-                let chunk = read(s);
-
-                let cmp = _mm_set_epi8(
-                    CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                    CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                );
-                let check_high = process_gt(chunk, cmp);
-                let cmp = _mm_set_epi8(
-                    CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                    CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                );
-                let check_low = process_gt(cmp, chunk);
-
-                process_big(chunk, check_high, check_low, s)
-            }
-            17 => parse_u128(s).map(|v| v as u64),
-            18 => parse_u128(s).map(|v| v as u64),
-            19 => {
-                let val = parse_u128(s)? as u64;
-
-                match parse_type {
-                    ParseType::I64Neg => {
-                        if val > i64::MIN as u64 {
-                            Err(AtoiSimdError::Overflow(parse_type, s))
-                        } else if val == i64::MIN as u64 {
-                            Err(AtoiSimdError::I64Min)
-                        } else {
-                            Ok(val)
-                        }
-                    }
-                    ParseType::I64 => {
-                        if val > i64::MAX as u64 {
-                            Err(AtoiSimdError::Overflow(parse_type, s))
-                        } else {
-                            Ok(val)
-                        }
-                    }
-                    _ => Ok(val),
-                }
-            }
-            20 => {
-                if parse_type != ParseType::None {
-                    return Err(AtoiSimdError::Overflow(parse_type, s));
-                }
-
-                let val = parse_u128(s)?;
-
-                if val > u64::MAX as u128 {
-                    return Err(AtoiSimdError::Overflow(parse_type, s));
-                }
-                Ok(val as u64)
-            }
-            s_len => Err(AtoiSimdError::Size(s_len, s)),
-            // Do not try to separate this function to three,
-            // and chain them with `_ => parse_u32(s).map(|v| v as u64)`,
-            // I've tried it, and the performance is not good (even with #[inline]).
+            Ok(val & 0xF)
         }
+        2 => {
+            let mut chunk = read(s);
+
+            let cmp = _mm_set_epi8(
+                HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH,
+                CHAR_MAX, CHAR_MAX,
+            );
+            let check_high = process_gt(chunk, cmp);
+            let cmp = _mm_set_epi8(
+                LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, CHAR_MIN,
+                CHAR_MIN,
+            );
+            let check_low = process_gt(cmp, chunk);
+
+            chunk = process_and(chunk, 0xF0F);
+            chunk = mult_10(chunk);
+
+            checker(check_high, check_low, s)?;
+
+            Ok(to_u64(chunk))
+            // std::mem::transmute::<__m128i, [u16; 8]>(chunk)[7] as u64 // same performance
+        }
+        3 => {
+            let mut chunk = read(s);
+
+            let cmp = _mm_set_epi8(
+                HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH,
+                CHAR_MAX, CHAR_MAX, CHAR_MAX,
+            );
+            let check_high = process_gt(chunk, cmp);
+            let cmp = _mm_set_epi8(
+                LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, CHAR_MIN,
+                CHAR_MIN, CHAR_MIN,
+            );
+            let check_low = process_gt(cmp, chunk);
+
+            chunk = _mm_bslli_si128(chunk, 1);
+            process_small(chunk, check_high, check_low, s)
+        }
+        4 => {
+            let chunk = read(s);
+
+            let cmp = _mm_set_epi8(
+                HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, CHAR_MAX,
+                CHAR_MAX, CHAR_MAX, CHAR_MAX,
+            );
+            let check_high = process_gt(chunk, cmp);
+            let cmp = _mm_set_epi8(
+                LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, CHAR_MIN, CHAR_MIN,
+                CHAR_MIN, CHAR_MIN,
+            );
+            let check_low = process_gt(cmp, chunk);
+
+            process_small(chunk, check_high, check_low, s)
+        }
+        5 => {
+            let mut chunk = read(s);
+
+            let cmp = _mm_set_epi8(
+                HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, CHAR_MAX,
+                CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+            );
+            let check_high = process_gt(chunk, cmp);
+            let cmp = _mm_set_epi8(
+                LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, CHAR_MIN, CHAR_MIN,
+                CHAR_MIN, CHAR_MIN, CHAR_MIN,
+            );
+            let check_low = process_gt(cmp, chunk);
+
+            chunk = _mm_bslli_si128(chunk, 3);
+            process_medium(chunk, check_high, check_low, s)
+        }
+        6 => {
+            let mut chunk = read(s);
+
+            let cmp = _mm_set_epi8(
+                HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, CHAR_MAX, CHAR_MAX,
+                CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+            );
+            let check_high = process_gt(chunk, cmp);
+            let cmp = _mm_set_epi8(
+                LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+                CHAR_MIN, CHAR_MIN, CHAR_MIN,
+            );
+            let check_low = process_gt(cmp, chunk);
+
+            chunk = _mm_bslli_si128(chunk, 2);
+            process_medium(chunk, check_high, check_low, s)
+        }
+        7 => {
+            let mut chunk = read(s);
+
+            let cmp = _mm_set_epi8(
+                HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+                CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+            );
+            let check_high = process_gt(chunk, cmp);
+            let cmp = _mm_set_epi8(
+                LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+                CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+            );
+            let check_low = process_gt(cmp, chunk);
+
+            chunk = _mm_bslli_si128(chunk, 1);
+            process_medium(chunk, check_high, check_low, s)
+        }
+        8 => {
+            let chunk = read(s);
+
+            let cmp = _mm_set_epi8(
+                HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+                CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+            );
+            let check_high = process_gt(chunk, cmp);
+            let cmp = _mm_set_epi8(
+                LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+                CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+            );
+            let check_low = process_gt(cmp, chunk);
+
+            process_medium(chunk, check_high, check_low, s)
+        }
+        9 => {
+            let mut chunk = read(s);
+
+            let cmp = _mm_set_epi8(
+                HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+                CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+            );
+            let check_high = process_gt(chunk, cmp);
+            let cmp = _mm_set_epi8(
+                LOW, LOW, LOW, LOW, LOW, LOW, LOW, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+                CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+            );
+            let check_low = process_gt(cmp, chunk);
+
+            chunk = _mm_bslli_si128(chunk, 7);
+            process_big(chunk, check_high, check_low, s)
+        }
+        10 => {
+            let mut chunk = read(s);
+
+            let cmp = _mm_set_epi8(
+                HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+                CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+            );
+            let check_high = process_gt(chunk, cmp);
+            let cmp = _mm_set_epi8(
+                LOW, LOW, LOW, LOW, LOW, LOW, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+                CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+            );
+            let check_low = process_gt(cmp, chunk);
+
+            chunk = _mm_bslli_si128(chunk, 6);
+            process_big(chunk, check_high, check_low, s)
+        }
+        11 => {
+            let mut chunk = read(s);
+
+            let cmp = _mm_set_epi8(
+                HIGH, HIGH, HIGH, HIGH, HIGH, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+                CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+            );
+            let check_high = process_gt(chunk, cmp);
+            let cmp = _mm_set_epi8(
+                LOW, LOW, LOW, LOW, LOW, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+                CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+            );
+            let check_low = process_gt(cmp, chunk);
+
+            chunk = _mm_bslli_si128(chunk, 5);
+            process_big(chunk, check_high, check_low, s)
+        }
+        12 => {
+            let mut chunk = read(s);
+
+            let cmp = _mm_set_epi8(
+                HIGH, HIGH, HIGH, HIGH, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+                CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+            );
+            let check_high = process_gt(chunk, cmp);
+            let cmp = _mm_set_epi8(
+                LOW, LOW, LOW, LOW, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+                CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+            );
+            let check_low = process_gt(cmp, chunk);
+
+            chunk = _mm_bslli_si128(chunk, 4);
+            process_big(chunk, check_high, check_low, s)
+        }
+        13 => {
+            let mut chunk = read(s);
+
+            let cmp = _mm_set_epi8(
+                HIGH, HIGH, HIGH, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+                CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+            );
+            let check_high = process_gt(chunk, cmp);
+            let cmp = _mm_set_epi8(
+                LOW, LOW, LOW, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+                CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+            );
+            let check_low = process_gt(cmp, chunk);
+
+            chunk = _mm_bslli_si128(chunk, 3);
+            process_big(chunk, check_high, check_low, s)
+        }
+        14 => {
+            let mut chunk = read(s);
+
+            let cmp = _mm_set_epi8(
+                HIGH, HIGH, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+                CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+            );
+            let check_high = process_gt(chunk, cmp);
+            let cmp = _mm_set_epi8(
+                LOW, LOW, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+                CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+            );
+            let check_low = process_gt(cmp, chunk);
+
+            chunk = _mm_bslli_si128(chunk, 2);
+            process_big(chunk, check_high, check_low, s)
+        }
+        15 => {
+            let mut chunk = read(s);
+
+            let cmp = _mm_set_epi8(
+                HIGH, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+                CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+            );
+            let check_high = process_gt(chunk, cmp);
+            let cmp = _mm_set_epi8(
+                LOW, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+                CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+            );
+            let check_low = process_gt(cmp, chunk);
+
+            chunk = _mm_bslli_si128(chunk, 1);
+            process_big(chunk, check_high, check_low, s)
+        }
+        16 => {
+            let chunk = read(s);
+
+            let cmp = _mm_set_epi8(
+                CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+                CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+            );
+            let check_high = process_gt(chunk, cmp);
+            let cmp = _mm_set_epi8(
+                CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+                CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+            );
+            let check_low = process_gt(cmp, chunk);
+
+            process_big(chunk, check_high, check_low, s)
+        }
+        17 => parse_u128(s).map(|v| v as u64),
+        18 => parse_u128(s).map(|v| v as u64),
+        19 => {
+            let val = parse_u128(s)? as u64;
+
+            match parse_type {
+                ParseType::I64Neg => {
+                    if val > i64::MIN as u64 {
+                        Err(AtoiSimdError::Overflow(parse_type, s))
+                    } else if val == i64::MIN as u64 {
+                        Err(AtoiSimdError::I64Min)
+                    } else {
+                        Ok(val)
+                    }
+                }
+                ParseType::I64 => {
+                    if val > i64::MAX as u64 {
+                        Err(AtoiSimdError::Overflow(parse_type, s))
+                    } else {
+                        Ok(val)
+                    }
+                }
+                _ => Ok(val),
+            }
+        }
+        20 => {
+            if parse_type != ParseType::None {
+                return Err(AtoiSimdError::Overflow(parse_type, s));
+            }
+
+            let val = parse_u128(s)?;
+
+            if val > u64::MAX as u128 {
+                return Err(AtoiSimdError::Overflow(parse_type, s));
+            }
+            Ok(val as u64)
+        }
+        s_len => Err(AtoiSimdError::Size(s_len, s)),
+        // Do not try to separate this function to three,
+        // and chain them with `_ => parse_u32(s).map(|v| v as u64)`,
+        // I've tried it, and the performance is not good (even with #[inline]).
     }
 }
 
@@ -638,376 +637,375 @@ unsafe fn process_avx_or(chunk: __m256i, mult: __m256i) -> __m256i {
 
 /// Parses string of *only* digits. String length must be 1..=32.
 /// Uses AVX/AVX2 intrinsics
-fn parse_u128(s: &[u8]) -> Result<u128, AtoiSimdError> {
-    unsafe {
-        let mut chunk: __m256i;
-        let check_high: __m256i;
-        let check_low: __m256i;
+#[target_feature(enable = "sse2,sse3,sse4.1,ssse3,avx,avx2")]
+unsafe fn parse_u128(s: &[u8]) -> Result<u128, AtoiSimdError> {
+    let mut chunk: __m256i;
+    let check_high: __m256i;
+    let check_low: __m256i;
 
-        match s.len() {
-            17 => {
-                chunk = read_avx(s);
-                let cmp = _mm256_set_epi8(
-                    HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH,
-                    HIGH, HIGH, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                    CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                    CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                );
-                check_high = process_avx_gt(chunk, cmp);
-                let cmp = _mm256_set_epi8(
-                    LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW,
-                    CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                    CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                    CHAR_MIN,
-                );
-                check_low = process_avx_gt(cmp, chunk);
+    match s.len() {
+        17 => {
+            chunk = read_avx(s);
+            let cmp = _mm256_set_epi8(
+                HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH,
+                HIGH, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+                CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+                CHAR_MAX, CHAR_MAX,
+            );
+            check_high = process_avx_gt(chunk, cmp);
+            let cmp = _mm256_set_epi8(
+                LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW,
+                CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+                CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+                CHAR_MIN,
+            );
+            check_low = process_avx_gt(cmp, chunk);
 
-                let mut mult = process_avx_permute2x128(chunk);
-                mult = _mm256_bsrli_epi128(mult, 1);
-                chunk = _mm256_bslli_epi128(chunk, 15);
-                chunk = process_avx_or(chunk, mult);
-            }
-            18 => {
-                chunk = read_avx(s);
-                let cmp = _mm256_set_epi8(
-                    HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH,
-                    HIGH, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                    CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                    CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                );
-                check_high = process_avx_gt(chunk, cmp);
-                let cmp = _mm256_set_epi8(
-                    LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, CHAR_MIN,
-                    CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                    CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                    CHAR_MIN,
-                );
-                check_low = process_avx_gt(cmp, chunk);
-
-                let mut mult = process_avx_permute2x128(chunk);
-                mult = _mm256_bsrli_epi128(mult, 2);
-                chunk = _mm256_bslli_epi128(chunk, 14);
-                chunk = process_avx_or(chunk, mult);
-            }
-            19 => {
-                chunk = read_avx(s);
-                let cmp = _mm256_set_epi8(
-                    HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH,
-                    CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                    CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                    CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                );
-                check_high = process_avx_gt(chunk, cmp);
-                let cmp = _mm256_set_epi8(
-                    LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, CHAR_MIN,
-                    CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                    CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                    CHAR_MIN, CHAR_MIN,
-                );
-                check_low = process_avx_gt(cmp, chunk);
-
-                let mut mult = process_avx_permute2x128(chunk);
-                mult = _mm256_bsrli_epi128(mult, 3);
-                chunk = _mm256_bslli_epi128(chunk, 13);
-                chunk = process_avx_or(chunk, mult);
-            }
-            20 => {
-                chunk = read_avx(s);
-                let cmp = _mm256_set_epi8(
-                    HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH,
-                    CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                    CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                    CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                );
-                check_high = process_avx_gt(chunk, cmp);
-                let cmp = _mm256_set_epi8(
-                    LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, CHAR_MIN, CHAR_MIN,
-                    CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                    CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                    CHAR_MIN, CHAR_MIN,
-                );
-                check_low = process_avx_gt(cmp, chunk);
-
-                // maybe can be optimized even further with _mm256_permutevar8x32_epi32
-                let mut mult = process_avx_permute2x128(chunk);
-                mult = _mm256_bsrli_epi128(mult, 4);
-                chunk = _mm256_bslli_epi128(chunk, 12);
-                chunk = process_avx_or(chunk, mult);
-            }
-            21 => {
-                chunk = read_avx(s);
-                let cmp = _mm256_set_epi8(
-                    HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, CHAR_MAX,
-                    CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                    CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                    CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                );
-                check_high = process_avx_gt(chunk, cmp);
-                let cmp = _mm256_set_epi8(
-                    LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, CHAR_MIN, CHAR_MIN,
-                    CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                    CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                    CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                );
-                check_low = process_avx_gt(cmp, chunk);
-
-                let mut mult = process_avx_permute2x128(chunk);
-                mult = _mm256_bsrli_epi128(mult, 5);
-                chunk = _mm256_bslli_epi128(chunk, 11);
-                chunk = process_avx_or(chunk, mult);
-            }
-            22 => {
-                chunk = read_avx(s);
-                let cmp = _mm256_set_epi8(
-                    HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, CHAR_MAX, CHAR_MAX,
-                    CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                    CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                    CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                );
-                check_high = process_avx_gt(chunk, cmp);
-                let cmp = _mm256_set_epi8(
-                    LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                    CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                    CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                    CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                );
-                check_low = process_avx_gt(cmp, chunk);
-
-                let mut mult = process_avx_permute2x128(chunk);
-                mult = _mm256_bsrli_epi128(mult, 6);
-                chunk = _mm256_bslli_epi128(chunk, 10);
-                chunk = process_avx_or(chunk, mult);
-            }
-            23 => {
-                chunk = read_avx(s);
-                let cmp = _mm256_set_epi8(
-                    HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, CHAR_MAX, CHAR_MAX,
-                    CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                    CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                    CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                );
-                check_high = process_avx_gt(chunk, cmp);
-                let cmp = _mm256_set_epi8(
-                    LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                    CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                    CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                    CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                );
-                check_low = process_avx_gt(cmp, chunk);
-
-                let mut mult = process_avx_permute2x128(chunk);
-                mult = _mm256_bsrli_epi128(mult, 7);
-                chunk = _mm256_bslli_epi128(chunk, 9);
-                chunk = process_avx_or(chunk, mult);
-            }
-            24 => {
-                chunk = read_avx(s);
-                let cmp = _mm256_set_epi8(
-                    HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                    CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                    CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                    CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                );
-                check_high = process_avx_gt(chunk, cmp);
-                let cmp = _mm256_set_epi8(
-                    LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                    CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                    CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                    CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                );
-                check_low = process_avx_gt(cmp, chunk);
-
-                // maybe can be optimized even further with _mm256_permute4x64_epi64
-                let mut mult = process_avx_permute2x128(chunk);
-                mult = _mm256_bsrli_epi128(mult, 8);
-                chunk = _mm256_bslli_epi128(chunk, 8);
-                chunk = process_avx_or(chunk, mult);
-            }
-            25 => {
-                chunk = read_avx(s);
-                let cmp = _mm256_set_epi8(
-                    HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                    CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                    CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                    CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                );
-                check_high = process_avx_gt(chunk, cmp);
-                let cmp = _mm256_set_epi8(
-                    LOW, LOW, LOW, LOW, LOW, LOW, LOW, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                    CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                    CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                    CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                );
-                check_low = process_avx_gt(cmp, chunk);
-
-                let mut mult = process_avx_permute2x128(chunk);
-                mult = _mm256_bsrli_epi128(mult, 9);
-                chunk = _mm256_bslli_epi128(chunk, 7);
-                chunk = process_avx_or(chunk, mult);
-            }
-            26 => {
-                chunk = read_avx(s);
-                let cmp = _mm256_set_epi8(
-                    HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                    CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                    CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                    CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                );
-                check_high = process_avx_gt(chunk, cmp);
-                let cmp = _mm256_set_epi8(
-                    LOW, LOW, LOW, LOW, LOW, LOW, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                    CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                    CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                    CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                );
-                check_low = process_avx_gt(cmp, chunk);
-
-                let mut mult = process_avx_permute2x128(chunk);
-                mult = _mm256_bsrli_epi128(mult, 10);
-                chunk = _mm256_bslli_epi128(chunk, 6);
-                chunk = process_avx_or(chunk, mult);
-            }
-            27 => {
-                chunk = read_avx(s);
-                let cmp = _mm256_set_epi8(
-                    HIGH, HIGH, HIGH, HIGH, HIGH, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                    CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                    CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                    CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                );
-                check_high = process_avx_gt(chunk, cmp);
-                let cmp = _mm256_set_epi8(
-                    LOW, LOW, LOW, LOW, LOW, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                    CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                    CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                    CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                );
-                check_low = process_avx_gt(cmp, chunk);
-
-                let mut mult = process_avx_permute2x128(chunk);
-                mult = _mm256_bsrli_epi128(mult, 11);
-                chunk = _mm256_bslli_epi128(chunk, 5);
-                chunk = process_avx_or(chunk, mult);
-            }
-            28 => {
-                chunk = read_avx(s);
-                let cmp = _mm256_set_epi8(
-                    HIGH, HIGH, HIGH, HIGH, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                    CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                    CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                    CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                );
-                check_high = process_avx_gt(chunk, cmp);
-                let cmp = _mm256_set_epi8(
-                    LOW, LOW, LOW, LOW, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                    CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                    CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                    CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                );
-                check_low = process_avx_gt(cmp, chunk);
-
-                // maybe can be optimized even further with _mm256_permutevar8x32_epi32
-                // let mult = _mm256_set_epi32(6, 5, 4, 3, 2, 1, 0, 0);
-                // chunk = _mm256_permutevar8x32_epi32(chunk, mult);
-                let mut mult = process_avx_permute2x128(chunk);
-                mult = _mm256_bsrli_epi128(mult, 12);
-                chunk = _mm256_bslli_epi128(chunk, 4);
-                chunk = process_avx_or(chunk, mult);
-            }
-            29 => {
-                chunk = read_avx(s);
-                let cmp = _mm256_set_epi8(
-                    HIGH, HIGH, HIGH, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                    CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                    CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                    CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                );
-                check_high = process_avx_gt(chunk, cmp);
-                let cmp = _mm256_set_epi8(
-                    LOW, LOW, LOW, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                    CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                    CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                    CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                );
-                check_low = process_avx_gt(cmp, chunk);
-
-                let mut mult = process_avx_permute2x128(chunk);
-                mult = _mm256_bsrli_epi128(mult, 13);
-                chunk = _mm256_bslli_epi128(chunk, 3);
-                chunk = process_avx_or(chunk, mult);
-            }
-            30 => {
-                chunk = read_avx(s);
-                let cmp = _mm256_set_epi8(
-                    HIGH, HIGH, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                    CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                    CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                    CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                );
-                check_high = process_avx_gt(chunk, cmp);
-                let cmp = _mm256_set_epi8(
-                    LOW, LOW, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                    CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                    CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                    CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                );
-                check_low = process_avx_gt(cmp, chunk);
-
-                let mut mult = process_avx_permute2x128(chunk);
-                mult = _mm256_bsrli_epi128(mult, 14);
-                chunk = _mm256_bslli_epi128(chunk, 2);
-                chunk = process_avx_or(chunk, mult);
-            }
-            31 => {
-                chunk = read_avx(s);
-                let cmp = _mm256_set_epi8(
-                    HIGH, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                    CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                    CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                    CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                );
-                check_high = process_avx_gt(chunk, cmp);
-                let cmp = _mm256_set_epi8(
-                    LOW, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                    CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                    CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                    CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                );
-                check_low = process_avx_gt(cmp, chunk);
-
-                let mut mult = process_avx_permute2x128(chunk);
-                // somehow it'll be bugged, if you move permute after it
-                mult = _mm256_bsrli_epi128(mult, 15);
-                chunk = _mm256_bslli_epi128(chunk, 1);
-                chunk = process_avx_or(chunk, mult);
-            }
-            32 => {
-                chunk = read_avx(s);
-                let cmp = _mm256_set_epi8(
-                    CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                    CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                    CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                    CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-                );
-                check_high = process_avx_gt(chunk, cmp);
-                let cmp = _mm256_set_epi8(
-                    CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                    CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                    CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                    CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-                );
-                check_low = process_avx_gt(cmp, chunk);
-            }
-            _ => return parse_u64(s, ParseType::None).map(|v| v as u128),
+            let mut mult = process_avx_permute2x128(chunk);
+            mult = _mm256_bsrli_epi128(mult, 1);
+            chunk = _mm256_bslli_epi128(chunk, 15);
+            chunk = process_avx_or(chunk, mult);
         }
+        18 => {
+            chunk = read_avx(s);
+            let cmp = _mm256_set_epi8(
+                HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH,
+                CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+                CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+                CHAR_MAX, CHAR_MAX,
+            );
+            check_high = process_avx_gt(chunk, cmp);
+            let cmp = _mm256_set_epi8(
+                LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, CHAR_MIN,
+                CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+                CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+                CHAR_MIN,
+            );
+            check_low = process_avx_gt(cmp, chunk);
 
-        process_avx(chunk, check_high, check_low, s)
+            let mut mult = process_avx_permute2x128(chunk);
+            mult = _mm256_bsrli_epi128(mult, 2);
+            chunk = _mm256_bslli_epi128(chunk, 14);
+            chunk = process_avx_or(chunk, mult);
+        }
+        19 => {
+            chunk = read_avx(s);
+            let cmp = _mm256_set_epi8(
+                HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH,
+                CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+                CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+                CHAR_MAX, CHAR_MAX, CHAR_MAX,
+            );
+            check_high = process_avx_gt(chunk, cmp);
+            let cmp = _mm256_set_epi8(
+                LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, CHAR_MIN,
+                CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+                CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+                CHAR_MIN, CHAR_MIN,
+            );
+            check_low = process_avx_gt(cmp, chunk);
+
+            let mut mult = process_avx_permute2x128(chunk);
+            mult = _mm256_bsrli_epi128(mult, 3);
+            chunk = _mm256_bslli_epi128(chunk, 13);
+            chunk = process_avx_or(chunk, mult);
+        }
+        20 => {
+            chunk = read_avx(s);
+            let cmp = _mm256_set_epi8(
+                HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, CHAR_MAX,
+                CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+                CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+                CHAR_MAX, CHAR_MAX, CHAR_MAX,
+            );
+            check_high = process_avx_gt(chunk, cmp);
+            let cmp = _mm256_set_epi8(
+                LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, CHAR_MIN, CHAR_MIN,
+                CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+                CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+                CHAR_MIN, CHAR_MIN,
+            );
+            check_low = process_avx_gt(cmp, chunk);
+
+            // maybe can be optimized even further with _mm256_permutevar8x32_epi32
+            let mut mult = process_avx_permute2x128(chunk);
+            mult = _mm256_bsrli_epi128(mult, 4);
+            chunk = _mm256_bslli_epi128(chunk, 12);
+            chunk = process_avx_or(chunk, mult);
+        }
+        21 => {
+            chunk = read_avx(s);
+            let cmp = _mm256_set_epi8(
+                HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, CHAR_MAX,
+                CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+                CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+                CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+            );
+            check_high = process_avx_gt(chunk, cmp);
+            let cmp = _mm256_set_epi8(
+                LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, CHAR_MIN, CHAR_MIN,
+                CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+                CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+                CHAR_MIN, CHAR_MIN, CHAR_MIN,
+            );
+            check_low = process_avx_gt(cmp, chunk);
+
+            let mut mult = process_avx_permute2x128(chunk);
+            mult = _mm256_bsrli_epi128(mult, 5);
+            chunk = _mm256_bslli_epi128(chunk, 11);
+            chunk = process_avx_or(chunk, mult);
+        }
+        22 => {
+            chunk = read_avx(s);
+            let cmp = _mm256_set_epi8(
+                HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, CHAR_MAX, CHAR_MAX,
+                CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+                CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+                CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+            );
+            check_high = process_avx_gt(chunk, cmp);
+            let cmp = _mm256_set_epi8(
+                LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+                CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+                CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+                CHAR_MIN, CHAR_MIN, CHAR_MIN,
+            );
+            check_low = process_avx_gt(cmp, chunk);
+
+            let mut mult = process_avx_permute2x128(chunk);
+            mult = _mm256_bsrli_epi128(mult, 6);
+            chunk = _mm256_bslli_epi128(chunk, 10);
+            chunk = process_avx_or(chunk, mult);
+        }
+        23 => {
+            chunk = read_avx(s);
+            let cmp = _mm256_set_epi8(
+                HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+                CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+                CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+                CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+            );
+            check_high = process_avx_gt(chunk, cmp);
+            let cmp = _mm256_set_epi8(
+                LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+                CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+                CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+                CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+            );
+            check_low = process_avx_gt(cmp, chunk);
+
+            let mut mult = process_avx_permute2x128(chunk);
+            mult = _mm256_bsrli_epi128(mult, 7);
+            chunk = _mm256_bslli_epi128(chunk, 9);
+            chunk = process_avx_or(chunk, mult);
+        }
+        24 => {
+            chunk = read_avx(s);
+            let cmp = _mm256_set_epi8(
+                HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+                CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+                CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+                CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+            );
+            check_high = process_avx_gt(chunk, cmp);
+            let cmp = _mm256_set_epi8(
+                LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+                CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+                CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+                CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+            );
+            check_low = process_avx_gt(cmp, chunk);
+
+            // maybe can be optimized even further with _mm256_permute4x64_epi64
+            let mut mult = process_avx_permute2x128(chunk);
+            mult = _mm256_bsrli_epi128(mult, 8);
+            chunk = _mm256_bslli_epi128(chunk, 8);
+            chunk = process_avx_or(chunk, mult);
+        }
+        25 => {
+            chunk = read_avx(s);
+            let cmp = _mm256_set_epi8(
+                HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+                CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+                CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+                CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+            );
+            check_high = process_avx_gt(chunk, cmp);
+            let cmp = _mm256_set_epi8(
+                LOW, LOW, LOW, LOW, LOW, LOW, LOW, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+                CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+                CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+                CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+            );
+            check_low = process_avx_gt(cmp, chunk);
+
+            let mut mult = process_avx_permute2x128(chunk);
+            mult = _mm256_bsrli_epi128(mult, 9);
+            chunk = _mm256_bslli_epi128(chunk, 7);
+            chunk = process_avx_or(chunk, mult);
+        }
+        26 => {
+            chunk = read_avx(s);
+            let cmp = _mm256_set_epi8(
+                HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+                CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+                CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+                CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+            );
+            check_high = process_avx_gt(chunk, cmp);
+            let cmp = _mm256_set_epi8(
+                LOW, LOW, LOW, LOW, LOW, LOW, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+                CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+                CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+                CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+            );
+            check_low = process_avx_gt(cmp, chunk);
+
+            let mut mult = process_avx_permute2x128(chunk);
+            mult = _mm256_bsrli_epi128(mult, 10);
+            chunk = _mm256_bslli_epi128(chunk, 6);
+            chunk = process_avx_or(chunk, mult);
+        }
+        27 => {
+            chunk = read_avx(s);
+            let cmp = _mm256_set_epi8(
+                HIGH, HIGH, HIGH, HIGH, HIGH, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+                CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+                CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+                CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+            );
+            check_high = process_avx_gt(chunk, cmp);
+            let cmp = _mm256_set_epi8(
+                LOW, LOW, LOW, LOW, LOW, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+                CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+                CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+                CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+            );
+            check_low = process_avx_gt(cmp, chunk);
+
+            let mut mult = process_avx_permute2x128(chunk);
+            mult = _mm256_bsrli_epi128(mult, 11);
+            chunk = _mm256_bslli_epi128(chunk, 5);
+            chunk = process_avx_or(chunk, mult);
+        }
+        28 => {
+            chunk = read_avx(s);
+            let cmp = _mm256_set_epi8(
+                HIGH, HIGH, HIGH, HIGH, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+                CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+                CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+                CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+            );
+            check_high = process_avx_gt(chunk, cmp);
+            let cmp = _mm256_set_epi8(
+                LOW, LOW, LOW, LOW, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+                CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+                CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+                CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+            );
+            check_low = process_avx_gt(cmp, chunk);
+
+            // maybe can be optimized even further with _mm256_permutevar8x32_epi32
+            // let mult = _mm256_set_epi32(6, 5, 4, 3, 2, 1, 0, 0);
+            // chunk = _mm256_permutevar8x32_epi32(chunk, mult);
+            let mut mult = process_avx_permute2x128(chunk);
+            mult = _mm256_bsrli_epi128(mult, 12);
+            chunk = _mm256_bslli_epi128(chunk, 4);
+            chunk = process_avx_or(chunk, mult);
+        }
+        29 => {
+            chunk = read_avx(s);
+            let cmp = _mm256_set_epi8(
+                HIGH, HIGH, HIGH, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+                CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+                CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+                CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+            );
+            check_high = process_avx_gt(chunk, cmp);
+            let cmp = _mm256_set_epi8(
+                LOW, LOW, LOW, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+                CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+                CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+                CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+            );
+            check_low = process_avx_gt(cmp, chunk);
+
+            let mut mult = process_avx_permute2x128(chunk);
+            mult = _mm256_bsrli_epi128(mult, 13);
+            chunk = _mm256_bslli_epi128(chunk, 3);
+            chunk = process_avx_or(chunk, mult);
+        }
+        30 => {
+            chunk = read_avx(s);
+            let cmp = _mm256_set_epi8(
+                HIGH, HIGH, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+                CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+                CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+                CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+            );
+            check_high = process_avx_gt(chunk, cmp);
+            let cmp = _mm256_set_epi8(
+                LOW, LOW, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+                CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+                CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+                CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+            );
+            check_low = process_avx_gt(cmp, chunk);
+
+            let mut mult = process_avx_permute2x128(chunk);
+            mult = _mm256_bsrli_epi128(mult, 14);
+            chunk = _mm256_bslli_epi128(chunk, 2);
+            chunk = process_avx_or(chunk, mult);
+        }
+        31 => {
+            chunk = read_avx(s);
+            let cmp = _mm256_set_epi8(
+                HIGH, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+                CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+                CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+                CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+            );
+            check_high = process_avx_gt(chunk, cmp);
+            let cmp = _mm256_set_epi8(
+                LOW, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+                CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+                CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+                CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+            );
+            check_low = process_avx_gt(cmp, chunk);
+
+            let mut mult = process_avx_permute2x128(chunk);
+            // somehow it'll be bugged, if you move permute after it
+            mult = _mm256_bsrli_epi128(mult, 15);
+            chunk = _mm256_bslli_epi128(chunk, 1);
+            chunk = process_avx_or(chunk, mult);
+        }
+        32 => {
+            chunk = read_avx(s);
+            let cmp = _mm256_set_epi8(
+                CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+                CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+                CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+                CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+            );
+            check_high = process_avx_gt(chunk, cmp);
+            let cmp = _mm256_set_epi8(
+                CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+                CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+                CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+                CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+            );
+            check_low = process_avx_gt(cmp, chunk);
+        }
+        _ => return parse_u64(s, ParseType::None).map(|v| v as u128),
     }
+
+    process_avx(chunk, check_high, check_low, s)
 }
 
 #[inline]
 fn parse_u8(s: &[u8], parse_type: ParseType) -> Result<u8, AtoiSimdError> {
-    let val = parse_u64(s, parse_type)?;
+    let val = unsafe { parse_u64(s, parse_type)? };
     match parse_type {
         ParseType::I8 => {
             if val > i8::MAX as u64 {
@@ -1029,7 +1027,7 @@ fn parse_u8(s: &[u8], parse_type: ParseType) -> Result<u8, AtoiSimdError> {
 #[inline]
 fn parse_i8(s: &[u8]) -> Result<i8, AtoiSimdError> {
     if *s.first().ok_or(AtoiSimdError::Empty)? == b'-' {
-        let val = parse_u64(&s[1..], ParseType::None)?;
+        let val = unsafe { parse_u64(&s[1..], ParseType::None)? };
         if val > i8::MAX as u64 + 1 {
             Err(AtoiSimdError::Overflow(ParseType::I8Neg, s))
         } else if val == i8::MAX as u64 + 1 {
@@ -1044,7 +1042,7 @@ fn parse_i8(s: &[u8]) -> Result<i8, AtoiSimdError> {
 
 #[inline]
 fn parse_u16(s: &[u8], parse_type: ParseType) -> Result<u16, AtoiSimdError> {
-    let val = parse_u64(s, parse_type)?;
+    let val = unsafe { parse_u64(s, parse_type)? };
     match parse_type {
         ParseType::I16 => {
             if val > i16::MAX as u64 {
@@ -1066,7 +1064,7 @@ fn parse_u16(s: &[u8], parse_type: ParseType) -> Result<u16, AtoiSimdError> {
 #[inline]
 fn parse_i16(s: &[u8]) -> Result<i16, AtoiSimdError> {
     if *s.first().ok_or(AtoiSimdError::Empty)? == b'-' {
-        let val = parse_u64(&s[1..], ParseType::None)?;
+        let val = unsafe { parse_u64(&s[1..], ParseType::None)? };
         if val > i16::MAX as u64 + 1 {
             Err(AtoiSimdError::Overflow(ParseType::I16Neg, s))
         } else if val == i16::MAX as u64 + 1 {
@@ -1081,7 +1079,7 @@ fn parse_i16(s: &[u8]) -> Result<i16, AtoiSimdError> {
 
 #[inline]
 fn parse_u32(s: &[u8], parse_type: ParseType) -> Result<u32, AtoiSimdError> {
-    let val = parse_u64(s, parse_type)?;
+    let val = unsafe { parse_u64(s, parse_type)? };
     match parse_type {
         ParseType::I32 => {
             if val > i32::MAX as u64 {
@@ -1103,7 +1101,7 @@ fn parse_u32(s: &[u8], parse_type: ParseType) -> Result<u32, AtoiSimdError> {
 #[inline]
 fn parse_i32(s: &[u8]) -> Result<i32, AtoiSimdError> {
     if *s.first().ok_or(AtoiSimdError::Empty)? == b'-' {
-        let val = parse_u64(&s[1..], ParseType::None)?;
+        let val = unsafe { parse_u64(&s[1..], ParseType::None)? };
         if val > i32::MAX as u64 + 1 {
             Err(AtoiSimdError::Overflow(ParseType::I32Neg, s))
         } else if val == i32::MAX as u64 + 1 {
@@ -1123,7 +1121,7 @@ fn parse_i32(s: &[u8]) -> Result<i32, AtoiSimdError> {
 #[inline]
 fn parse_i64(s: &[u8]) -> Result<i64, AtoiSimdError> {
     if *s.first().ok_or(AtoiSimdError::Empty)? == b'-' {
-        let res = parse_u64(&s[1..], ParseType::I64Neg).map(|v| -(v as i64));
+        let res = unsafe { parse_u64(&s[1..], ParseType::I64Neg).map(|v| -(v as i64)) };
 
         if let Err(AtoiSimdError::I64Min) = res {
             return Ok(i64::MIN);
@@ -1131,7 +1129,7 @@ fn parse_i64(s: &[u8]) -> Result<i64, AtoiSimdError> {
 
         res
     } else {
-        parse_u64(s, ParseType::I64).map(|v| v as i64)
+        unsafe { parse_u64(s, ParseType::I64).map(|v| v as i64) }
     }
 }
 
@@ -1142,9 +1140,9 @@ fn parse_i64(s: &[u8]) -> Result<i64, AtoiSimdError> {
 #[inline]
 fn parse_i128(s: &[u8]) -> Result<i128, AtoiSimdError> {
     if *s.first().ok_or(AtoiSimdError::Empty)? == b'-' {
-        parse_u128(&s[1..]).map(|v| -(v as i128))
+        unsafe { parse_u128(&s[1..]).map(|v| -(v as i128)) }
     } else {
-        parse_u128(s).map(|v| v as i128)
+        unsafe { parse_u128(s).map(|v| v as i128) }
     }
 }
 
@@ -1214,7 +1212,7 @@ impl Parser<isize> for isize {
 impl Parser<usize> for usize {
     #[inline]
     fn atoi_simd_parser(s: &[u8]) -> Result<usize, AtoiSimdError> {
-        parse_u64(s, ParseType::None).map(|v| v as usize)
+        unsafe { parse_u64(s, ParseType::None).map(|v| v as usize) }
     }
 }
 
@@ -1229,7 +1227,7 @@ impl Parser<isize> for isize {
 impl Parser<u64> for u64 {
     #[inline]
     fn atoi_simd_parser(s: &[u8]) -> Result<u64, AtoiSimdError> {
-        parse_u64(s, ParseType::None)
+        unsafe { parse_u64(s, ParseType::None) }
     }
 }
 
@@ -1243,7 +1241,7 @@ impl Parser<i64> for i64 {
 impl Parser<u128> for u128 {
     #[inline]
     fn atoi_simd_parser(s: &[u8]) -> Result<u128, AtoiSimdError> {
-        parse_u128(s)
+        unsafe { parse_u128(s) }
     }
 }
 
