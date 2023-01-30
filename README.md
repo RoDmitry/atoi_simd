@@ -8,11 +8,12 @@ Modified [this](https://github.com/pickfire/parseint) version (from [the article
 If you have `&str` then use `.as_bytes()`
 
 Supported output types: u8, i8, u16, i16, u32, i32, u64, i64, u128, i128, usize, isize.
-The 128 bit max string length is 32 numbers (33 chars with sign), because it's limited by AVX2.
+The 128 bit max slice length is 32 numbers (33 with '-' sign), because it's limited by AVX2.
 
 Has good test coverage, and can be considered safe.
 
-It needs the `target-feature` or `target-cpu` flags for it to build with optimized performance. By default the `target-feature` is set in ./.cargo/config.toml, but seems like it works only inside this library.
+<details><summary>Deprecated info</summary>
+Earlier it needed the `target-feature` or `target-cpu` flags for it to build with optimized performance. By default the `target-feature` is set in ./.cargo/config.toml, but seems like it works only inside this library.
 
 Also you can use one of the following environment variables:
 
@@ -21,6 +22,7 @@ Also you can use one of the following environment variables:
 -   `RUSTFLAGS="-C target-cpu=native"`
 
 For Windows PowerShell you can set it with `$Env:RUSTFLAGS='-C target-feature=+sse2,+sse3,+sse4.1,+ssse3,+avx,+avx2'`
+</details>
 
 ## Examples
 
