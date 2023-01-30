@@ -1822,6 +1822,12 @@ mod tests {
         let tmp: i32 = parse("-1234".as_bytes()).unwrap();
         assert_eq!(tmp, -1234_i32);
 
+        let tmp: usize = parse("1234".as_bytes()).unwrap();
+        assert_eq!(tmp, 1234_usize);
+
+        let tmp: isize = parse("-1234".as_bytes()).unwrap();
+        assert_eq!(tmp, -1234_isize);
+
         let tmp: u64 = parse("1234".as_bytes()).unwrap();
         assert_eq!(tmp, 1234_u64);
 
