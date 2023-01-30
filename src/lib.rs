@@ -1147,47 +1147,47 @@ fn parse_i128(s: &[u8]) -> Result<i128, AtoiSimdError> {
 }
 
 pub trait Parser<T> {
-    fn atoi_simd_parser(s: &[u8]) -> Result<T, AtoiSimdError>;
+    fn atoi_simd_parse(s: &[u8]) -> Result<T, AtoiSimdError>;
 }
 
 impl Parser<u8> for u8 {
     #[inline]
-    fn atoi_simd_parser(s: &[u8]) -> Result<u8, AtoiSimdError> {
+    fn atoi_simd_parse(s: &[u8]) -> Result<u8, AtoiSimdError> {
         parse_u8(s, ParseType::None)
     }
 }
 
 impl Parser<i8> for i8 {
     #[inline]
-    fn atoi_simd_parser(s: &[u8]) -> Result<i8, AtoiSimdError> {
+    fn atoi_simd_parse(s: &[u8]) -> Result<i8, AtoiSimdError> {
         parse_i8(s)
     }
 }
 
 impl Parser<u16> for u16 {
     #[inline]
-    fn atoi_simd_parser(s: &[u8]) -> Result<u16, AtoiSimdError> {
+    fn atoi_simd_parse(s: &[u8]) -> Result<u16, AtoiSimdError> {
         parse_u16(s, ParseType::None)
     }
 }
 
 impl Parser<i16> for i16 {
     #[inline]
-    fn atoi_simd_parser(s: &[u8]) -> Result<i16, AtoiSimdError> {
+    fn atoi_simd_parse(s: &[u8]) -> Result<i16, AtoiSimdError> {
         parse_i16(s)
     }
 }
 
 impl Parser<u32> for u32 {
     #[inline]
-    fn atoi_simd_parser(s: &[u8]) -> Result<u32, AtoiSimdError> {
+    fn atoi_simd_parse(s: &[u8]) -> Result<u32, AtoiSimdError> {
         parse_u32(s, ParseType::None)
     }
 }
 
 impl Parser<i32> for i32 {
     #[inline]
-    fn atoi_simd_parser(s: &[u8]) -> Result<i32, AtoiSimdError> {
+    fn atoi_simd_parse(s: &[u8]) -> Result<i32, AtoiSimdError> {
         parse_i32(s)
     }
 }
@@ -1195,7 +1195,7 @@ impl Parser<i32> for i32 {
 #[cfg(target_pointer_width = "32")]
 impl Parser<usize> for usize {
     #[inline]
-    fn atoi_simd_parser(s: &[u8]) -> Result<usize, AtoiSimdError> {
+    fn atoi_simd_parse(s: &[u8]) -> Result<usize, AtoiSimdError> {
         parse_u32(s, ParseType::None).map(|v| v as usize)
     }
 }
@@ -1203,7 +1203,7 @@ impl Parser<usize> for usize {
 #[cfg(target_pointer_width = "32")]
 impl Parser<isize> for isize {
     #[inline]
-    fn atoi_simd_parser(s: &[u8]) -> Result<isize, AtoiSimdError> {
+    fn atoi_simd_parse(s: &[u8]) -> Result<isize, AtoiSimdError> {
         parse_i32(s).map(|v| v as isize)
     }
 }
@@ -1211,7 +1211,7 @@ impl Parser<isize> for isize {
 #[cfg(target_pointer_width = "64")]
 impl Parser<usize> for usize {
     #[inline]
-    fn atoi_simd_parser(s: &[u8]) -> Result<usize, AtoiSimdError> {
+    fn atoi_simd_parse(s: &[u8]) -> Result<usize, AtoiSimdError> {
         unsafe { parse_u64(s, ParseType::None).map(|v| v as usize) }
     }
 }
@@ -1219,42 +1219,42 @@ impl Parser<usize> for usize {
 #[cfg(target_pointer_width = "64")]
 impl Parser<isize> for isize {
     #[inline]
-    fn atoi_simd_parser(s: &[u8]) -> Result<isize, AtoiSimdError> {
+    fn atoi_simd_parse(s: &[u8]) -> Result<isize, AtoiSimdError> {
         parse_i64(s).map(|v| v as isize)
     }
 }
 
 impl Parser<u64> for u64 {
     #[inline]
-    fn atoi_simd_parser(s: &[u8]) -> Result<u64, AtoiSimdError> {
+    fn atoi_simd_parse(s: &[u8]) -> Result<u64, AtoiSimdError> {
         unsafe { parse_u64(s, ParseType::None) }
     }
 }
 
 impl Parser<i64> for i64 {
     #[inline]
-    fn atoi_simd_parser(s: &[u8]) -> Result<i64, AtoiSimdError> {
+    fn atoi_simd_parse(s: &[u8]) -> Result<i64, AtoiSimdError> {
         parse_i64(s)
     }
 }
 
 impl Parser<u128> for u128 {
     #[inline]
-    fn atoi_simd_parser(s: &[u8]) -> Result<u128, AtoiSimdError> {
+    fn atoi_simd_parse(s: &[u8]) -> Result<u128, AtoiSimdError> {
         unsafe { parse_u128(s) }
     }
 }
 
 impl Parser<i128> for i128 {
     #[inline]
-    fn atoi_simd_parser(s: &[u8]) -> Result<i128, AtoiSimdError> {
+    fn atoi_simd_parse(s: &[u8]) -> Result<i128, AtoiSimdError> {
         parse_i128(s)
     }
 }
 
 #[inline]
 pub fn parse<T: Parser<T>>(s: &[u8]) -> Result<T, AtoiSimdError> {
-    T::atoi_simd_parser(s)
+    T::atoi_simd_parse(s)
 }
 
 #[cfg(test)]
