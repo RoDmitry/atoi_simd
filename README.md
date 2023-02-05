@@ -12,6 +12,9 @@ The 128 bit max slice length is 32 numbers (33 with '-' sign), because it's limi
 
 Has good test coverage, and can be considered safe.
 
+Maybe todo:
+There is a posibility to parse base 16 slice, by first finding (a,b,c,d,e,f) and then giving them +9
+
 <details><summary>Deprecated info</summary>
 Earlier it needed the `target-feature` or `target-cpu` flags for it to build with optimized performance. By default the `target-feature` is set in ./.cargo/config.toml, but seems like it works only inside this library.
 
