@@ -1,8 +1,8 @@
 [package]
 name = "atoi_simd"
-version = "0.6.1"
+version = "0.7.0"
 authors = ["Dmitry Rodionov <18184039+RoDmitry@users.noreply.github.com>"]
-description = "Rust fast `&[u8]` to integer parser (x86_64 SIMD, SSE4.1, AVX2)"
+description = "Rust fast `&[u8]` to integer parser"
 repository = "https://github.com/RoDmitry/atoi_simd"
 homepage = "https://github.com/RoDmitry/atoi_simd"
 readme = "README.md"

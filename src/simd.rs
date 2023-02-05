@@ -1,6 +1,3 @@
-#![allow(clippy::comparison_chain)]
-#![allow(clippy::manual_range_contains)]
-
 use crate::{AtoiSimdError, ParseType};
 use core::arch::x86_64::{
     __m128i, __m256i, _mm256_add_epi64, _mm256_and_si256, _mm256_bslli_epi128, _mm256_bsrli_epi128,
@@ -13,10 +10,10 @@ use core::arch::x86_64::{
     _mm_test_all_ones,
 };
 
-const HIGH: i8 = 0x7F;
-const LOW: i8 = -0x80;
-const CHAR_MAX: i8 = 0x39;
-const CHAR_MIN: i8 = 0x30;
+const HIGH: i8 = i8::MAX;
+const LOW: i8 = i8::MIN;
+const CHAR_MAX: i8 = b'9' as i8;
+const CHAR_MIN: i8 = b'0' as i8;
 
 /// s = "1234567890123456"
 unsafe fn read(s: &[u8]) -> __m128i {
@@ -177,13 +174,10 @@ unsafe fn process_big(
 pub(crate) unsafe fn parse_u64(s: &[u8], parse_type: ParseType) -> Result<u64, AtoiSimdError> {
     match s.len() {
         0 => Err(AtoiSimdError::Empty),
-        1 => {
-            let val = *s.first().unwrap() as u64;
-            if val > 0x39 || val < 0x30 {
-                return Err(AtoiSimdError::Invalid(s));
-            }
-            Ok(val & 0xF)
-        }
+        1 => match s[0] {
+            c @ b'0'..=b'9' => Ok((c & 0xF) as u64),
+            _ => Err(AtoiSimdError::Invalid(s)),
+        },
         2 => {
             let mut chunk = read(s);
 

@@ -1,9 +1,13 @@
-# Rust fast `&[u8]` to integer parser (x86_64 SIMD, SSE4.1, AVX2)
+# Rust fast `&[u8]` to integer parser
 
 [![Crate](https://img.shields.io/crates/v/atoi_simd.svg)](https://crates.io/crates/atoi_simd)
 [![API](https://docs.rs/atoi_simd/badge.svg)](https://docs.rs/atoi_simd)
 
 Modified [this](https://github.com/pickfire/parseint) version (from [the article](https://rust-malaysia.github.io/code/2020/07/11/faster-integer-parsing.html)) to perform validation, support various strings of different lengths and negative values.
+
+Faster on x86_64 (uses SIMD, SSE4.1, AVX2), but can be used even if you don't have x86_64 SIMD capable cpu.
+
+To enable SIMD it needs the `target-feature` or `target-cpu` flags set, or it will fallback to non-SIMD functions. 
 
 If you have `&str` then use `.as_bytes()`
 
@@ -12,20 +16,18 @@ The 128 bit max slice length is 32 numbers (33 with '-' sign), because it's limi
 
 Has good test coverage, and can be considered safe.
 
-Maybe todo:
-There is a posibility to parse base 16 slice, by first finding (a,b,c,d,e,f) and then giving them +9
+By default the `target-feature` is set in `./.cargo/config.toml`, but seems like it works only inside this project.
 
-<details><summary>Deprecated info</summary>
-Earlier it needed the `target-feature` or `target-cpu` flags for it to build with optimized performance. By default the `target-feature` is set in ./.cargo/config.toml, but seems like it works only inside this library.
-
-Also you can use one of the following environment variables:
+To enable SIMD you can copy the `./.cargo/config.toml` in your project, or you can use one of the following environment variables:
 
 -   `RUSTFLAGS="-C target-feature=+sse2,+sse3,+sse4.1,+ssse3,+avx,+avx2"`
 
 -   `RUSTFLAGS="-C target-cpu=native"`
 
 For Windows PowerShell you can set it with `$Env:RUSTFLAGS='-C target-feature=+sse2,+sse3,+sse4.1,+ssse3,+avx,+avx2'`
-</details>
+
+Maybe todo:
+There is a posibility to parse base 16 slice, by first finding (a,b,c,d,e,f) and then giving them +9
 
 ## Examples
 
