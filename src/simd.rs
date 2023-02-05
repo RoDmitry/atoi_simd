@@ -171,7 +171,7 @@ unsafe fn process_big(
 
 /// Parses string of *only* digits
 #[target_feature(enable = "sse2,sse3,sse4.1,ssse3,avx,avx2")]
-pub(crate) unsafe fn parse_u64(s: &[u8], parse_type: ParseType) -> Result<u64, AtoiSimdError> {
+pub(crate) unsafe fn parse_simd_u64(s: &[u8], parse_type: ParseType) -> Result<u64, AtoiSimdError> {
     match s.len() {
         0 => Err(AtoiSimdError::Empty),
         1 => match s[0] {
@@ -435,10 +435,10 @@ pub(crate) unsafe fn parse_u64(s: &[u8], parse_type: ParseType) -> Result<u64, A
 
             process_big(chunk, check_high, check_low, s)
         }
-        17 => parse_u128(s).map(|v| v as u64),
-        18 => parse_u128(s).map(|v| v as u64),
+        17 => parse_simd_u128(s).map(|v| v as u64),
+        18 => parse_simd_u128(s).map(|v| v as u64),
         19 => {
-            let val = parse_u128(s)? as u64;
+            let val = parse_simd_u128(s)? as u64;
 
             match parse_type {
                 ParseType::I64Neg => {
@@ -465,7 +465,7 @@ pub(crate) unsafe fn parse_u64(s: &[u8], parse_type: ParseType) -> Result<u64, A
                 return Err(AtoiSimdError::Overflow(parse_type, s));
             }
 
-            let val = parse_u128(s)?;
+            let val = parse_simd_u128(s)?;
 
             if val > u64::MAX as u128 {
                 return Err(AtoiSimdError::Overflow(parse_type, s));
@@ -560,7 +560,7 @@ unsafe fn process_avx_or(chunk: __m256i, mult: __m256i) -> __m256i {
 /// Parses string of *only* digits. String length must be 1..=32.
 /// Uses AVX/AVX2 intrinsics
 #[target_feature(enable = "sse2,sse3,sse4.1,ssse3,avx,avx2")]
-pub(crate) unsafe fn parse_u128(s: &[u8]) -> Result<u128, AtoiSimdError> {
+pub(crate) unsafe fn parse_simd_u128(s: &[u8]) -> Result<u128, AtoiSimdError> {
     let mut chunk: __m256i;
     let check_high: __m256i;
     let check_low: __m256i;
@@ -919,7 +919,7 @@ pub(crate) unsafe fn parse_u128(s: &[u8]) -> Result<u128, AtoiSimdError> {
             );
             check_low = process_avx_gt(cmp, chunk);
         }
-        _ => return parse_u64(s, ParseType::None).map(|v| v as u128),
+        _ => return parse_simd_u64(s, ParseType::None).map(|v| v as u128),
     }
 
     process_avx(chunk, check_high, check_low, s)
