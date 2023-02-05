@@ -3,22 +3,19 @@
 [![Crate](https://img.shields.io/crates/v/atoi_simd.svg)](https://crates.io/crates/atoi_simd)
 [![API](https://docs.rs/atoi_simd/badge.svg)](https://docs.rs/atoi_simd)
 
-Modified [this](https://github.com/pickfire/parseint) version (from [the article](https://rust-malaysia.github.io/code/2020/07/11/faster-integer-parsing.html)) to perform validation, support various strings of different lengths and negative values.
+Got the idea from [here](https://rust-malaysia.github.io/code/2020/07/11/faster-integer-parsing.html) ([source](https://github.com/pickfire/parseint)).
 
 Faster on x86_64 (uses SIMD, SSE4.1, AVX2), but can be used even if you don't have x86_64 SIMD capable cpu.
 
-To enable SIMD it needs the `target-feature` or `target-cpu` flags set, or it will fallback to non-SIMD functions. 
-
-If you have `&str` then use `.as_bytes()`
+Supports negative values and validates the input.
 
 Supported output types: u8, i8, u16, i16, u32, i32, u64, i64, u128, i128, usize, isize.
 The 128 bit max slice length is 32 numbers (33 with '-' sign), because it's limited by AVX2.
 
 Has good test coverage, and can be considered safe.
 
-By default the `target-feature` is set in `./.cargo/config.toml`, but seems like it works only inside this project.
-
-To enable SIMD you can copy the `./.cargo/config.toml` in your project, or you can use one of the following environment variables:
+To enable SIMD it needs the `target-feature` or `target-cpu` flags set, or it will fallback to non-SIMD functions.
+To do it you can copy the `./.cargo/config.toml` in your project, or you can use one of the following environment variables:
 
 -   `RUSTFLAGS="-C target-feature=+sse2,+sse3,+sse4.1,+ssse3,+avx,+avx2"`
 
@@ -26,8 +23,12 @@ To enable SIMD you can copy the `./.cargo/config.toml` in your project, or you c
 
 For Windows PowerShell you can set it with `$Env:RUSTFLAGS='-C target-feature=+sse2,+sse3,+sse4.1,+ssse3,+avx,+avx2'`
 
+By default the `target-feature` is set in `./.cargo/config.toml`, but seems like it works only inside this project.
+
+If you have `&str` then use `.as_bytes()`
+
 Maybe todo:
-There is a posibility to parse base 16 slice, by first finding (a,b,c,d,e,f) and then giving them +9
+There is a posibility to parse base 16 input, by first finding (a,b,c,d,e,f) and then increment them by 9
 
 ## Examples
 

@@ -2,14 +2,21 @@
 //!
 //! Faster on x86_64 (uses SIMD, SSE4.1, AVX2), but can be used even if you don't have x86_64 SIMD capable cpu.
 //!
-//! To enable SIMD it needs the `target-feature` or `target-cpu` flags set, or it will fallback to non-SIMD functions.
-//!
-//! If you have `&str` then use `.as_bytes()`
+//! Supports negative values and validates the input.
 //!
 //! Supported output types: u8, i8, u16, i16, u32, i32, u64, i64, u128, i128, usize, isize.
 //! The 128 bit max slice length is 32 numbers (33 with '-' sign), because it's limited by AVX2.
 //!
 //! Has good test coverage, and can be considered safe.
+//!
+//! To enable SIMD it needs the `target-feature` or `target-cpu` flags set, or it will fallback to non-SIMD functions.
+//! To do it you can copy the `./.cargo/config.toml` in your project, or you can use one of the following environment variables:
+//!
+//! -   `RUSTFLAGS="-C target-feature=+sse2,+sse3,+sse4.1,+ssse3,+avx,+avx2"`
+//!
+//! -   `RUSTFLAGS="-C target-cpu=native"`
+//!
+//! If you have `&str` then use `.as_bytes()`
 //!
 //! # Examples
 //!
