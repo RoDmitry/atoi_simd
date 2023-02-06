@@ -50,6 +50,7 @@ mod simd;
 mod test;
 
 pub use crate::error::AtoiSimdError;
+pub use crate::fallback::parse_until_invalid_pos;
 use crate::fallback::{parse_fb_128_neg, parse_fb_128_pos, parse_fb_neg, parse_fb_pos};
 use crate::simd::{parse_simd_u128, parse_simd_u64};
 

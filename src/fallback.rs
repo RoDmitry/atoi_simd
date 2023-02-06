@@ -37,9 +37,7 @@ pub(crate) fn parse_fb_pos<const MAX: u64>(s: &[u8]) -> Result<u64, AtoiSimdErro
                         significand = significand * 10 + digit;
                         i += 1;
                     }
-                    _ => {
-                        return Err(AtoiSimdError::Invalid(s));
-                    }
+                    _ => return Err(AtoiSimdError::Invalid(s)),
                 }
             }
             Ok(significand)
@@ -69,9 +67,7 @@ pub(crate) fn parse_fb_neg<const MIN: i64>(s: &[u8]) -> Result<i64, AtoiSimdErro
                         significand = significand * 10 - digit;
                         i += 1;
                     }
-                    _ => {
-                        return Err(AtoiSimdError::Invalid(s));
-                    }
+                    _ => return Err(AtoiSimdError::Invalid(s)),
                 }
             }
             Ok(significand)
@@ -101,9 +97,7 @@ pub(crate) fn parse_fb_128_pos(s: &[u8]) -> Result<u128, AtoiSimdError> {
                         significand = significand * 10 + digit;
                         i += 1;
                     }
-                    _ => {
-                        return Err(AtoiSimdError::Invalid(s));
-                    }
+                    _ => return Err(AtoiSimdError::Invalid(s)),
                 }
             }
             Ok(significand)
@@ -133,13 +127,44 @@ pub(crate) fn parse_fb_128_neg(s: &[u8]) -> Result<i128, AtoiSimdError> {
                         significand = significand * 10 - digit;
                         i += 1;
                     }
-                    _ => {
-                        return Err(AtoiSimdError::Invalid(s));
-                    }
+                    _ => return Err(AtoiSimdError::Invalid(s)),
                 }
             }
             Ok(significand)
         }
         _ => Err(AtoiSimdError::Invalid(s)),
+    }
+}
+
+/// Parses integer until it reaches invalid character.
+/// Returns parsed value and a new index of the slice.
+/// It does not use SIMD.
+/// The function name may change in the future versions.
+pub fn parse_until_invalid_pos(s: &[u8], mut i: usize) -> Result<(u64, usize), AtoiSimdError> {
+    if s.len() <= i {
+        return Err(AtoiSimdError::Empty);
+    }
+    match s[i] {
+        c @ b'0'..=b'9' => {
+            let mut significand = (c - b'0') as u64;
+            i += 1;
+            while s.len() > i {
+                match s[i] {
+                    c @ b'0'..=b'9' => {
+                        let digit = (c - b'0') as u64;
+
+                        if overflow!(significand * 10 + digit, u64::MAX) {
+                            return Err(AtoiSimdError::Overflow(ParseType::None, s));
+                        }
+
+                        significand = significand * 10 + digit;
+                        i += 1;
+                    }
+                    _ => return Ok((significand, i)),
+                }
+            }
+            Ok((significand, i))
+        }
+        _ => Err(AtoiSimdError::Empty),
     }
 }
