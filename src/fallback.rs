@@ -23,24 +23,24 @@ pub(crate) fn parse_fb_pos<const MAX: u64>(s: &[u8]) -> Result<u64, AtoiSimdErro
     }
     match s[i] {
         c @ b'0'..=b'9' => {
-            let mut significand = (c - b'0') as u64;
+            let mut res = (c & 0xF) as u64;
             i += 1;
             while s.len() > i {
                 match s[i] {
                     c @ b'0'..=b'9' => {
-                        let digit = (c - b'0') as u64;
+                        let digit = (c & 0xF) as u64;
 
-                        if overflow!(significand * 10 + digit, MAX) {
+                        if overflow!(res * 10 + digit, MAX) {
                             return Err(AtoiSimdError::Overflow(ParseType::None, s));
                         }
 
-                        significand = significand * 10 + digit;
+                        res = res * 10 + digit;
                         i += 1;
                     }
                     _ => return Err(AtoiSimdError::Invalid(s)),
                 }
             }
-            Ok(significand)
+            Ok(res)
         }
         _ => Err(AtoiSimdError::Invalid(s)),
     }
@@ -53,24 +53,24 @@ pub(crate) fn parse_fb_neg<const MIN: i64>(s: &[u8]) -> Result<i64, AtoiSimdErro
     }
     match s[i] {
         c @ b'0'..=b'9' => {
-            let mut significand = -((c - b'0') as i64);
+            let mut res = -((c & 0xF) as i64);
             i += 1;
             while s.len() > i {
                 match s[i] {
                     c @ b'0'..=b'9' => {
-                        let digit = (c - b'0') as i64;
+                        let digit = (c & 0xF) as i64;
 
-                        if overflow_neg!(significand * 10 - digit, MIN) {
+                        if overflow_neg!(res * 10 - digit, MIN) {
                             return Err(AtoiSimdError::Overflow(ParseType::I64Neg, s));
                         }
 
-                        significand = significand * 10 - digit;
+                        res = res * 10 - digit;
                         i += 1;
                     }
                     _ => return Err(AtoiSimdError::Invalid(s)),
                 }
             }
-            Ok(significand)
+            Ok(res)
         }
         _ => Err(AtoiSimdError::Invalid(s)),
     }
@@ -83,24 +83,24 @@ pub(crate) fn parse_fb_128_pos(s: &[u8]) -> Result<u128, AtoiSimdError> {
     }
     match s[i] {
         c @ b'0'..=b'9' => {
-            let mut significand = (c - b'0') as u128;
+            let mut res = (c & 0xF) as u128;
             i += 1;
             while s.len() > i {
                 match s[i] {
                     c @ b'0'..=b'9' => {
-                        let digit = (c - b'0') as u128;
+                        let digit = (c & 0xF) as u128;
 
-                        if overflow!(significand * 10 + digit, u128::MAX) {
+                        if overflow!(res * 10 + digit, u128::MAX) {
                             return Err(AtoiSimdError::Overflow(ParseType::None, s));
                         }
 
-                        significand = significand * 10 + digit;
+                        res = res * 10 + digit;
                         i += 1;
                     }
                     _ => return Err(AtoiSimdError::Invalid(s)),
                 }
             }
-            Ok(significand)
+            Ok(res)
         }
         _ => Err(AtoiSimdError::Invalid(s)),
     }
@@ -113,24 +113,24 @@ pub(crate) fn parse_fb_128_neg(s: &[u8]) -> Result<i128, AtoiSimdError> {
     }
     match s[i] {
         c @ b'0'..=b'9' => {
-            let mut significand = -((c - b'0') as i128);
+            let mut res = -((c & 0xF) as i128);
             i += 1;
             while s.len() > i {
                 match s[i] {
                     c @ b'0'..=b'9' => {
-                        let digit = (c - b'0') as i128;
+                        let digit = (c & 0xF) as i128;
 
-                        if overflow_neg!(significand * 10 - digit, i128::MIN) {
+                        if overflow_neg!(res * 10 - digit, i128::MIN) {
                             return Err(AtoiSimdError::Overflow(ParseType::None, s));
                         }
 
-                        significand = significand * 10 - digit;
+                        res = res * 10 - digit;
                         i += 1;
                     }
                     _ => return Err(AtoiSimdError::Invalid(s)),
                 }
             }
-            Ok(significand)
+            Ok(res)
         }
         _ => Err(AtoiSimdError::Invalid(s)),
     }
@@ -146,24 +146,24 @@ pub fn parse_until_invalid_pos(s: &[u8], mut i: usize) -> Result<(u64, usize), A
     }
     match s[i] {
         c @ b'0'..=b'9' => {
-            let mut significand = (c - b'0') as u64;
+            let mut res = (c & 0xF) as u64;
             i += 1;
             while s.len() > i {
                 match s[i] {
                     c @ b'0'..=b'9' => {
-                        let digit = (c - b'0') as u64;
+                        let digit = (c & 0xF) as u64;
 
-                        if overflow!(significand * 10 + digit, u64::MAX) {
+                        if overflow!(res * 10 + digit, u64::MAX) {
                             return Err(AtoiSimdError::Overflow(ParseType::None, s));
                         }
 
-                        significand = significand * 10 + digit;
+                        res = res * 10 + digit;
                         i += 1;
                     }
-                    _ => return Ok((significand, i)),
+                    _ => return Ok((res, i)),
                 }
             }
-            Ok((significand, i))
+            Ok((res, i))
         }
         _ => Err(AtoiSimdError::Empty),
     }
