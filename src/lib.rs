@@ -468,7 +468,7 @@ impl Parser<usize> for usize {
     #[cfg(target_pointer_width = "32")]
     #[inline]
     fn atoi_simd_parse(s: &[u8]) -> Result<usize, AtoiSimdError> {
-        parse_fb_pos::<{ u32::MAX as u64 }>(s).map(|v| v as usize)
+        parse_fb_pos::<{ u32::MAX as u64 }>(s).map(|(v, _)| v as usize)
     }
 
     #[cfg(target_pointer_width = "64")]

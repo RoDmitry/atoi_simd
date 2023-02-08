@@ -6,8 +6,8 @@ use core::arch::x86::{
     _mm256_mul_epu32, _mm256_or_si256, _mm256_packus_epi32, _mm256_permute2x128_si256,
     _mm256_set1_epi8, _mm256_set_epi16, _mm256_set_epi32, _mm256_set_epi64x, _mm256_set_epi8,
     _mm256_srli_epi64, _mm256_testz_si256, _mm_and_si128, _mm_andnot_si128, _mm_bslli_si128,
-    _mm_cmpgt_epi8, _mm_cvtsi128_si64, _mm_lddqu_si128, _mm_madd_epi16, _mm_maddubs_epi16,
-    _mm_or_si128, _mm_packus_epi32, _mm_set1_epi8, _mm_set_epi16, _mm_set_epi64x, _mm_set_epi8,
+    _mm_cmpgt_epi8, _mm_lddqu_si128, _mm_madd_epi16, _mm_maddubs_epi16, _mm_or_si128,
+    _mm_packus_epi32, _mm_set1_epi8, _mm_set_epi16, _mm_set_epi64x, _mm_set_epi8,
     _mm_test_all_ones,
 };
 #[cfg(target_arch = "x86_64")]
@@ -72,6 +72,13 @@ unsafe fn mult_100(chunk: __m128i) -> __m128i {
     _mm_madd_epi16(chunk, mult)
 }
 
+#[cfg(target_arch = "x86")]
+#[inline]
+unsafe fn to_u64(chunk: __m128i) -> u64 {
+    std::mem::transmute::<__m128i, [u64; 2]>(chunk)[0]
+}
+
+#[cfg(target_arch = "x86_64")]
 #[inline]
 unsafe fn to_u64(chunk: __m128i) -> u64 {
     _mm_cvtsi128_si64(chunk) as u64
