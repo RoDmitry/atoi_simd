@@ -170,9 +170,9 @@ fn parse_i64_neg(s: &[u8]) -> Result<i64, AtoiSimdError> {
     }
 }
 
-/// Parses string of digits and first '-' char.
-/// String length (except '-' char) must be 1..=20.
-/// This function is slower than `parse_u64()`, because it checks for '-' sign.
+/// Parses slice of digits and first '-' char.
+/// Slice length (except '-' char) must be 1..=20.
+/// This function is slower than `parse_simd_u64()`, because it checks for '-' sign.
 /// Uses SSE4.1 intrinsics
 #[inline]
 fn parse_i64(s: &[u8]) -> Result<i64, AtoiSimdError> {
@@ -208,9 +208,9 @@ fn parse_i128_neg(s: &[u8]) -> Result<i128, AtoiSimdError> {
     }
 }
 
-/// Parses string of digits and first '-' char.
-/// String length (except '-' char) must be 1..=32.
-/// This function is slower than `parse_u128()`, because it checks for '-' sign.
+/// Parses slice of digits and first '-' char.
+/// Slice length (except '-' char) must be 1..=32.
+/// This function is slower than `parse_simd_u128()`, because it checks for '-' sign.
 /// Uses AVX/AVX2 intrinsics
 #[inline]
 fn parse_i128(s: &[u8]) -> Result<i128, AtoiSimdError> {
@@ -234,6 +234,10 @@ fn parse_i128(s: &[u8]) -> Result<i128, AtoiSimdError> {
 pub trait Parser<T> {
     fn atoi_simd_parse(s: &[u8]) -> Result<T, AtoiSimdError>;
     fn atoi_simd_parse_until_invalid(s: &[u8]) -> Result<(T, usize), AtoiSimdError>;
+}
+
+pub trait ParserNeg<T> {
+    fn atoi_simd_parse_neg(s: &[u8]) -> Result<T, AtoiSimdError>;
 }
 
 #[cfg(all(
@@ -289,6 +293,13 @@ impl Parser<i8> for i8 {
         } else {
             parse_fb_until_invalid_pos::<{ i8::MAX as u64 }>(s).map(|(v, i)| (v as i8, i))
         }
+    }
+}
+
+impl ParserNeg<i8> for i8 {
+    #[inline]
+    fn atoi_simd_parse_neg(s: &[u8]) -> Result<i8, AtoiSimdError> {
+        parse_i8_neg(s)
     }
 }
 
@@ -348,6 +359,13 @@ impl Parser<i16> for i16 {
     }
 }
 
+impl ParserNeg<i16> for i16 {
+    #[inline]
+    fn atoi_simd_parse_neg(s: &[u8]) -> Result<i16, AtoiSimdError> {
+        parse_i16_neg(s)
+    }
+}
+
 #[cfg(all(
     target_feature = "sse2",
     target_feature = "sse3",
@@ -401,6 +419,13 @@ impl Parser<i32> for i32 {
         } else {
             parse_fb_until_invalid_pos::<{ i32::MAX as u64 }>(s).map(|(v, i)| (v as i32, i))
         }
+    }
+}
+
+impl ParserNeg<i32> for i32 {
+    #[inline]
+    fn atoi_simd_parse_neg(s: &[u8]) -> Result<i32, AtoiSimdError> {
+        parse_i32_neg(s)
     }
 }
 
@@ -481,6 +506,20 @@ impl Parser<isize> for isize {
     }
 }
 
+impl ParserNeg<isize> for isize {
+    #[cfg(target_pointer_width = "32")]
+    #[inline]
+    fn atoi_simd_parse_neg(s: &[u8]) -> Result<isize, AtoiSimdError> {
+        parse_i32_neg(s).map(|v| v as isize)
+    }
+
+    #[cfg(target_pointer_width = "64")]
+    #[inline]
+    fn atoi_simd_parse_neg(s: &[u8]) -> Result<isize, AtoiSimdError> {
+        parse_i64_neg(s).map(|v| v as isize)
+    }
+}
+
 #[cfg(all(
     target_feature = "sse2",
     target_feature = "sse3",
@@ -534,6 +573,13 @@ impl Parser<i64> for i64 {
         } else {
             parse_fb_until_invalid_pos::<{ i64::MAX as u64 }>(s).map(|(v, i)| (v as i64, i))
         }
+    }
+}
+
+impl ParserNeg<i64> for i64 {
+    #[inline]
+    fn atoi_simd_parse_neg(s: &[u8]) -> Result<i64, AtoiSimdError> {
+        parse_i64_neg(s)
     }
 }
 
@@ -593,14 +639,28 @@ impl Parser<i128> for i128 {
     }
 }
 
+impl ParserNeg<i128> for i128 {
+    #[inline]
+    fn atoi_simd_parse_neg(s: &[u8]) -> Result<i128, AtoiSimdError> {
+        parse_i128_neg(s)
+    }
+}
+
+/// Parses slice of digits, and checks first '-' char for signed integers.
 #[inline]
 pub fn parse<T: Parser<T>>(s: &[u8]) -> Result<T, AtoiSimdError> {
     T::atoi_simd_parse(s)
 }
 
-// Parses integer until it reaches invalid character.
-// Returns parsed value and parsed size of the slice.
-// It does not use SIMD.
+/// Parses negative integer. Slice must not contain '-' sign.
+#[inline]
+pub fn parse_neg<T: ParserNeg<T>>(s: &[u8]) -> Result<T, AtoiSimdError> {
+    T::atoi_simd_parse_neg(s)
+}
+
+/// Parses integer until it reaches invalid character.
+/// Returns parsed value and parsed size of the slice.
+/// It does not use SIMD.
 #[inline]
 pub fn parse_until_invalid<T: Parser<T>>(s: &[u8]) -> Result<(T, usize), AtoiSimdError> {
     T::atoi_simd_parse_until_invalid(s)
