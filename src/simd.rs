@@ -490,12 +490,11 @@ pub(crate) unsafe fn parse_simd_u64(s: &[u8], parse_type: ParseType) -> Result<u
 
 /// Parses string of *only* digits
 /// Uses AVX/AVX2 intrinsics
-unsafe fn process_avx(
+unsafe fn process_avx<'e>(
     mut chunk: __m256i,
     check: __m256i,
     check2: __m256i,
-    s: &[u8],
-) -> Result<u128, AtoiSimdError> {
+) -> Result<u128, AtoiSimdError<'e>> {
     // to numbers
     chunk = _mm256_and_si256(chunk, _mm256_set1_epi8(0xF));
 
@@ -931,7 +930,7 @@ pub(crate) unsafe fn parse_simd_u128(s: &[u8]) -> Result<u128, AtoiSimdError> {
         _ => return parse_simd_u64(s, ParseType::None).map(|v| v as u128),
     }
 
-    process_avx(chunk, check_high, check_low, s)
+    process_avx(chunk, check_high, check_low)
 }
 
 #[inline]
