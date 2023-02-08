@@ -16,7 +16,7 @@ macro_rules! overflow_neg {
     };
 }
 
-pub(crate) fn parse_fb_pos<const MAX: u64>(s: &[u8]) -> Result<u64, AtoiSimdError> {
+pub(crate) fn parse_fb_pos<const MAX: u64>(s: &[u8]) -> Result<(u64, usize), AtoiSimdError> {
     let mut i = 0;
     if s.len() == i {
         return Err(AtoiSimdError::Empty);
@@ -37,16 +37,16 @@ pub(crate) fn parse_fb_pos<const MAX: u64>(s: &[u8]) -> Result<u64, AtoiSimdErro
                         res = res * 10 + digit;
                         i += 1;
                     }
-                    _ => return Err(AtoiSimdError::Invalid(s)),
+                    _ => return Err(AtoiSimdError::Invalid64(res, i)),
                 }
             }
-            Ok(res)
+            Ok((res, i))
         }
-        _ => Err(AtoiSimdError::Invalid(s)),
+        _ => Err(AtoiSimdError::Invalid64(0, i)),
     }
 }
 
-pub(crate) fn parse_fb_neg<const MIN: i64>(s: &[u8]) -> Result<i64, AtoiSimdError> {
+pub(crate) fn parse_fb_neg<const MIN: i64>(s: &[u8]) -> Result<(i64, usize), AtoiSimdError> {
     let mut i = 0;
     if s.len() == i {
         return Err(AtoiSimdError::Empty);
@@ -67,16 +67,16 @@ pub(crate) fn parse_fb_neg<const MIN: i64>(s: &[u8]) -> Result<i64, AtoiSimdErro
                         res = res * 10 - digit;
                         i += 1;
                     }
-                    _ => return Err(AtoiSimdError::Invalid(s)),
+                    _ => return Err(AtoiSimdError::Invalid64(res as u64, i)),
                 }
             }
-            Ok(res)
+            Ok((res, i))
         }
-        _ => Err(AtoiSimdError::Invalid(s)),
+        _ => Err(AtoiSimdError::Invalid64(0, i)),
     }
 }
 
-pub(crate) fn parse_fb_128_pos(s: &[u8]) -> Result<u128, AtoiSimdError> {
+pub(crate) fn parse_fb_128_pos(s: &[u8]) -> Result<(u128, usize), AtoiSimdError> {
     let mut i = 0;
     if s.len() == i {
         return Err(AtoiSimdError::Empty);
@@ -97,16 +97,16 @@ pub(crate) fn parse_fb_128_pos(s: &[u8]) -> Result<u128, AtoiSimdError> {
                         res = res * 10 + digit;
                         i += 1;
                     }
-                    _ => return Err(AtoiSimdError::Invalid(s)),
+                    _ => return Err(AtoiSimdError::Invalid128(res, i)),
                 }
             }
-            Ok(res)
+            Ok((res, i))
         }
-        _ => Err(AtoiSimdError::Invalid(s)),
+        _ => Err(AtoiSimdError::Invalid128(0, i)),
     }
 }
 
-pub(crate) fn parse_fb_128_neg(s: &[u8]) -> Result<i128, AtoiSimdError> {
+pub(crate) fn parse_fb_128_neg(s: &[u8]) -> Result<(i128, usize), AtoiSimdError> {
     let mut i = 0;
     if s.len() == i {
         return Err(AtoiSimdError::Empty);
@@ -127,44 +127,43 @@ pub(crate) fn parse_fb_128_neg(s: &[u8]) -> Result<i128, AtoiSimdError> {
                         res = res * 10 - digit;
                         i += 1;
                     }
-                    _ => return Err(AtoiSimdError::Invalid(s)),
-                }
-            }
-            Ok(res)
-        }
-        _ => Err(AtoiSimdError::Invalid(s)),
-    }
-}
-
-/// Parses integer until it reaches invalid character.
-/// Returns parsed value and a new index of the slice.
-/// It does not use SIMD.
-/// The function name may change in the future versions.
-pub fn parse_until_invalid_pos(s: &[u8], mut i: usize) -> Result<(u64, usize), AtoiSimdError> {
-    if s.len() <= i {
-        return Err(AtoiSimdError::Empty);
-    }
-    match s[i] {
-        c @ b'0'..=b'9' => {
-            let mut res = (c & 0xF) as u64;
-            i += 1;
-            while s.len() > i {
-                match s[i] {
-                    c @ b'0'..=b'9' => {
-                        let digit = (c & 0xF) as u64;
-
-                        if overflow!(res * 10 + digit, u64::MAX) {
-                            return Err(AtoiSimdError::Overflow(ParseType::None, s));
-                        }
-
-                        res = res * 10 + digit;
-                        i += 1;
-                    }
-                    _ => return Ok((res, i)),
+                    _ => return Err(AtoiSimdError::Invalid128(res as u128, i)),
                 }
             }
             Ok((res, i))
         }
-        _ => Err(AtoiSimdError::Empty),
+        _ => Err(AtoiSimdError::Invalid128(0, i)),
+    }
+}
+
+pub(crate) fn parse_fb_until_invalid_pos<const MAX: u64>(
+    s: &[u8],
+) -> Result<(u64, usize), AtoiSimdError> {
+    match parse_fb_pos::<MAX>(s) {
+        Err(AtoiSimdError::Invalid64(res, i)) => Ok((res, i)),
+        res => res,
+    }
+}
+
+pub(crate) fn parse_fb_until_invalid_neg<const MIN: i64>(
+    s: &[u8],
+) -> Result<(i64, usize), AtoiSimdError> {
+    match parse_fb_neg::<MIN>(s) {
+        Err(AtoiSimdError::Invalid64(res, i)) => Ok((res as i64, i)),
+        res => res,
+    }
+}
+
+pub(crate) fn parse_fb_until_invalid_128_pos(s: &[u8]) -> Result<(u128, usize), AtoiSimdError> {
+    match parse_fb_128_pos(s) {
+        Err(AtoiSimdError::Invalid128(res, i)) => Ok((res, i)),
+        res => res,
+    }
+}
+
+pub(crate) fn parse_fb_until_invalid_128_neg(s: &[u8]) -> Result<(i128, usize), AtoiSimdError> {
+    match parse_fb_128_neg(s) {
+        Err(AtoiSimdError::Invalid128(res, i)) => Ok((res as i128, i)),
+        res => res,
     }
 }

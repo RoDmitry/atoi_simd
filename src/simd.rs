@@ -95,7 +95,7 @@ unsafe fn process_internal(mut chunk: __m128i) -> __m128i {
     _mm_madd_epi16(chunk, mult)
 }
 
-unsafe fn checker(check: __m128i, check2: __m128i, s: &[u8]) -> Result<(), AtoiSimdError> {
+unsafe fn checker<'e>(check: __m128i, check2: __m128i) -> Result<(), AtoiSimdError<'e>> {
     let mut chunk = _mm_or_si128(check, check2);
 
     let mult = _mm_set_epi64x(u64::MAX as i64, u64::MAX as i64);
@@ -104,13 +104,13 @@ unsafe fn checker(check: __m128i, check2: __m128i, s: &[u8]) -> Result<(), AtoiS
 
     let res = _mm_test_all_ones(chunk);
     if res == 0 {
-        return Err(AtoiSimdError::Invalid(s));
+        return Err(AtoiSimdError::Invalid64(0, usize::MAX));
     }
 
     Ok(())
 }
 
-unsafe fn checker_avx(check: __m256i, check2: __m256i, s: &[u8]) -> Result<(), AtoiSimdError> {
+unsafe fn checker_avx<'e>(check: __m256i, check2: __m256i) -> Result<(), AtoiSimdError<'e>> {
     let chunk = _mm256_or_si256(check, check2);
 
     let mult = _mm256_set_epi64x(
@@ -122,22 +122,21 @@ unsafe fn checker_avx(check: __m256i, check2: __m256i, s: &[u8]) -> Result<(), A
     // test all zeroes
     let res = _mm256_testz_si256(chunk, mult);
     if res == 0 {
-        return Err(AtoiSimdError::Invalid(s));
+        return Err(AtoiSimdError::Invalid128(0, usize::MAX));
     }
 
     Ok(())
 }
 
-unsafe fn process_small(
+unsafe fn process_small<'e>(
     mut chunk: __m128i,
     check: __m128i,
     check2: __m128i,
-    s: &[u8],
-) -> Result<u64, AtoiSimdError> {
+) -> Result<u64, AtoiSimdError<'e>> {
     chunk = process_and(chunk, 0xF0F0F0F);
     chunk = mult_10(chunk);
 
-    checker(check, check2, s)?;
+    checker(check, check2)?;
 
     chunk = mult_100(chunk);
 
@@ -145,32 +144,30 @@ unsafe fn process_small(
     // std::mem::transmute::<__m128i, [u32; 4]>(chunk)[3] as u64 // same performance
 }
 
-unsafe fn process_medium(
+unsafe fn process_medium<'e>(
     mut chunk: __m128i,
     check: __m128i,
     check2: __m128i,
-    s: &[u8],
-) -> Result<u64, AtoiSimdError> {
+) -> Result<u64, AtoiSimdError<'e>> {
     chunk = process_and(chunk, 0xF0F0F0F0F0F0F0F);
     chunk = mult_10(chunk);
 
-    checker(check, check2, s)?;
+    checker(check, check2)?;
 
     chunk = process_internal(chunk);
 
     Ok(to_u64(chunk))
 }
 
-unsafe fn process_big(
+unsafe fn process_big<'e>(
     mut chunk: __m128i,
     check: __m128i,
     check2: __m128i,
-    s: &[u8],
-) -> Result<u64, AtoiSimdError> {
+) -> Result<u64, AtoiSimdError<'e>> {
     chunk = to_numbers(chunk);
     chunk = mult_10(chunk);
 
-    checker(check, check2, s)?;
+    checker(check, check2)?;
 
     chunk = process_internal(chunk);
 
@@ -188,7 +185,7 @@ pub(crate) unsafe fn parse_simd_u64(s: &[u8], parse_type: ParseType) -> Result<u
         0 => Err(AtoiSimdError::Empty),
         1 => match s[0] {
             c @ b'0'..=b'9' => Ok((c & 0xF) as u64),
-            _ => Err(AtoiSimdError::Invalid(s)),
+            _ => Err(AtoiSimdError::Invalid64(0, 0)),
         },
         2 => {
             let mut chunk = read(s);
@@ -207,7 +204,7 @@ pub(crate) unsafe fn parse_simd_u64(s: &[u8], parse_type: ParseType) -> Result<u
             chunk = process_and(chunk, 0xF0F);
             chunk = mult_10(chunk);
 
-            checker(check_high, check_low, s)?;
+            checker(check_high, check_low)?;
 
             Ok(to_u64(chunk))
             // std::mem::transmute::<__m128i, [u16; 8]>(chunk)[7] as u64 // same performance
@@ -227,7 +224,7 @@ pub(crate) unsafe fn parse_simd_u64(s: &[u8], parse_type: ParseType) -> Result<u
             let check_low = process_gt(cmp, chunk);
 
             chunk = _mm_bslli_si128(chunk, 1);
-            process_small(chunk, check_high, check_low, s)
+            process_small(chunk, check_high, check_low)
         }
         4 => {
             let chunk = read(s);
@@ -243,7 +240,7 @@ pub(crate) unsafe fn parse_simd_u64(s: &[u8], parse_type: ParseType) -> Result<u
             );
             let check_low = process_gt(cmp, chunk);
 
-            process_small(chunk, check_high, check_low, s)
+            process_small(chunk, check_high, check_low)
         }
         5 => {
             let mut chunk = read(s);
@@ -260,7 +257,7 @@ pub(crate) unsafe fn parse_simd_u64(s: &[u8], parse_type: ParseType) -> Result<u
             let check_low = process_gt(cmp, chunk);
 
             chunk = _mm_bslli_si128(chunk, 3);
-            process_medium(chunk, check_high, check_low, s)
+            process_medium(chunk, check_high, check_low)
         }
         6 => {
             let mut chunk = read(s);
@@ -277,7 +274,7 @@ pub(crate) unsafe fn parse_simd_u64(s: &[u8], parse_type: ParseType) -> Result<u
             let check_low = process_gt(cmp, chunk);
 
             chunk = _mm_bslli_si128(chunk, 2);
-            process_medium(chunk, check_high, check_low, s)
+            process_medium(chunk, check_high, check_low)
         }
         7 => {
             let mut chunk = read(s);
@@ -294,7 +291,7 @@ pub(crate) unsafe fn parse_simd_u64(s: &[u8], parse_type: ParseType) -> Result<u
             let check_low = process_gt(cmp, chunk);
 
             chunk = _mm_bslli_si128(chunk, 1);
-            process_medium(chunk, check_high, check_low, s)
+            process_medium(chunk, check_high, check_low)
         }
         8 => {
             let chunk = read(s);
@@ -310,7 +307,7 @@ pub(crate) unsafe fn parse_simd_u64(s: &[u8], parse_type: ParseType) -> Result<u
             );
             let check_low = process_gt(cmp, chunk);
 
-            process_medium(chunk, check_high, check_low, s)
+            process_medium(chunk, check_high, check_low)
         }
         9 => {
             let mut chunk = read(s);
@@ -327,7 +324,7 @@ pub(crate) unsafe fn parse_simd_u64(s: &[u8], parse_type: ParseType) -> Result<u
             let check_low = process_gt(cmp, chunk);
 
             chunk = _mm_bslli_si128(chunk, 7);
-            process_big(chunk, check_high, check_low, s)
+            process_big(chunk, check_high, check_low)
         }
         10 => {
             let mut chunk = read(s);
@@ -344,7 +341,7 @@ pub(crate) unsafe fn parse_simd_u64(s: &[u8], parse_type: ParseType) -> Result<u
             let check_low = process_gt(cmp, chunk);
 
             chunk = _mm_bslli_si128(chunk, 6);
-            process_big(chunk, check_high, check_low, s)
+            process_big(chunk, check_high, check_low)
         }
         11 => {
             let mut chunk = read(s);
@@ -361,7 +358,7 @@ pub(crate) unsafe fn parse_simd_u64(s: &[u8], parse_type: ParseType) -> Result<u
             let check_low = process_gt(cmp, chunk);
 
             chunk = _mm_bslli_si128(chunk, 5);
-            process_big(chunk, check_high, check_low, s)
+            process_big(chunk, check_high, check_low)
         }
         12 => {
             let mut chunk = read(s);
@@ -378,7 +375,7 @@ pub(crate) unsafe fn parse_simd_u64(s: &[u8], parse_type: ParseType) -> Result<u
             let check_low = process_gt(cmp, chunk);
 
             chunk = _mm_bslli_si128(chunk, 4);
-            process_big(chunk, check_high, check_low, s)
+            process_big(chunk, check_high, check_low)
         }
         13 => {
             let mut chunk = read(s);
@@ -395,7 +392,7 @@ pub(crate) unsafe fn parse_simd_u64(s: &[u8], parse_type: ParseType) -> Result<u
             let check_low = process_gt(cmp, chunk);
 
             chunk = _mm_bslli_si128(chunk, 3);
-            process_big(chunk, check_high, check_low, s)
+            process_big(chunk, check_high, check_low)
         }
         14 => {
             let mut chunk = read(s);
@@ -412,7 +409,7 @@ pub(crate) unsafe fn parse_simd_u64(s: &[u8], parse_type: ParseType) -> Result<u
             let check_low = process_gt(cmp, chunk);
 
             chunk = _mm_bslli_si128(chunk, 2);
-            process_big(chunk, check_high, check_low, s)
+            process_big(chunk, check_high, check_low)
         }
         15 => {
             let mut chunk = read(s);
@@ -429,7 +426,7 @@ pub(crate) unsafe fn parse_simd_u64(s: &[u8], parse_type: ParseType) -> Result<u
             let check_low = process_gt(cmp, chunk);
 
             chunk = _mm_bslli_si128(chunk, 1);
-            process_big(chunk, check_high, check_low, s)
+            process_big(chunk, check_high, check_low)
         }
         16 => {
             let chunk = read(s);
@@ -445,7 +442,7 @@ pub(crate) unsafe fn parse_simd_u64(s: &[u8], parse_type: ParseType) -> Result<u
             );
             let check_low = process_gt(cmp, chunk);
 
-            process_big(chunk, check_high, check_low, s)
+            process_big(chunk, check_high, check_low)
         }
         17 => parse_simd_u128(s).map(|v| v as u64),
         18 => parse_simd_u128(s).map(|v| v as u64),
@@ -509,7 +506,7 @@ unsafe fn process_avx(
     // mult 10
     chunk = _mm256_maddubs_epi16(chunk, mult);
 
-    checker_avx(check, check2, s)?;
+    checker_avx(check, check2)?;
 
     mult = _mm256_set_epi16(
         1, 100, 1, 100, 1, 100, 1, 100, 1, 100, 1, 100, 1, 100, 1, 100,
@@ -935,4 +932,114 @@ pub(crate) unsafe fn parse_simd_u128(s: &[u8]) -> Result<u128, AtoiSimdError> {
     }
 
     process_avx(chunk, check_high, check_low, s)
+}
+
+#[inline]
+pub(crate) fn parse_simd_u8(s: &[u8], parse_type: ParseType) -> Result<u8, AtoiSimdError> {
+    let val = unsafe { parse_simd_u64(s, parse_type)? };
+    match parse_type {
+        ParseType::I8 => {
+            if val > i8::MAX as u64 {
+                Err(AtoiSimdError::Overflow(parse_type, s))
+            } else {
+                Ok(val as u8)
+            }
+        }
+        _ => {
+            if val > u8::MAX as u64 {
+                Err(AtoiSimdError::Overflow(parse_type, s))
+            } else {
+                Ok(val as u8)
+            }
+        }
+    }
+}
+
+#[inline]
+pub(crate) fn parse_simd_i8_neg(s: &[u8]) -> Result<i8, AtoiSimdError> {
+    let val = unsafe { parse_simd_u64(s, ParseType::None)? };
+    if val > i8::MAX as u64 + 1 {
+        Err(AtoiSimdError::Overflow(ParseType::I8Neg, s))
+    } else if val == i8::MAX as u64 + 1 {
+        Ok(i8::MIN)
+    } else {
+        Ok(-(val as i8))
+    }
+}
+
+#[inline]
+pub(crate) fn parse_simd_u16(s: &[u8], parse_type: ParseType) -> Result<u16, AtoiSimdError> {
+    let val = unsafe { parse_simd_u64(s, parse_type)? };
+    match parse_type {
+        ParseType::I16 => {
+            if val > i16::MAX as u64 {
+                Err(AtoiSimdError::Overflow(parse_type, s))
+            } else {
+                Ok(val as u16)
+            }
+        }
+        _ => {
+            if val > u16::MAX as u64 {
+                Err(AtoiSimdError::Overflow(parse_type, s))
+            } else {
+                Ok(val as u16)
+            }
+        }
+    }
+}
+
+#[inline]
+pub(crate) fn parse_simd_i16_neg(s: &[u8]) -> Result<i16, AtoiSimdError> {
+    let val = unsafe { parse_simd_u64(s, ParseType::None)? };
+    if val > i16::MAX as u64 + 1 {
+        Err(AtoiSimdError::Overflow(ParseType::I16Neg, s))
+    } else if val == i16::MAX as u64 + 1 {
+        Ok(i16::MIN)
+    } else {
+        Ok(-(val as i16))
+    }
+}
+
+#[inline]
+pub(crate) fn parse_simd_u32(s: &[u8], parse_type: ParseType) -> Result<u32, AtoiSimdError> {
+    let val = unsafe { parse_simd_u64(s, parse_type)? };
+    match parse_type {
+        ParseType::I32 => {
+            if val > i32::MAX as u64 {
+                Err(AtoiSimdError::Overflow(parse_type, s))
+            } else {
+                Ok(val as u32)
+            }
+        }
+        _ => {
+            if val > u32::MAX as u64 {
+                Err(AtoiSimdError::Overflow(parse_type, s))
+            } else {
+                Ok(val as u32)
+            }
+        }
+    }
+}
+
+#[inline]
+pub(crate) fn parse_simd_i32_neg(s: &[u8]) -> Result<i32, AtoiSimdError> {
+    let val = unsafe { parse_simd_u64(s, ParseType::None)? };
+    if val > i32::MAX as u64 + 1 {
+        Err(AtoiSimdError::Overflow(ParseType::I32Neg, s))
+    } else if val == i32::MAX as u64 + 1 {
+        Ok(i32::MIN)
+    } else {
+        Ok(-(val as i32))
+    }
+}
+
+#[inline]
+pub(crate) fn parse_simd_i64_neg(s: &[u8]) -> Result<i64, AtoiSimdError> {
+    let res = unsafe { parse_simd_u64(s, ParseType::I64Neg).map(|v| -(v as i64)) };
+
+    if let Err(AtoiSimdError::I64Min) = res {
+        return Ok(i64::MIN);
+    }
+
+    res
 }

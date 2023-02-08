@@ -343,14 +343,17 @@ fn test_parse_fb_pos() {
         panic!("error");
     }
 
-    assert_eq!(parse_fb_pos::<{ u64::MAX }>("0".as_bytes()).unwrap(), 0_u64);
+    assert_eq!(
+        parse_fb_pos::<{ u64::MAX }>("0".as_bytes()).unwrap().0,
+        0_u64
+    );
 
     let mut s = String::with_capacity(20);
     for i in '1'..='9' {
         test_each_position_fb_pos::<{ u64::MAX }>(&s);
         s.push(i);
         assert_eq!(
-            parse_fb_pos::<{ u64::MAX }>(s.as_bytes()).unwrap(),
+            parse_fb_pos::<{ u64::MAX }>(s.as_bytes()).unwrap().0,
             s.parse::<u64>().unwrap()
         );
     }
@@ -358,19 +361,21 @@ fn test_parse_fb_pos() {
         test_each_position_fb_pos::<{ u64::MAX }>(&s);
         s.push(i);
         assert_eq!(
-            parse_fb_pos::<{ u64::MAX }>(s.as_bytes()).unwrap(),
+            parse_fb_pos::<{ u64::MAX }>(s.as_bytes()).unwrap().0,
             s.parse::<u64>().unwrap()
         );
     }
     test_each_position_fb_pos::<{ u64::MAX }>(&s);
     s.push('0');
     assert_eq!(
-        parse_fb_pos::<{ u64::MAX }>(s.as_bytes()).unwrap(),
+        parse_fb_pos::<{ u64::MAX }>(s.as_bytes()).unwrap().0,
         s.parse::<u64>().unwrap()
     );
 
     assert_eq!(
-        parse_fb_pos::<{ u64::MAX }>("18446744073709551615".as_bytes()).unwrap(),
+        parse_fb_pos::<{ u64::MAX }>("18446744073709551615".as_bytes())
+            .unwrap()
+            .0,
         u64::MAX
     );
 
@@ -389,14 +394,17 @@ fn test_parse_fb_neg() {
         panic!("error");
     }
 
-    assert_eq!(parse_fb_neg::<{ i64::MIN }>("0".as_bytes()).unwrap(), 0_i64);
+    assert_eq!(
+        parse_fb_neg::<{ i64::MIN }>("0".as_bytes()).unwrap().0,
+        0_i64
+    );
 
     let mut s = String::with_capacity(20);
     for i in '1'..='9' {
         test_each_position_fb_neg::<{ i64::MIN }>(&s);
         s.push(i);
         assert_eq!(
-            parse_fb_neg::<{ i64::MIN }>(s.as_bytes()).unwrap(),
+            parse_fb_neg::<{ i64::MIN }>(s.as_bytes()).unwrap().0,
             -s.parse::<i64>().unwrap()
         );
     }
@@ -404,13 +412,15 @@ fn test_parse_fb_neg() {
         test_each_position_fb_neg::<{ i64::MIN }>(&s);
         s.push(i);
         assert_eq!(
-            parse_fb_neg::<{ i64::MIN }>(s.as_bytes()).unwrap(),
+            parse_fb_neg::<{ i64::MIN }>(s.as_bytes()).unwrap().0,
             -s.parse::<i64>().unwrap()
         );
     }
 
     assert_eq!(
-        parse_fb_neg::<{ i64::MIN }>("9223372036854775808".as_bytes()).unwrap(),
+        parse_fb_neg::<{ i64::MIN }>("9223372036854775808".as_bytes())
+            .unwrap()
+            .0,
         i64::MIN
     );
 

@@ -6,7 +6,8 @@ pub enum AtoiSimdError<'a> {
     Empty,
     Size(usize, &'a [u8]),
     Overflow(ParseType, &'a [u8]),
-    Invalid(&'a [u8]),
+    Invalid64(u64, usize),
+    Invalid128(u128, usize),
     I64Min,
 }
 
@@ -28,11 +29,11 @@ impl fmt::Display for AtoiSimdError<'_> {
                     from_utf8(val).unwrap_or("not string")
                 )
             }
-            Self::Invalid(val) => {
+            Self::Invalid64(_, index) | Self::Invalid128(_, index) => {
                 write!(
                     f,
-                    "atoi_simd invalid, it must contain only digits: {}",
-                    from_utf8(val).unwrap_or("not string")
+                    "atoi_simd invalid at index: {} it must contain only digits",
+                    index,
                 )
             }
             Self::I64Min => write!(f, "atoi_simd i64::min"), // internal error
