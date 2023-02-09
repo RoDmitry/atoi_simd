@@ -1,11 +1,11 @@
-use crate::ParseType;
 use std::{fmt, str::from_utf8};
 
 #[derive(Debug, Clone, Copy)]
 pub enum AtoiSimdError<'a> {
     Empty,
     Size(usize, &'a [u8]),
-    Overflow(ParseType, &'a [u8]),
+    Overflow64(u64, &'a [u8]),
+    Overflow128(u128, &'a [u8]),
     Invalid64(u64, usize),
     Invalid128(u128, usize),
     I64Min,
@@ -21,11 +21,19 @@ impl fmt::Display for AtoiSimdError<'_> {
                 len,
                 from_utf8(val).unwrap_or("not string")
             ),
-            Self::Overflow(t, val) => {
+            Self::Overflow64(max, val) => {
                 write!(
                     f,
-                    "atoi_simd {:?} overflow: {}",
-                    t,
+                    "atoi_simd max: {:?} overflow: {}",
+                    max,
+                    from_utf8(val).unwrap_or("not string")
+                )
+            }
+            Self::Overflow128(max, val) => {
+                write!(
+                    f,
+                    "atoi_simd max: {:?} overflow: {}",
+                    max,
                     from_utf8(val).unwrap_or("not string")
                 )
             }

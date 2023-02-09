@@ -29,20 +29,6 @@
 #![allow(clippy::comparison_chain)]
 #![allow(clippy::collapsible_else_if)]
 
-/// Not for public use.
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum ParseType {
-    I64,
-    I64Neg,
-    I32,
-    I32Neg,
-    I16,
-    I16Neg,
-    I8,
-    I8Neg,
-    None,
-}
-
 mod error;
 mod fallback;
 mod simd;
@@ -62,7 +48,7 @@ fn parse_i8_neg(s: &[u8]) -> Result<i8, AtoiSimdError> {
         && cfg!(target_feature = "avx")
         && cfg!(target_feature = "avx2")
     {
-        parse_simd_i8_neg(s)
+        parse_simd_neg::<{ i8::MIN as i64 }>(s).map(|v| v as i8)
     } else {
         parse_fb_neg::<{ i8::MIN as i64 }>(s).map(|(v, _)| v as i8)
     }
@@ -80,7 +66,7 @@ fn parse_i8(s: &[u8]) -> Result<i8, AtoiSimdError> {
             && cfg!(target_feature = "avx")
             && cfg!(target_feature = "avx2")
         {
-            parse_simd_u8(s, ParseType::I8).map(|v| v as i8)
+            parse_simd::<{ i8::MAX as u64 }>(s).map(|v| v as i8)
         } else {
             parse_fb_pos::<{ i8::MAX as u64 }>(s).map(|(v, _)| v as i8)
         }
@@ -96,7 +82,7 @@ fn parse_i16_neg(s: &[u8]) -> Result<i16, AtoiSimdError> {
         && cfg!(target_feature = "avx")
         && cfg!(target_feature = "avx2")
     {
-        parse_simd_i16_neg(s)
+        parse_simd_neg::<{ i16::MIN as i64 }>(s).map(|v| v as i16)
     } else {
         parse_fb_neg::<{ i16::MIN as i64 }>(s).map(|(v, _)| v as i16)
     }
@@ -114,7 +100,7 @@ fn parse_i16(s: &[u8]) -> Result<i16, AtoiSimdError> {
             && cfg!(target_feature = "avx")
             && cfg!(target_feature = "avx2")
         {
-            parse_simd_u16(s, ParseType::I16).map(|v| v as i16)
+            parse_simd::<{ i16::MAX as u64 }>(s).map(|v| v as i16)
         } else {
             parse_fb_pos::<{ i16::MAX as u64 }>(s).map(|(v, _)| v as i16)
         }
@@ -130,7 +116,7 @@ fn parse_i32_neg(s: &[u8]) -> Result<i32, AtoiSimdError> {
         && cfg!(target_feature = "avx")
         && cfg!(target_feature = "avx2")
     {
-        parse_simd_i32_neg(s)
+        parse_simd_neg::<{ i32::MIN as i64 }>(s).map(|v| v as i32)
     } else {
         parse_fb_neg::<{ i32::MIN as i64 }>(s).map(|(v, _)| v as i32)
     }
@@ -148,7 +134,7 @@ fn parse_i32(s: &[u8]) -> Result<i32, AtoiSimdError> {
             && cfg!(target_feature = "avx")
             && cfg!(target_feature = "avx2")
         {
-            parse_simd_u32(s, ParseType::I32).map(|v| v as i32)
+            parse_simd::<{ i32::MAX as u64 }>(s).map(|v| v as i32)
         } else {
             parse_fb_pos::<{ i32::MAX as u64 }>(s).map(|(v, _)| v as i32)
         }
@@ -186,7 +172,7 @@ fn parse_i64(s: &[u8]) -> Result<i64, AtoiSimdError> {
             && cfg!(target_feature = "avx")
             && cfg!(target_feature = "avx2")
         {
-            unsafe { parse_simd_u64(s, ParseType::I64).map(|v| v as i64) }
+            parse_simd_i64(s).map(|v| v as i64)
         } else {
             parse_fb_pos::<{ i64::MAX as u64 }>(s).map(|(v, _)| v as i64)
         }
@@ -202,7 +188,7 @@ fn parse_i128_neg(s: &[u8]) -> Result<i128, AtoiSimdError> {
         && cfg!(target_feature = "avx")
         && cfg!(target_feature = "avx2")
     {
-        unsafe { parse_simd_u128(s).map(|v| -(v as i128)) }
+        unsafe { parse_simd_avx(s).map(|v| -(v as i128)) }
     } else {
         parse_fb_128_neg(s).map(|(v, _)| v)
     }
@@ -224,7 +210,7 @@ fn parse_i128(s: &[u8]) -> Result<i128, AtoiSimdError> {
             && cfg!(target_feature = "avx")
             && cfg!(target_feature = "avx2")
         {
-            unsafe { parse_simd_u128(s).map(|v| v as i128) }
+            unsafe { parse_simd_avx(s).map(|v| v as i128) }
         } else {
             parse_fb_128_pos(s).map(|(v, _)| v as i128)
         }
@@ -251,7 +237,7 @@ pub trait ParserNeg<T> {
 impl Parser<u8> for u8 {
     #[inline]
     fn atoi_simd_parse(s: &[u8]) -> Result<u8, AtoiSimdError> {
-        parse_simd_u8(s, ParseType::None)
+        parse_simd::<{ u8::MAX as u64 }>(s).map(|v| v as u8)
     }
 
     #[inline]
@@ -314,7 +300,7 @@ impl ParserNeg<i8> for i8 {
 impl Parser<u16> for u16 {
     #[inline]
     fn atoi_simd_parse(s: &[u8]) -> Result<u16, AtoiSimdError> {
-        parse_simd_u16(s, ParseType::None)
+        parse_simd::<{ u16::MAX as u64 }>(s).map(|v| v as u16)
     }
 
     #[inline]
@@ -377,7 +363,7 @@ impl ParserNeg<i16> for i16 {
 impl Parser<u32> for u32 {
     #[inline]
     fn atoi_simd_parse(s: &[u8]) -> Result<u32, AtoiSimdError> {
-        parse_simd_u32(s, ParseType::None)
+        parse_simd::<{ u32::MAX as u64 }>(s).map(|v| v as u32)
     }
 
     #[inline]
@@ -441,13 +427,13 @@ impl Parser<usize> for usize {
     #[cfg(target_pointer_width = "32")]
     #[inline]
     fn atoi_simd_parse(s: &[u8]) -> Result<usize, AtoiSimdError> {
-        parse_simd_u32(s, ParseType::None).map(|v| v as usize)
+        parse_simd::<{ u32::MAX as u64 }>(s).map(|v| v as usize)
     }
 
     #[cfg(target_pointer_width = "64")]
     #[inline]
     fn atoi_simd_parse(s: &[u8]) -> Result<usize, AtoiSimdError> {
-        unsafe { parse_simd_u64(s, ParseType::None).map(|v| v as usize) }
+        parse_simd_u64(s).map(|v| v as usize)
     }
 
     #[inline]
@@ -465,16 +451,9 @@ impl Parser<usize> for usize {
     target_feature = "avx2"
 )))]
 impl Parser<usize> for usize {
-    #[cfg(target_pointer_width = "32")]
     #[inline]
     fn atoi_simd_parse(s: &[u8]) -> Result<usize, AtoiSimdError> {
-        parse_fb_pos::<{ u32::MAX as u64 }>(s).map(|(v, _)| v as usize)
-    }
-
-    #[cfg(target_pointer_width = "64")]
-    #[inline]
-    fn atoi_simd_parse(s: &[u8]) -> Result<usize, AtoiSimdError> {
-        parse_fb_pos::<{ u64::MAX }>(s).map(|(v, _)| v as usize)
+        parse_fb_pos::<{ usize::MAX as u64 }>(s).map(|(v, _)| v as usize)
     }
 
     #[inline]
@@ -531,7 +510,7 @@ impl ParserNeg<isize> for isize {
 impl Parser<u64> for u64 {
     #[inline]
     fn atoi_simd_parse(s: &[u8]) -> Result<u64, AtoiSimdError> {
-        unsafe { parse_simd_u64(s, ParseType::None) }
+        parse_simd_u64(s)
     }
 
     #[inline]
@@ -594,7 +573,7 @@ impl ParserNeg<i64> for i64 {
 impl Parser<u128> for u128 {
     #[inline]
     fn atoi_simd_parse(s: &[u8]) -> Result<u128, AtoiSimdError> {
-        unsafe { parse_simd_u128(s) }
+        unsafe { parse_simd_avx(s) }
     }
 
     #[inline]

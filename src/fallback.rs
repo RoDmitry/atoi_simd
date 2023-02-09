@@ -1,4 +1,4 @@
-use crate::{AtoiSimdError, ParseType};
+use crate::AtoiSimdError;
 
 macro_rules! overflow {
     ($a:ident * 10 + $b:ident, $c:expr) => {
@@ -31,7 +31,7 @@ pub(crate) fn parse_fb_pos<const MAX: u64>(s: &[u8]) -> Result<(u64, usize), Ato
                         let digit = (c & 0xF) as u64;
 
                         if overflow!(res * 10 + digit, MAX) {
-                            return Err(AtoiSimdError::Overflow(ParseType::None, s));
+                            return Err(AtoiSimdError::Overflow64(MAX, s));
                         }
 
                         res = res * 10 + digit;
@@ -61,7 +61,7 @@ pub(crate) fn parse_fb_neg<const MIN: i64>(s: &[u8]) -> Result<(i64, usize), Ato
                         let digit = (c & 0xF) as i64;
 
                         if overflow_neg!(res * 10 - digit, MIN) {
-                            return Err(AtoiSimdError::Overflow(ParseType::I64Neg, s));
+                            return Err(AtoiSimdError::Overflow64(MIN as u64, s));
                         }
 
                         res = res * 10 - digit;
@@ -91,7 +91,7 @@ pub(crate) fn parse_fb_128_pos(s: &[u8]) -> Result<(u128, usize), AtoiSimdError>
                         let digit = (c & 0xF) as u128;
 
                         if overflow!(res * 10 + digit, u128::MAX) {
-                            return Err(AtoiSimdError::Overflow(ParseType::None, s));
+                            return Err(AtoiSimdError::Overflow128(u128::MAX, s));
                         }
 
                         res = res * 10 + digit;
@@ -121,7 +121,7 @@ pub(crate) fn parse_fb_128_neg(s: &[u8]) -> Result<(i128, usize), AtoiSimdError>
                         let digit = (c & 0xF) as i128;
 
                         if overflow_neg!(res * 10 - digit, i128::MIN) {
-                            return Err(AtoiSimdError::Overflow(ParseType::None, s));
+                            return Err(AtoiSimdError::Overflow128(i128::MIN as u128, s));
                         }
 
                         res = res * 10 - digit;
