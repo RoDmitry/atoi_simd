@@ -508,11 +508,11 @@ pub(crate) fn parse_simd_u64(s: &[u8]) -> Result<(u64, usize), AtoiSimdError> {
     let len = s.len();
     if len < 17 {
         return unsafe { parse_simd_sse(s, 0) };
-    } else if len > 20 {
-        return Err(AtoiSimdError::Size(len, s));
     }
     let (res, len) = unsafe { parse_simd_u128(s)? };
-    if len == 20 && res > u64::MAX as u128 {
+    if len > 20 {
+        return Err(AtoiSimdError::Size(len, s));
+    } else if len == 20 && res > u64::MAX as u128 {
         return Err(AtoiSimdError::Overflow64(u64::MAX, s));
     }
     Ok((res as u64, len))
@@ -538,11 +538,11 @@ pub(crate) fn parse_simd_i64(s: &[u8]) -> Result<(i64, usize), AtoiSimdError> {
     let len = s.len();
     if len < 17 {
         return unsafe { parse_simd_sse(s, 0).map(|(v, i)| (v as i64, i)) };
-    } else if len > 19 {
-        return Err(AtoiSimdError::Size(len, s));
     }
     let (res, len) = unsafe { parse_simd_u128(s)? };
-    if len == 19 && res > i64::MAX as u128 {
+    if len > 19 {
+        return Err(AtoiSimdError::Size(len, s));
+    } else if len == 19 && res > i64::MAX as u128 {
         return Err(AtoiSimdError::Overflow64(i64::MAX as u64, s));
     }
     Ok((res as i64, len))
@@ -568,11 +568,11 @@ pub(crate) fn parse_simd_i64_neg(s: &[u8]) -> Result<(i64, usize), AtoiSimdError
     let len = s.len();
     if len < 17 {
         return unsafe { parse_simd_sse(s, 0).map(|(v, i)| (-(v as i64), i)) };
-    } else if len > 19 {
-        return Err(AtoiSimdError::Size(len, s));
     }
     let (res, len) = unsafe { parse_simd_u128(s)? };
-    if len == 19 {
+    if len > 19 {
+        return Err(AtoiSimdError::Size(len, s));
+    } else if len == 19 {
         let min = -(i64::MIN as i128) as u128;
         if res > min {
             return Err(AtoiSimdError::Overflow64(i64::MIN as u64, s));

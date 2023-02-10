@@ -754,14 +754,125 @@ fn test_parse_until_invalid() {
     let tmp = parse_until_invalid::<u128>("1234s".as_bytes()).unwrap();
     assert_eq!(tmp, (1234_u128, 4));
 
-    let tmp = parse_until_invalid::<u128>("12345678901234567890s".as_bytes()).unwrap();
-    assert_eq!(tmp, (12345678901234567890_u128, 20));
-
     let tmp = parse_until_invalid::<i128>("-1234s".as_bytes()).unwrap();
     assert_eq!(tmp, (-1234_i128, 5));
 
+    let tmp = parse_until_invalid::<u128>("12345678901234567890s".as_bytes()).unwrap();
+    assert_eq!(tmp, (12345678901234567890_u128, 20));
+
     let tmp = parse_until_invalid::<i128>("-12345678901234567890s".as_bytes()).unwrap();
     assert_eq!(tmp, (-12345678901234567890_i128, 21));
+
+    let tmp = parse_until_invalid::<u64>(
+        "12345678901234567890s11111111111111111111111111111111111111111111111111111111111111"
+            .as_bytes(),
+    )
+    .unwrap();
+    assert_eq!(tmp, (12345678901234567890_u64, 20));
+
+    let tmp = parse_until_invalid::<i64>(
+        "-1234567890123456789s11111111111111111111111111111111111111111111111111111111111111"
+            .as_bytes(),
+    )
+    .unwrap();
+    assert_eq!(tmp, (-1234567890123456789_i64, 20));
+
+    let tmp = parse_until_invalid::<u128>(
+        "12345678901234567890s11111111111111111111111111111111111111111111111111111111111111"
+            .as_bytes(),
+    )
+    .unwrap();
+    assert_eq!(tmp, (12345678901234567890_u128, 20));
+
+    let tmp = parse_until_invalid::<i128>(
+        "-12345678901234567890s11111111111111111111111111111111111111111111111111111111111111"
+            .as_bytes(),
+    )
+    .unwrap();
+    assert_eq!(tmp, (-12345678901234567890_i128, 21));
+
+    assert_eq!(
+        parse_until_invalid::<u64>("18446744073709551615".as_bytes()).unwrap(),
+        (u64::MAX, 20)
+    );
+
+    if parse_until_invalid::<u64>("18446744073709551616".as_bytes()).is_ok() {
+        panic!("error");
+    }
+
+    if parse_until_invalid::<u64>("99999999999999999999".as_bytes()).is_ok() {
+        panic!("error");
+    }
+
+    assert_eq!(
+        parse_until_invalid::<i64>("9223372036854775807".as_bytes()).unwrap(),
+        (i64::MAX, 19)
+    );
+
+    if parse_until_invalid::<i64>("9223372036854775808".as_bytes()).is_ok() {
+        panic!("error");
+    }
+
+    assert_eq!(
+        parse_until_invalid::<i64>("-9223372036854775808".as_bytes()).unwrap(),
+        (i64::MIN, 20)
+    );
+
+    if parse_until_invalid::<i64>("-9223372036854775809".as_bytes()).is_ok() {
+        panic!("error");
+    }
+
+    if parse_until_invalid::<i64>("18446744073709551615".as_bytes()).is_ok() {
+        panic!("error");
+    }
+
+    if parse_until_invalid::<i64>("99999999999999999999".as_bytes()).is_ok() {
+        panic!("error");
+    }
+
+    if parse_until_invalid::<i64>("-99999999999999999999".as_bytes()).is_ok() {
+        panic!("error");
+    }
+
+    assert_eq!(
+        parse_until_invalid::<u128>("9999999999999999".as_bytes()).unwrap(),
+        (9_999_999_999_999_999_u128, 16)
+    );
+
+    assert_eq!(
+        parse_until_invalid::<u128>("12345678901234567890123456789012".as_bytes()).unwrap(),
+        (1234567890_1234567890_1234567890_12_u128, 32)
+    );
+
+    assert_eq!(
+        parse_until_invalid::<i128>("-9999999999999999".as_bytes()).unwrap(),
+        (-9_999_999_999_999_999_i128, 17)
+    );
+
+    assert_eq!(
+        parse_until_invalid::<i128>("9999999999999999".as_bytes()).unwrap(),
+        (9_999_999_999_999_999_i128, 16)
+    );
+
+    assert_eq!(
+        parse_until_invalid::<i128>("-99999999999999999999999999999999".as_bytes()).unwrap(),
+        (-99_999_999_999_999_999_999_999_999_999_999_i128, 33)
+    );
+
+    assert_eq!(
+        parse_until_invalid::<i128>("99999999999999999999999999999999".as_bytes()).unwrap(),
+        (99_999_999_999_999_999_999_999_999_999_999_i128, 32)
+    );
+
+    assert_eq!(
+        parse_until_invalid::<i128>("12345678901234567890123456789012".as_bytes()).unwrap(),
+        (1234567890_1234567890_1234567890_12_i128, 32)
+    );
+
+    assert_eq!(
+        parse_until_invalid::<i128>("-12345678901234567890123456789012".as_bytes()).unwrap(),
+        (-1234567890_1234567890_1234567890_12_i128, 33)
+    );
 }
 
 #[test]
