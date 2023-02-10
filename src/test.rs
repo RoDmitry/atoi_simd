@@ -1,4 +1,5 @@
 use super::*;
+use crate::fallback::*;
 
 const INVALID_CHARS: [&str; 6] = ["/", ":", "\0", "\x7f", "!", "a"];
 
@@ -30,11 +31,11 @@ fn test_each_position_u64(s: &str) {
 }
 
 fn test_each_position_fb_pos<const MAX: u64>(s: &str) {
-    test_each_position(s, |s_new| parse_fb_pos::<MAX>(s_new))
+    test_each_position(s, |s_new| parse_fb_checked_pos::<MAX>(s_new))
 }
 
 fn test_each_position_fb_neg<const MIN: i64>(s: &str) {
-    test_each_position(s, |s_new| parse_fb_neg::<MIN>(s_new))
+    test_each_position(s, |s_new| parse_fb_checked_neg::<MIN>(s_new))
 }
 
 #[test]
@@ -339,12 +340,12 @@ fn test_parse_u64() {
 
 #[test]
 fn test_parse_fb_pos() {
-    if parse_fb_pos::<{ u64::MAX }>("".as_bytes()).is_ok() {
+    if parse_fb_checked_pos::<{ u64::MAX }>("".as_bytes()).is_ok() {
         panic!("error");
     }
 
     assert_eq!(
-        parse_fb_pos::<{ u64::MAX }>("0".as_bytes()).unwrap().0,
+        parse_fb_checked_pos::<{ u64::MAX }>("0".as_bytes()).unwrap(),
         0_u64
     );
 
@@ -353,7 +354,7 @@ fn test_parse_fb_pos() {
         test_each_position_fb_pos::<{ u64::MAX }>(&s);
         s.push(i);
         assert_eq!(
-            parse_fb_pos::<{ u64::MAX }>(s.as_bytes()).unwrap().0,
+            parse_fb_checked_pos::<{ u64::MAX }>(s.as_bytes()).unwrap(),
             s.parse::<u64>().unwrap()
         );
     }
@@ -361,41 +362,39 @@ fn test_parse_fb_pos() {
         test_each_position_fb_pos::<{ u64::MAX }>(&s);
         s.push(i);
         assert_eq!(
-            parse_fb_pos::<{ u64::MAX }>(s.as_bytes()).unwrap().0,
+            parse_fb_checked_pos::<{ u64::MAX }>(s.as_bytes()).unwrap(),
             s.parse::<u64>().unwrap()
         );
     }
     test_each_position_fb_pos::<{ u64::MAX }>(&s);
     s.push('0');
     assert_eq!(
-        parse_fb_pos::<{ u64::MAX }>(s.as_bytes()).unwrap().0,
+        parse_fb_checked_pos::<{ u64::MAX }>(s.as_bytes()).unwrap(),
         s.parse::<u64>().unwrap()
     );
 
     assert_eq!(
-        parse_fb_pos::<{ u64::MAX }>("18446744073709551615".as_bytes())
-            .unwrap()
-            .0,
+        parse_fb_checked_pos::<{ u64::MAX }>("18446744073709551615".as_bytes()).unwrap(),
         u64::MAX
     );
 
-    if parse_fb_pos::<{ u64::MAX }>("18446744073709551616".as_bytes()).is_ok() {
+    if parse_fb_checked_pos::<{ u64::MAX }>("18446744073709551616".as_bytes()).is_ok() {
         panic!("error");
     }
 
-    if parse_fb_pos::<{ u64::MAX }>("99999999999999999999".as_bytes()).is_ok() {
+    if parse_fb_checked_pos::<{ u64::MAX }>("99999999999999999999".as_bytes()).is_ok() {
         panic!("error");
     }
 }
 
 #[test]
 fn test_parse_fb_neg() {
-    if parse_fb_neg::<{ i64::MIN }>("".as_bytes()).is_ok() {
+    if parse_fb_checked_neg::<{ i64::MIN }>("".as_bytes()).is_ok() {
         panic!("error");
     }
 
     assert_eq!(
-        parse_fb_neg::<{ i64::MIN }>("0".as_bytes()).unwrap().0,
+        parse_fb_checked_neg::<{ i64::MIN }>("0".as_bytes()).unwrap(),
         0_i64
     );
 
@@ -404,7 +403,7 @@ fn test_parse_fb_neg() {
         test_each_position_fb_neg::<{ i64::MIN }>(&s);
         s.push(i);
         assert_eq!(
-            parse_fb_neg::<{ i64::MIN }>(s.as_bytes()).unwrap().0,
+            parse_fb_checked_neg::<{ i64::MIN }>(s.as_bytes()).unwrap(),
             -s.parse::<i64>().unwrap()
         );
     }
@@ -412,23 +411,21 @@ fn test_parse_fb_neg() {
         test_each_position_fb_neg::<{ i64::MIN }>(&s);
         s.push(i);
         assert_eq!(
-            parse_fb_neg::<{ i64::MIN }>(s.as_bytes()).unwrap().0,
+            parse_fb_checked_neg::<{ i64::MIN }>(s.as_bytes()).unwrap(),
             -s.parse::<i64>().unwrap()
         );
     }
 
     assert_eq!(
-        parse_fb_neg::<{ i64::MIN }>("9223372036854775808".as_bytes())
-            .unwrap()
-            .0,
+        parse_fb_checked_neg::<{ i64::MIN }>("9223372036854775808".as_bytes()).unwrap(),
         i64::MIN
     );
 
-    if parse_fb_neg::<{ i64::MIN }>("9223372036854775809".as_bytes()).is_ok() {
+    if parse_fb_checked_neg::<{ i64::MIN }>("9223372036854775809".as_bytes()).is_ok() {
         panic!("error");
     }
 
-    if parse_fb_neg::<{ i64::MIN }>("99999999999999999999".as_bytes()).is_ok() {
+    if parse_fb_checked_neg::<{ i64::MIN }>("99999999999999999999".as_bytes()).is_ok() {
         panic!("error");
     }
 }
@@ -684,4 +681,145 @@ fn test_parse_types() {
 
     let tmp: i128 = parse("-999999".as_bytes()).unwrap();
     assert_eq!(tmp, -999999_i128);
+}
+
+#[test]
+fn test_parse_pos() {
+    let tmp: i8 = parse_pos("123".as_bytes()).unwrap();
+    assert_eq!(tmp, 123_i8);
+
+    let tmp: i16 = parse_pos("1234".as_bytes()).unwrap();
+    assert_eq!(tmp, 1234_i16);
+
+    let tmp: i32 = parse_pos("1234".as_bytes()).unwrap();
+    assert_eq!(tmp, 1234_i32);
+
+    let tmp: isize = parse_pos("1234".as_bytes()).unwrap();
+    assert_eq!(tmp, 1234_isize);
+
+    let tmp: i64 = parse_pos("1234".as_bytes()).unwrap();
+    assert_eq!(tmp, 1234_i64);
+
+    let tmp: i128 = parse_pos("999999".as_bytes()).unwrap();
+    assert_eq!(tmp, 999999_i128);
+}
+
+#[test]
+fn test_parse_neg() {
+    let tmp: i8 = parse_neg("123".as_bytes()).unwrap();
+    assert_eq!(tmp, -123_i8);
+
+    let tmp: i16 = parse_neg("1234".as_bytes()).unwrap();
+    assert_eq!(tmp, -1234_i16);
+
+    let tmp: i32 = parse_neg("1234".as_bytes()).unwrap();
+    assert_eq!(tmp, -1234_i32);
+
+    let tmp: isize = parse_neg("1234".as_bytes()).unwrap();
+    assert_eq!(tmp, -1234_isize);
+
+    let tmp: i64 = parse_neg("1234".as_bytes()).unwrap();
+    assert_eq!(tmp, -1234_i64);
+
+    let tmp: i128 = parse_neg("999999".as_bytes()).unwrap();
+    assert_eq!(tmp, -999999_i128);
+}
+
+#[test]
+fn test_parse_until_invalid() {
+    let tmp = parse_until_invalid::<u8>("123s".as_bytes()).unwrap();
+    assert_eq!(tmp, (123_u8, 3));
+
+    let tmp = parse_until_invalid::<i8>("-123s".as_bytes()).unwrap();
+    assert_eq!(tmp, (-123_i8, 4));
+
+    let tmp = parse_until_invalid::<u16>("1234s".as_bytes()).unwrap();
+    assert_eq!(tmp, (1234_u16, 4));
+
+    let tmp = parse_until_invalid::<i16>("-1234s".as_bytes()).unwrap();
+    assert_eq!(tmp, (-1234_i16, 5));
+
+    let tmp = parse_until_invalid::<u32>("1234s".as_bytes()).unwrap();
+    assert_eq!(tmp, (1234_u32, 4));
+
+    let tmp = parse_until_invalid::<i32>("-1234s".as_bytes()).unwrap();
+    assert_eq!(tmp, (-1234_i32, 5));
+
+    let tmp = parse_until_invalid::<u64>("1234s".as_bytes()).unwrap();
+    assert_eq!(tmp, (1234_u64, 4));
+
+    let tmp = parse_until_invalid::<i64>("-1234s".as_bytes()).unwrap();
+    assert_eq!(tmp, (-1234_i64, 5));
+
+    let tmp = parse_until_invalid::<u128>("1234s".as_bytes()).unwrap();
+    assert_eq!(tmp, (1234_u128, 4));
+
+    let tmp = parse_until_invalid::<u128>("12345678901234567890s".as_bytes()).unwrap();
+    assert_eq!(tmp, (12345678901234567890_u128, 20));
+
+    let tmp = parse_until_invalid::<i128>("-1234s".as_bytes()).unwrap();
+    assert_eq!(tmp, (-1234_i128, 5));
+
+    let tmp = parse_until_invalid::<i128>("-12345678901234567890s".as_bytes()).unwrap();
+    assert_eq!(tmp, (-12345678901234567890_i128, 21));
+}
+
+#[test]
+fn test_parse_until_invalid_pos() {
+    let tmp = parse_until_invalid_pos::<u8>("123s".as_bytes()).unwrap();
+    assert_eq!(tmp, (123_u8, 3));
+
+    let tmp = parse_until_invalid_pos::<i8>("123s".as_bytes()).unwrap();
+    assert_eq!(tmp, (123_i8, 3));
+
+    let tmp = parse_until_invalid_pos::<u16>("1234s".as_bytes()).unwrap();
+    assert_eq!(tmp, (1234_u16, 4));
+
+    let tmp = parse_until_invalid_pos::<i16>("1234s".as_bytes()).unwrap();
+    assert_eq!(tmp, (1234_i16, 4));
+
+    let tmp = parse_until_invalid_pos::<u32>("1234s".as_bytes()).unwrap();
+    assert_eq!(tmp, (1234_u32, 4));
+
+    let tmp = parse_until_invalid_pos::<i32>("1234s".as_bytes()).unwrap();
+    assert_eq!(tmp, (1234_i32, 4));
+
+    let tmp = parse_until_invalid_pos::<u64>("1234s".as_bytes()).unwrap();
+    assert_eq!(tmp, (1234_u64, 4));
+
+    let tmp = parse_until_invalid_pos::<i64>("1234s".as_bytes()).unwrap();
+    assert_eq!(tmp, (1234_i64, 4));
+
+    let tmp = parse_until_invalid_pos::<u128>("1234s".as_bytes()).unwrap();
+    assert_eq!(tmp, (1234_u128, 4));
+
+    let tmp = parse_until_invalid_pos::<u128>("12345678901234567890s".as_bytes()).unwrap();
+    assert_eq!(tmp, (12345678901234567890_u128, 20));
+
+    let tmp = parse_until_invalid_pos::<i128>("1234s".as_bytes()).unwrap();
+    assert_eq!(tmp, (1234_i128, 4));
+
+    let tmp = parse_until_invalid_pos::<i128>("12345678901234567890s".as_bytes()).unwrap();
+    assert_eq!(tmp, (12345678901234567890_i128, 20));
+}
+
+#[test]
+fn test_parse_until_invalid_neg() {
+    let tmp = parse_until_invalid_neg::<i8>("123s".as_bytes()).unwrap();
+    assert_eq!(tmp, (-123_i8, 3));
+
+    let tmp = parse_until_invalid_neg::<i16>("1234s".as_bytes()).unwrap();
+    assert_eq!(tmp, (-1234_i16, 4));
+
+    let tmp = parse_until_invalid_neg::<i32>("1234s".as_bytes()).unwrap();
+    assert_eq!(tmp, (-1234_i32, 4));
+
+    let tmp = parse_until_invalid_neg::<i64>("1234s".as_bytes()).unwrap();
+    assert_eq!(tmp, (-1234_i64, 4));
+
+    let tmp = parse_until_invalid_neg::<i128>("1234s".as_bytes()).unwrap();
+    assert_eq!(tmp, (-1234_i128, 4));
+
+    let tmp = parse_until_invalid_neg::<i128>("12345678901234567890s".as_bytes()).unwrap();
+    assert_eq!(tmp, (-12345678901234567890_i128, 20));
 }

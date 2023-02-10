@@ -8,7 +8,6 @@ pub enum AtoiSimdError<'a> {
     Overflow128(u128, &'a [u8]),
     Invalid64(u64, usize),
     Invalid128(u128, usize),
-    I64Min,
 }
 
 impl fmt::Display for AtoiSimdError<'_> {
@@ -24,7 +23,7 @@ impl fmt::Display for AtoiSimdError<'_> {
             Self::Overflow64(max, val) => {
                 write!(
                     f,
-                    "atoi_simd max: {:?} overflow: {}",
+                    "atoi_simd overflow, max value: {} input: {}",
                     max,
                     from_utf8(val).unwrap_or("not string")
                 )
@@ -32,19 +31,25 @@ impl fmt::Display for AtoiSimdError<'_> {
             Self::Overflow128(max, val) => {
                 write!(
                     f,
-                    "atoi_simd max: {:?} overflow: {}",
+                    "atoi_simd overflow, max value: {} input: {}",
                     max,
                     from_utf8(val).unwrap_or("not string")
                 )
             }
-            Self::Invalid64(_, index) | Self::Invalid128(_, index) => {
+            Self::Invalid64(val, index) => {
                 write!(
                     f,
-                    "atoi_simd invalid at index: {} it must contain only digits",
-                    index,
+                    "atoi_simd invalid at index: {} it must contain only digits, starting with: {}",
+                    index, val,
                 )
             }
-            Self::I64Min => write!(f, "atoi_simd i64::min"), // internal error
+            Self::Invalid128(val, index) => {
+                write!(
+                    f,
+                    "atoi_simd invalid at index: {} it must contain only digits, starting with: {}",
+                    index, val,
+                )
+            }
         }
     }
 }

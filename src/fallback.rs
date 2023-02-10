@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use crate::AtoiSimdError;
 
 macro_rules! overflow {
@@ -37,12 +39,12 @@ pub(crate) fn parse_fb_pos<const MAX: u64>(s: &[u8]) -> Result<(u64, usize), Ato
                         res = res * 10 + digit;
                         i += 1;
                     }
-                    _ => return Err(AtoiSimdError::Invalid64(res, i)),
+                    _ => return Ok((res, i)),
                 }
             }
             Ok((res, i))
         }
-        _ => Err(AtoiSimdError::Invalid64(0, i)),
+        _ => Err(AtoiSimdError::Empty),
     }
 }
 
@@ -67,12 +69,12 @@ pub(crate) fn parse_fb_neg<const MIN: i64>(s: &[u8]) -> Result<(i64, usize), Ato
                         res = res * 10 - digit;
                         i += 1;
                     }
-                    _ => return Err(AtoiSimdError::Invalid64(res as u64, i)),
+                    _ => return Ok((res, i)),
                 }
             }
             Ok((res, i))
         }
-        _ => Err(AtoiSimdError::Invalid64(0, i)),
+        _ => Err(AtoiSimdError::Empty),
     }
 }
 
@@ -97,12 +99,12 @@ pub(crate) fn parse_fb_128_pos(s: &[u8]) -> Result<(u128, usize), AtoiSimdError>
                         res = res * 10 + digit;
                         i += 1;
                     }
-                    _ => return Err(AtoiSimdError::Invalid128(res, i)),
+                    _ => return Ok((res, i)),
                 }
             }
             Ok((res, i))
         }
-        _ => Err(AtoiSimdError::Invalid128(0, i)),
+        _ => Err(AtoiSimdError::Empty),
     }
 }
 
@@ -127,43 +129,43 @@ pub(crate) fn parse_fb_128_neg(s: &[u8]) -> Result<(i128, usize), AtoiSimdError>
                         res = res * 10 - digit;
                         i += 1;
                     }
-                    _ => return Err(AtoiSimdError::Invalid128(res as u128, i)),
+                    _ => return Ok((res, i)),
                 }
             }
             Ok((res, i))
         }
-        _ => Err(AtoiSimdError::Invalid128(0, i)),
+        _ => Err(AtoiSimdError::Empty),
     }
 }
 
-pub(crate) fn parse_fb_until_invalid_pos<const MAX: u64>(
-    s: &[u8],
-) -> Result<(u64, usize), AtoiSimdError> {
-    match parse_fb_pos::<MAX>(s) {
-        Err(AtoiSimdError::Invalid64(res, i)) => Ok((res, i)),
-        res => res,
+pub(crate) fn parse_fb_checked_pos<const MAX: u64>(s: &[u8]) -> Result<u64, AtoiSimdError> {
+    let (res, len) = parse_fb_pos::<{ MAX }>(s)?;
+    if len < s.len() {
+        return Err(AtoiSimdError::Invalid64(res, len));
     }
+    Ok(res)
 }
 
-pub(crate) fn parse_fb_until_invalid_neg<const MIN: i64>(
-    s: &[u8],
-) -> Result<(i64, usize), AtoiSimdError> {
-    match parse_fb_neg::<MIN>(s) {
-        Err(AtoiSimdError::Invalid64(res, i)) => Ok((res as i64, i)),
-        res => res,
+pub(crate) fn parse_fb_checked_neg<const MIN: i64>(s: &[u8]) -> Result<i64, AtoiSimdError> {
+    let (res, len) = parse_fb_neg::<{ MIN }>(s)?;
+    if len < s.len() {
+        return Err(AtoiSimdError::Invalid64(res as u64, len));
     }
+    Ok(res)
 }
 
-pub(crate) fn parse_fb_until_invalid_128_pos(s: &[u8]) -> Result<(u128, usize), AtoiSimdError> {
-    match parse_fb_128_pos(s) {
-        Err(AtoiSimdError::Invalid128(res, i)) => Ok((res, i)),
-        res => res,
+pub(crate) fn parse_fb_checked_128_pos(s: &[u8]) -> Result<u128, AtoiSimdError> {
+    let (res, len) = parse_fb_128_pos(s)?;
+    if len < s.len() {
+        return Err(AtoiSimdError::Invalid128(res, len));
     }
+    Ok(res)
 }
 
-pub(crate) fn parse_fb_until_invalid_128_neg(s: &[u8]) -> Result<(i128, usize), AtoiSimdError> {
-    match parse_fb_128_neg(s) {
-        Err(AtoiSimdError::Invalid128(res, i)) => Ok((res as i128, i)),
-        res => res,
+pub(crate) fn parse_fb_checked_128_neg(s: &[u8]) -> Result<i128, AtoiSimdError> {
+    let (res, len) = parse_fb_128_neg(s)?;
+    if len < s.len() {
+        return Err(AtoiSimdError::Invalid128(res as u128, len));
     }
+    Ok(res)
 }
