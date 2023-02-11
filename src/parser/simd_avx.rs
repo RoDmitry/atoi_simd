@@ -1,5 +1,5 @@
 use super::*;
-use crate::simd::*;
+use crate::simd_sse_avx::*;
 
 #[cfg(target_pointer_width = "64")]
 impl ParserPos<usize> for usize {

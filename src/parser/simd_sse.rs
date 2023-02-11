@@ -1,5 +1,5 @@
 use super::*;
-use crate::simd::*;
+use crate::simd_sse_avx::*;
 
 impl ParserPos<u8> for u8 {
     #[inline(always)]

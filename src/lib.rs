@@ -34,7 +34,7 @@
 mod error;
 mod fallback;
 mod parser;
-mod simd;
+mod simd_sse_avx;
 #[cfg(test)]
 mod test;
 
