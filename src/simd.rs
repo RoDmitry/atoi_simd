@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+use crate::fallback::{parse_fb_128_pos, parse_fb_pos};
 use crate::AtoiSimdError;
 #[cfg(target_arch = "x86")]
 use core::arch::x86::{
@@ -26,44 +27,44 @@ const CHAR_MAX: i8 = b'9' as i8;
 const CHAR_MIN: i8 = b'0' as i8;
 
 /// s = "1234567890123456"
-#[inline]
+#[inline(always)]
 unsafe fn read(s: &[u8]) -> __m128i {
     _mm_lddqu_si128(std::mem::transmute_copy(&s))
 }
 
-#[inline]
+#[inline(always)]
 unsafe fn read_avx(s: &[u8]) -> __m256i {
     _mm256_lddqu_si256(std::mem::transmute_copy(&s))
 }
 
 /// converts chars  [ 0x36353433323130393837363534333231 ]
 /// to numbers      [ 0x06050403020100090807060504030201 ]
-#[inline]
+#[inline(always)]
 unsafe fn to_numbers(chunk: __m128i) -> __m128i {
     let mult = _mm_set1_epi8(0xF);
 
     _mm_and_si128(chunk, mult)
 }
 
-#[inline]
+#[inline(always)]
 unsafe fn process_and(chunk: __m128i, lval: i64) -> __m128i {
     let mult = _mm_set_epi64x(0, lval);
 
     _mm_and_si128(chunk, mult)
 }
 
-#[inline]
+#[inline(always)]
 unsafe fn process_gt(cmp_left: __m128i, cmp_right: __m128i) -> __m128i {
     _mm_cmpgt_epi8(cmp_left, cmp_right)
 }
 
-#[inline]
+#[inline(always)]
 unsafe fn process_avx_gt(cmp_left: __m256i, cmp_right: __m256i) -> __m256i {
     _mm256_cmpgt_epi8(cmp_left, cmp_right)
 }
 
 /// combine numbers [ 0x0038 | 0x0022 | 0x000c | 0x005a | 0x004e | 0x0038 | 0x0022 | 0x000c ( 56 | 34 | 12 | 90 | 78 | 56 | 34 | 12 ) ]
-#[inline]
+#[inline(always)]
 unsafe fn mult_10(chunk: __m128i) -> __m128i {
     let mult = _mm_set_epi8(1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10);
 
@@ -71,7 +72,7 @@ unsafe fn mult_10(chunk: __m128i) -> __m128i {
 }
 
 /// combine again   [ 0x0000 | 0x0d80 | 0x0000 | 0x2334 | 0x0000 | 0x162e | 0x0000 | 0x04d2 ( 0 | 3456 | 0 | 9012 | 0 | 5678 | 0 | 1234) ]
-#[inline]
+#[inline(always)]
 unsafe fn mult_100(chunk: __m128i) -> __m128i {
     let mult = _mm_set_epi16(1, 100, 1, 100, 1, 100, 1, 100);
 
@@ -79,23 +80,23 @@ unsafe fn mult_100(chunk: __m128i) -> __m128i {
 }
 
 #[cfg(target_arch = "x86")]
-#[inline]
+#[inline(always)]
 unsafe fn to_u64(chunk: __m128i) -> u64 {
     std::mem::transmute::<__m128i, [u64; 2]>(chunk)[0]
 }
 
 #[cfg(target_arch = "x86_64")]
-#[inline]
+#[inline(always)]
 unsafe fn to_u64(chunk: __m128i) -> u64 {
     _mm_cvtsi128_si64(chunk) as u64
 }
 
-#[inline]
+#[inline(always)]
 unsafe fn to_u32x4(chunk: __m128i) -> [u32; 4] {
     std::mem::transmute(chunk)
 }
 
-#[inline]
+#[inline(always)]
 unsafe fn process_internal(mut chunk: __m128i) -> __m128i {
     chunk = mult_100(chunk);
 
@@ -109,21 +110,21 @@ unsafe fn process_internal(mut chunk: __m128i) -> __m128i {
     _mm_madd_epi16(chunk, mult)
 }
 
-#[inline]
+#[inline(always)]
 unsafe fn checker(check: __m128i, check2: __m128i) -> u32 {
     let chunk = _mm_or_si128(check, check2);
     let res = _mm_movemask_epi8(chunk);
     res.trailing_zeros()
 }
 
-#[inline]
+#[inline(always)]
 unsafe fn checker_avx(check: __m256i, check2: __m256i) -> u32 {
     let chunk = _mm256_or_si256(check, check2);
     let res = _mm256_movemask_epi8(chunk);
     res.trailing_zeros()
 }
 
-#[inline]
+#[inline(always)]
 unsafe fn process_small(mut chunk: __m128i) -> u64 {
     chunk = process_and(chunk, 0xF0F0F0F);
     chunk = mult_10(chunk);
@@ -134,7 +135,7 @@ unsafe fn process_small(mut chunk: __m128i) -> u64 {
     // std::mem::transmute::<__m128i, [u32; 4]>(chunk)[3] as u64 // same performance
 }
 
-#[inline]
+#[inline(always)]
 unsafe fn process_medium(mut chunk: __m128i) -> u64 {
     chunk = process_and(chunk, 0xF0F0F0F0F0F0F0F);
     chunk = mult_10(chunk);
@@ -144,7 +145,7 @@ unsafe fn process_medium(mut chunk: __m128i) -> u64 {
     to_u64(chunk)
 }
 
-#[inline]
+#[inline(always)]
 unsafe fn process_big(mut chunk: __m128i) -> u64 {
     chunk = to_numbers(chunk);
     chunk = mult_10(chunk);
@@ -159,32 +160,14 @@ unsafe fn process_big(mut chunk: __m128i) -> u64 {
 }
 
 /// Parses string of *only* digits
-#[target_feature(enable = "sse2,sse3,sse4.1,ssse3")]
-unsafe fn parse_simd_sse(s: &[u8], mut len: usize) -> Result<(u64, usize), AtoiSimdError> {
-    let mut chunk = read(s);
-    if len == 0 {
-        let cmp_high = _mm_set_epi8(
-            CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-            CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-        );
-        let cmp_low = _mm_set_epi8(
-            CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-            CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-        );
-        let check_high = process_gt(chunk, cmp_high);
-        let check_low = process_gt(cmp_low, chunk);
-
-        len = s.len().min(checker(check_high, check_low) as usize)
-    };
-
+/// Uses SSE intrinsics
+#[inline(always)]
+unsafe fn parse_simd_sse(
+    s: &[u8],
+    len: usize,
+    mut chunk: __m128i,
+) -> Result<(u64, usize), AtoiSimdError> {
     let res = match len {
-        0 => return Err(AtoiSimdError::Empty),
-        1 => match s[0] {
-            // somehow it works faster with extra validation
-            c @ b'0'..=b'9' => (c & 0xF) as u64,
-            _ => return Err(AtoiSimdError::Invalid64(0, 0)),
-        },
-        // 1 => (s[0] & 0xF) as u64,
         2 => {
             chunk = process_and(chunk, 0xF0F);
             chunk = mult_10(chunk);
@@ -247,9 +230,30 @@ unsafe fn parse_simd_sse(s: &[u8], mut len: usize) -> Result<(u64, usize), AtoiS
     Ok((res, len))
 }
 
+#[inline(always)]
+fn parse_simd_sse_checked(s: &[u8]) -> Result<(u64, usize), AtoiSimdError> {
+    unsafe {
+        let chunk = read(s);
+        let cmp_high = _mm_set_epi8(
+            CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+            CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+        );
+        let cmp_low = _mm_set_epi8(
+            CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+            CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+        );
+        let check_high = process_gt(chunk, cmp_high);
+        let check_low = process_gt(cmp_low, chunk);
+
+        let len = s.len().min(checker(check_high, check_low) as usize);
+
+        parse_simd_sse(s, len, chunk)
+    }
+}
+
 /// Parses string of *only* digits
 /// Uses AVX/AVX2 intrinsics
-#[inline]
+#[inline(always)]
 unsafe fn process_avx(mut chunk: __m256i) -> u128 {
     let mut mult = _mm256_set_epi8(
         1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10,
@@ -308,23 +312,33 @@ unsafe fn process_u128(s: &[u8]) -> u128 {
     std::mem::transmute::<__m128i, u128>(chunk)
 } */
 
-#[inline]
+#[inline(always)]
 unsafe fn process_avx_permute2x128(chunk: __m256i) -> __m256i {
     _mm256_permute2x128_si256(chunk, chunk, 8)
 }
 
-#[inline]
+#[inline(always)]
 unsafe fn process_avx_or(chunk: __m256i, mult: __m256i) -> __m256i {
     _mm256_or_si256(chunk, mult)
 }
 
+#[inline(always)]
+fn parse_unchecked_128(s: &[u8], len: usize) -> Result<(u128, usize), AtoiSimdError> {
+    if len == 0 {
+        return Err(AtoiSimdError::Empty);
+    }
+    Ok(((s[len] & 0xF) as u128, len))
+}
+
 /// Parses string of *only* digits. String length must be 1..=32.
 /// Uses AVX/AVX2 intrinsics
-#[target_feature(enable = "sse2,sse3,sse4.1,ssse3,avx,avx2")]
+#[inline(always)]
 pub(crate) unsafe fn parse_simd_u128(s: &[u8]) -> Result<(u128, usize), AtoiSimdError> {
     let mut len = s.len();
-    if len < 17 {
-        return parse_simd_sse(s, 0).map(|(v, l)| (v as u128, l));
+    if len < 4 {
+        return parse_fb_128_pos(s);
+    } else if len < 17 {
+        return parse_simd_sse_checked(s).map(|(v, l)| (v as u128, l));
     }
 
     let mut chunk = read_avx(s);
@@ -350,7 +364,7 @@ pub(crate) unsafe fn parse_simd_u128(s: &[u8]) -> Result<(u128, usize), AtoiSimd
     let mut mult = process_avx_permute2x128(chunk);
 
     match len {
-        0 => return Err(AtoiSimdError::Empty),
+        0..=1 => return parse_unchecked_128(s, len),
         17 => {
             mult = _mm256_bsrli_epi128(mult, 1);
             chunk = _mm256_bslli_epi128(chunk, 15);
@@ -432,23 +446,33 @@ pub(crate) unsafe fn parse_simd_u128(s: &[u8]) -> Result<(u128, usize), AtoiSimd
             chunk = process_avx_or(chunk, mult);
         }
         32 => {}
-        // todo: pass half of the chunk to parse_simd_sse()
-        s_len => return parse_simd_sse(s, s_len).map(|(v, l)| (v as u128, l)),
+        s_len => {
+            return parse_simd_sse(s, s_len, std::mem::transmute_copy(&chunk))
+                .map(|(v, l)| (v as u128, l))
+        }
     }
 
     Ok((process_avx(chunk), len))
 }
 
-#[inline]
+#[inline(always)]
+fn parse_simd_sse_pre(s: &[u8]) -> Result<(u64, usize), AtoiSimdError> {
+    if s.len() < 4 {
+        return parse_fb_pos::<{ u64::MAX }>(s);
+    }
+    parse_simd_sse_checked(s)
+}
+
+#[inline(always)]
 fn parse_simd_checked_pre_u64(s: &[u8]) -> Result<u64, AtoiSimdError> {
-    let (res, len) = unsafe { parse_simd_sse(s, 0)? };
+    let (res, len) = parse_simd_sse_pre(s)?;
     if len < s.len() {
         return Err(AtoiSimdError::Invalid64(res, len));
     }
     Ok(res)
 }
 
-#[inline]
+#[inline(always)]
 pub(crate) fn parse_simd_checked_u128(s: &[u8]) -> Result<u128, AtoiSimdError> {
     let (res, len) = unsafe { parse_simd_u128(s)? };
     if len < s.len() {
@@ -457,9 +481,9 @@ pub(crate) fn parse_simd_checked_u128(s: &[u8]) -> Result<u128, AtoiSimdError> {
     Ok(res)
 }
 
-#[inline]
+#[inline(always)]
 pub(crate) fn parse_simd<const MAX: u64>(s: &[u8]) -> Result<(u64, usize), AtoiSimdError> {
-    let (res, len) = unsafe { parse_simd_sse(s, 0)? };
+    let (res, len) = parse_simd_sse_pre(s)?;
     if res > MAX {
         Err(AtoiSimdError::Overflow64(MAX, s))
     } else {
@@ -467,7 +491,7 @@ pub(crate) fn parse_simd<const MAX: u64>(s: &[u8]) -> Result<(u64, usize), AtoiS
     }
 }
 
-#[inline]
+#[inline(always)]
 pub(crate) fn parse_simd_checked<const MAX: u64>(s: &[u8]) -> Result<u64, AtoiSimdError> {
     let res = parse_simd_checked_pre_u64(s)?;
     if res > MAX {
@@ -477,9 +501,9 @@ pub(crate) fn parse_simd_checked<const MAX: u64>(s: &[u8]) -> Result<u64, AtoiSi
     }
 }
 
-#[inline]
+#[inline(always)]
 pub(crate) fn parse_simd_neg<const MIN: i64>(s: &[u8]) -> Result<(i64, usize), AtoiSimdError> {
-    let (res, len) = unsafe { parse_simd_sse(s, 0)? };
+    let (res, len) = parse_simd_sse_pre(s)?;
     let min = -MIN as u64;
     if res > min {
         Err(AtoiSimdError::Overflow64(MIN as u64, s))
@@ -490,7 +514,7 @@ pub(crate) fn parse_simd_neg<const MIN: i64>(s: &[u8]) -> Result<(i64, usize), A
     }
 }
 
-#[inline]
+#[inline(always)]
 pub(crate) fn parse_simd_checked_neg<const MIN: i64>(s: &[u8]) -> Result<i64, AtoiSimdError> {
     let res = parse_simd_checked_pre_u64(s)?;
     let min = -MIN as u64;
@@ -503,11 +527,11 @@ pub(crate) fn parse_simd_checked_neg<const MIN: i64>(s: &[u8]) -> Result<i64, At
     }
 }
 
-#[inline]
+#[inline(always)]
 pub(crate) fn parse_simd_u64(s: &[u8]) -> Result<(u64, usize), AtoiSimdError> {
     let len = s.len();
     if len < 17 {
-        return unsafe { parse_simd_sse(s, 0) };
+        return parse_simd_sse_checked(s);
     }
     let (res, len) = unsafe { parse_simd_u128(s)? };
     if len > 20 {
@@ -518,7 +542,7 @@ pub(crate) fn parse_simd_u64(s: &[u8]) -> Result<(u64, usize), AtoiSimdError> {
     Ok((res as u64, len))
 }
 
-#[inline]
+#[inline(always)]
 pub(crate) fn parse_simd_checked_u64(s: &[u8]) -> Result<u64, AtoiSimdError> {
     let len = s.len();
     if len < 17 {
@@ -533,11 +557,11 @@ pub(crate) fn parse_simd_checked_u64(s: &[u8]) -> Result<u64, AtoiSimdError> {
     Ok(res as u64)
 }
 
-#[inline]
+#[inline(always)]
 pub(crate) fn parse_simd_i64(s: &[u8]) -> Result<(i64, usize), AtoiSimdError> {
     let len = s.len();
     if len < 17 {
-        return unsafe { parse_simd_sse(s, 0).map(|(v, i)| (v as i64, i)) };
+        return parse_simd_sse_checked(s).map(|(v, i)| (v as i64, i));
     }
     let (res, len) = unsafe { parse_simd_u128(s)? };
     if len > 19 {
@@ -548,7 +572,7 @@ pub(crate) fn parse_simd_i64(s: &[u8]) -> Result<(i64, usize), AtoiSimdError> {
     Ok((res as i64, len))
 }
 
-#[inline]
+#[inline(always)]
 pub(crate) fn parse_simd_checked_i64(s: &[u8]) -> Result<i64, AtoiSimdError> {
     let len = s.len();
     if len < 17 {
@@ -563,11 +587,11 @@ pub(crate) fn parse_simd_checked_i64(s: &[u8]) -> Result<i64, AtoiSimdError> {
     Ok(res as i64)
 }
 
-#[inline]
+#[inline(always)]
 pub(crate) fn parse_simd_i64_neg(s: &[u8]) -> Result<(i64, usize), AtoiSimdError> {
     let len = s.len();
     if len < 17 {
-        return unsafe { parse_simd_sse(s, 0).map(|(v, i)| (-(v as i64), i)) };
+        return parse_simd_sse_checked(s).map(|(v, i)| (-(v as i64), i));
     }
     let (res, len) = unsafe { parse_simd_u128(s)? };
     if len > 19 {
@@ -583,7 +607,7 @@ pub(crate) fn parse_simd_i64_neg(s: &[u8]) -> Result<(i64, usize), AtoiSimdError
     Ok((-(res as i64), len))
 }
 
-#[inline]
+#[inline(always)]
 pub(crate) fn parse_simd_checked_i64_neg(s: &[u8]) -> Result<i64, AtoiSimdError> {
     let len = s.len();
     if len < 17 {

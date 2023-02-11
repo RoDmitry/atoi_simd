@@ -45,12 +45,12 @@ pub trait ParserNeg<T>: Sized {
 }
 
 pub trait Parser<T: ParserPos<T>>: Sized {
-    #[inline]
+    #[inline(always)]
     fn atoi_simd_parse(s: &[u8]) -> Result<T, AtoiSimdError> {
         T::atoi_simd_parse_pos(s)
     }
 
-    #[inline]
+    #[inline(always)]
     fn atoi_simd_parse_until_invalid(s: &[u8]) -> Result<(T, usize), AtoiSimdError> {
         T::atoi_simd_parse_until_invalid_pos(s)
     }

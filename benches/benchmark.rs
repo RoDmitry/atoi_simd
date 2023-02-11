@@ -1,4 +1,4 @@
-use atoi_simd::parse;
+use atoi_simd::{parse, parse_until_invalid, parse_until_invalid_neg, parse_until_invalid_pos};
 use criterion::{
     criterion_group, criterion_main, measurement::WallTime, BenchmarkGroup, BenchmarkId, Criterion,
 };
@@ -63,6 +63,24 @@ fn bench_128(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
     );
 }
 
+fn bench_until_invalid_128(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
+    let len = str.len();
+    let str = str.to_owned() + "s1111111111111111111111111111111111111111111111111111111111111";
+    let str_neg = "-".to_owned() + &str;
+
+    bench_group.bench_with_input(
+        BenchmarkId::new("u128 until_invalid", len),
+        &str,
+        |b, val| b.iter(|| parse_until_invalid::<u128>(val.as_bytes()).unwrap()),
+    );
+    bench_group.bench_with_input(BenchmarkId::new("i128", len), &str, |b, val| {
+        b.iter(|| parse_until_invalid::<i128>(val.as_bytes()).unwrap())
+    });
+    bench_group.bench_with_input(BenchmarkId::new("neg i128", len), &str_neg, |b, val| {
+        b.iter(|| parse_until_invalid::<i128>(val.as_bytes()).unwrap())
+    });
+}
+
 fn benchmark_group_max_20(
     bench_group: &mut BenchmarkGroup<WallTime>,
     func: fn(bench_group: &mut BenchmarkGroup<WallTime>, str: &str),
@@ -103,6 +121,9 @@ fn benchmark(c: &mut Criterion) {
     }
 
     let mut bench_group = c.benchmark_group("benchmark 128");
+
+    benchmark_group_max_20(&mut bench_group, bench_until_invalid_128);
+
     benchmark_group_max_20(&mut bench_group, bench_128);
 
     let mut str = "123456789012345678901".to_owned();

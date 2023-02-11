@@ -40,26 +40,26 @@ pub use crate::error::AtoiSimdError;
 use crate::parser::{Parser, ParserNeg, ParserPos};
 
 /// Parses slice of digits, and checks first '-' char for signed integers.
-#[inline]
+#[inline(always)]
 pub fn parse<T: Parser<T> + ParserPos<T>>(s: &[u8]) -> Result<T, AtoiSimdError> {
     T::atoi_simd_parse(s)
 }
 
 /// Parses positive integer.
-#[inline]
+#[inline(always)]
 pub fn parse_pos<T: ParserPos<T>>(s: &[u8]) -> Result<T, AtoiSimdError> {
     T::atoi_simd_parse_pos(s)
 }
 
 /// Parses negative integer. Slice must not contain '-' sign.
-#[inline]
+#[inline(always)]
 pub fn parse_neg<T: ParserNeg<T>>(s: &[u8]) -> Result<T, AtoiSimdError> {
     T::atoi_simd_parse_neg(s)
 }
 
 /// Parses slice of digits until it reaches invalid character, and checks first '-' char for signed integers.
 /// Returns parsed value and parsed size of the slice.
-#[inline]
+#[inline(always)]
 pub fn parse_until_invalid<T: Parser<T> + ParserPos<T>>(
     s: &[u8],
 ) -> Result<(T, usize), AtoiSimdError> {
@@ -68,16 +68,14 @@ pub fn parse_until_invalid<T: Parser<T> + ParserPos<T>>(
 
 /// Parses positive integer until it reaches invalid character.
 /// Returns parsed value and parsed size of the slice.
-#[inline]
-pub fn parse_until_invalid_pos<T: ParserPos<T>>(
-    s: &[u8],
-) -> Result<(T, usize), AtoiSimdError> {
+#[inline(always)]
+pub fn parse_until_invalid_pos<T: ParserPos<T>>(s: &[u8]) -> Result<(T, usize), AtoiSimdError> {
     T::atoi_simd_parse_until_invalid_pos(s)
 }
 
 /// Parses negative integer until it reaches invalid character. Slice must not contain '-' sign.
 /// Returns parsed value and parsed size of the slice.
-#[inline]
+#[inline(always)]
 pub fn parse_until_invalid_neg<T: ParserNeg<T>>(s: &[u8]) -> Result<(T, usize), AtoiSimdError> {
     T::atoi_simd_parse_until_invalid_neg(s)
 }

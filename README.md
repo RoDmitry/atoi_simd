@@ -14,6 +14,8 @@ The 128 bit max slice length is 32 numbers (33 with '-' sign), because it's limi
 
 Has good test coverage, and can be considered safe.
 
+The code will be inlined to the place where you call the function.
+
 To enable SIMD it needs the `target-feature` or `target-cpu` flags set, or it will fallback to non-SIMD functions.
 To do it you can copy the `./.cargo/config.toml` in your project, or you can use one of the following environment variables:
 

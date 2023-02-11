@@ -18,6 +18,7 @@ macro_rules! overflow_neg {
     };
 }
 
+#[inline(always)]
 pub(crate) fn parse_fb_pos<const MAX: u64>(s: &[u8]) -> Result<(u64, usize), AtoiSimdError> {
     let mut i = 0;
     if s.len() == i {
@@ -48,6 +49,7 @@ pub(crate) fn parse_fb_pos<const MAX: u64>(s: &[u8]) -> Result<(u64, usize), Ato
     }
 }
 
+#[inline(always)]
 pub(crate) fn parse_fb_neg<const MIN: i64>(s: &[u8]) -> Result<(i64, usize), AtoiSimdError> {
     let mut i = 0;
     if s.len() == i {
@@ -78,6 +80,7 @@ pub(crate) fn parse_fb_neg<const MIN: i64>(s: &[u8]) -> Result<(i64, usize), Ato
     }
 }
 
+#[inline(always)]
 pub(crate) fn parse_fb_128_pos(s: &[u8]) -> Result<(u128, usize), AtoiSimdError> {
     let mut i = 0;
     if s.len() == i {
@@ -108,6 +111,7 @@ pub(crate) fn parse_fb_128_pos(s: &[u8]) -> Result<(u128, usize), AtoiSimdError>
     }
 }
 
+#[inline(always)]
 pub(crate) fn parse_fb_128_neg(s: &[u8]) -> Result<(i128, usize), AtoiSimdError> {
     let mut i = 0;
     if s.len() == i {
@@ -138,6 +142,7 @@ pub(crate) fn parse_fb_128_neg(s: &[u8]) -> Result<(i128, usize), AtoiSimdError>
     }
 }
 
+#[inline(always)]
 pub(crate) fn parse_fb_checked_pos<const MAX: u64>(s: &[u8]) -> Result<u64, AtoiSimdError> {
     let (res, len) = parse_fb_pos::<{ MAX }>(s)?;
     if len < s.len() {
@@ -146,6 +151,7 @@ pub(crate) fn parse_fb_checked_pos<const MAX: u64>(s: &[u8]) -> Result<u64, Atoi
     Ok(res)
 }
 
+#[inline(always)]
 pub(crate) fn parse_fb_checked_neg<const MIN: i64>(s: &[u8]) -> Result<i64, AtoiSimdError> {
     let (res, len) = parse_fb_neg::<{ MIN }>(s)?;
     if len < s.len() {
@@ -154,6 +160,7 @@ pub(crate) fn parse_fb_checked_neg<const MIN: i64>(s: &[u8]) -> Result<i64, Atoi
     Ok(res)
 }
 
+#[inline(always)]
 pub(crate) fn parse_fb_checked_128_pos(s: &[u8]) -> Result<u128, AtoiSimdError> {
     let (res, len) = parse_fb_128_pos(s)?;
     if len < s.len() {
@@ -162,6 +169,7 @@ pub(crate) fn parse_fb_checked_128_pos(s: &[u8]) -> Result<u128, AtoiSimdError> 
     Ok(res)
 }
 
+#[inline(always)]
 pub(crate) fn parse_fb_checked_128_neg(s: &[u8]) -> Result<i128, AtoiSimdError> {
     let (res, len) = parse_fb_128_neg(s)?;
     if len < s.len() {
