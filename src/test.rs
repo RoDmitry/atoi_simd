@@ -792,6 +792,16 @@ fn test_parse_until_invalid() {
     assert_eq!(tmp, (-12345678901234567890_i128, 21));
 
     assert_eq!(
+        parse_until_invalid::<u64>("0 asdf".as_bytes()).unwrap(),
+        (0, 1)
+    );
+
+    assert_eq!(
+        parse_until_invalid::<u64>("1:2 3:4 1:5s".as_bytes()).unwrap(),
+        (1, 1)
+    );
+
+    assert_eq!(
         parse_until_invalid::<u64>("18446744073709551615".as_bytes()).unwrap(),
         (u64::MAX, 20)
     );
