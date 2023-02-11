@@ -802,6 +802,21 @@ fn test_parse_until_invalid() {
     );
 
     assert_eq!(
+        parse_until_invalid::<u64>("12:2 3:4 1:5s".as_bytes()).unwrap(),
+        (12, 2)
+    );
+
+    assert_eq!(
+        parse_until_invalid::<u64>("123:2 3:4 1:5s".as_bytes()).unwrap(),
+        (123, 3)
+    );
+
+    assert_eq!(
+        parse_until_invalid::<u64>("1234:2 3:4 1:5s".as_bytes()).unwrap(),
+        (1234, 4)
+    );
+
+    assert_eq!(
         parse_until_invalid::<u64>("18446744073709551615".as_bytes()).unwrap(),
         (u64::MAX, 20)
     );
@@ -892,6 +907,9 @@ fn test_parse_until_invalid_pos() {
 
     let tmp = parse_until_invalid_pos::<i8>("123s".as_bytes()).unwrap();
     assert_eq!(tmp, (123_i8, 3));
+
+    let tmp = parse_until_invalid_pos::<u16>("123s".as_bytes()).unwrap();
+    assert_eq!(tmp, (123_u16, 3));
 
     let tmp = parse_until_invalid_pos::<u16>("1234s".as_bytes()).unwrap();
     assert_eq!(tmp, (1234_u16, 4));
