@@ -1,4 +1,4 @@
-use atoi_simd::{parse, parse_until_invalid, parse_until_invalid_neg, parse_until_invalid_pos};
+use atoi_simd::{parse, parse_until_invalid};
 use criterion::{
     criterion_group, criterion_main, measurement::WallTime, BenchmarkGroup, BenchmarkId, Criterion,
 };
