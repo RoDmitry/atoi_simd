@@ -126,8 +126,8 @@ unsafe fn checker_avx(check: __m256i, check2: __m256i) -> u32 {
 
 #[inline(always)]
 unsafe fn process_small(mut chunk: __m128i) -> u64 {
-    chunk = process_and(chunk, 0xF0F0F0F);
-    chunk = mult_10(chunk);
+    let mult = _mm_set_epi8(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 10, 1, 10);
+    chunk = _mm_maddubs_epi16(chunk, mult);
 
     chunk = mult_100(chunk);
 
@@ -137,8 +137,8 @@ unsafe fn process_small(mut chunk: __m128i) -> u64 {
 
 #[inline(always)]
 unsafe fn process_medium(mut chunk: __m128i) -> u64 {
-    chunk = process_and(chunk, 0xF0F0F0F0F0F0F0F);
-    chunk = mult_10(chunk);
+    let mult = _mm_set_epi8(0, 0, 0, 0, 0, 0, 0, 0, 1, 10, 1, 10, 1, 10, 1, 10);
+    chunk = _mm_maddubs_epi16(chunk, mult);
 
     chunk = process_internal(chunk);
 
@@ -147,8 +147,8 @@ unsafe fn process_medium(mut chunk: __m128i) -> u64 {
 
 #[inline(always)]
 unsafe fn process_big(mut chunk: __m128i) -> u64 {
-    chunk = to_numbers(chunk);
-    chunk = mult_10(chunk);
+    let mult = _mm_set_epi8(1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10);
+    chunk = _mm_maddubs_epi16(chunk, mult);
 
     chunk = process_internal(chunk);
 
@@ -179,8 +179,8 @@ unsafe fn parse_simd_sse(
         // somehow it's faster that way
         0..=1 => return parse_unchecked_64(s, len),
         2 => {
-            chunk = process_and(chunk, 0xF0F);
-            chunk = mult_10(chunk);
+            let mult = _mm_set_epi8(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 10);
+            chunk = _mm_maddubs_epi16(chunk, mult);
 
             to_u64(chunk)
             // std::mem::transmute::<__m128i, [u16; 8]>(chunk)[7] as u64 // same performance
@@ -243,7 +243,7 @@ unsafe fn parse_simd_sse(
 #[inline(always)]
 fn parse_simd_sse_checked(s: &[u8]) -> Result<(u64, usize), AtoiSimdError> {
     unsafe {
-        let chunk = read(s);
+        let mut chunk = read(s);
         let cmp_high = _mm_set_epi8(
             CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
             CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
@@ -254,6 +254,8 @@ fn parse_simd_sse_checked(s: &[u8]) -> Result<(u64, usize), AtoiSimdError> {
         );
         let check_high = process_gt(chunk, cmp_high);
         let check_low = process_gt(cmp_low, chunk);
+
+        chunk = to_numbers(chunk);
 
         let len = s.len().min(checker(check_high, check_low) as usize);
 

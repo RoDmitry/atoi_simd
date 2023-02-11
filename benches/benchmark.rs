@@ -73,18 +73,23 @@ fn bench_until_invalid_128(bench_group: &mut BenchmarkGroup<WallTime>, str: &str
         &str,
         |b, val| b.iter(|| parse_until_invalid::<u128>(val.as_bytes()).unwrap()),
     );
-    bench_group.bench_with_input(BenchmarkId::new("i128", len), &str, |b, val| {
-        b.iter(|| parse_until_invalid::<i128>(val.as_bytes()).unwrap())
-    });
-    bench_group.bench_with_input(BenchmarkId::new("neg i128", len), &str_neg, |b, val| {
-        b.iter(|| parse_until_invalid::<i128>(val.as_bytes()).unwrap())
-    });
+    bench_group.bench_with_input(
+        BenchmarkId::new("i128 until_invalid", len),
+        &str,
+        |b, val| b.iter(|| parse_until_invalid::<i128>(val.as_bytes()).unwrap()),
+    );
+    bench_group.bench_with_input(
+        BenchmarkId::new("neg i128 until_invalid", len),
+        &str_neg,
+        |b, val| b.iter(|| parse_until_invalid::<i128>(val.as_bytes()).unwrap()),
+    );
 }
 
 fn benchmark_group_max_20(
     bench_group: &mut BenchmarkGroup<WallTime>,
     func: fn(bench_group: &mut BenchmarkGroup<WallTime>, str: &str),
 ) {
+    // let mut str = "321".to_owned();
     let mut str = String::new();
     for i in '1'..='5' {
         str.push(i);
