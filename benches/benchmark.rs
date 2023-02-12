@@ -63,6 +63,28 @@ fn bench_128(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
     );
 }
 
+fn bench_until_invalid_64(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
+    let len = str.len();
+    let str = str.to_owned() + "s";
+    let str_neg = "-".to_owned() + &str;
+
+    bench_group.bench_with_input(
+        BenchmarkId::new("u64 until_invalid", len),
+        &str,
+        |b, val| b.iter(|| parse_until_invalid::<u64>(val.as_bytes()).unwrap()),
+    );
+    bench_group.bench_with_input(
+        BenchmarkId::new("i64 until_invalid", len),
+        &str,
+        |b, val| b.iter(|| parse_until_invalid::<i64>(val.as_bytes()).unwrap()),
+    );
+    bench_group.bench_with_input(
+        BenchmarkId::new("neg i64 until_invalid", len),
+        &str_neg,
+        |b, val| b.iter(|| parse_until_invalid::<i64>(val.as_bytes()).unwrap()),
+    );
+}
+
 fn bench_until_invalid_128(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
     let len = str.len();
     let str = str.to_owned() + "s1111111111111111111111111111111111111111111111111111111111111";
@@ -121,29 +143,34 @@ fn benchmark_group_max_20(
 fn benchmark(c: &mut Criterion) {
     {
         let mut bench_group = c.benchmark_group("benchmark 64");
+        // benchmark_group_max_20(&mut bench_group, bench_until_invalid_64);
         benchmark_group_max_20(&mut bench_group, bench_64);
         bench_group.finish();
     }
 
     let mut bench_group = c.benchmark_group("benchmark 128");
 
-    benchmark_group_max_20(&mut bench_group, bench_until_invalid_128);
-
+    // benchmark_group_max_20(&mut bench_group, bench_until_invalid_128);
     benchmark_group_max_20(&mut bench_group, bench_128);
 
     let mut str = "123456789012345678901".to_owned();
+    // bench_until_invalid_128(&mut bench_group, &str);
     bench_128(&mut bench_group, &str);
 
     str = "1234567890123456789012345".to_owned();
+    // bench_until_invalid_128(&mut bench_group, &str);
     bench_128(&mut bench_group, &str);
 
     str = "123456789012345678901234567890".to_owned();
+    // bench_until_invalid_128(&mut bench_group, &str);
     bench_128(&mut bench_group, &str);
 
     str = "1234567890123456789012345678901".to_owned();
+    // bench_until_invalid_128(&mut bench_group, &str);
     bench_128(&mut bench_group, &str);
 
     str = "12345678901234567890123456789012".to_owned();
+    // bench_until_invalid_128(&mut bench_group, &str);
     bench_128(&mut bench_group, &str);
 
     bench_group.finish();

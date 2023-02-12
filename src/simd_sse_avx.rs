@@ -8,9 +8,9 @@ use core::arch::x86::{
     _mm256_cmpgt_epi8, _mm256_lddqu_si256, _mm256_madd_epi16, _mm256_maddubs_epi16,
     _mm256_movemask_epi8, _mm256_mul_epu32, _mm256_or_si256, _mm256_packus_epi32,
     _mm256_permute2x128_si256, _mm256_set1_epi8, _mm256_set_epi16, _mm256_set_epi32,
-    _mm256_set_epi8, _mm256_srli_epi64, _mm_and_si128, _mm_bslli_si128, _mm_cmpgt_epi8,
-    _mm_lddqu_si128, _mm_madd_epi16, _mm_maddubs_epi16, _mm_movemask_epi8, _mm_or_si128,
-    _mm_packus_epi32, _mm_set1_epi8, _mm_set_epi16, _mm_set_epi64x, _mm_set_epi8,
+    _mm256_set_epi8, _mm256_srli_epi64, _mm_and_si128, _mm_cmpgt_epi8, _mm_lddqu_si128,
+    _mm_madd_epi16, _mm_maddubs_epi16, _mm_movemask_epi8, _mm_or_si128, _mm_packus_epi32,
+    _mm_set1_epi8, _mm_set_epi16, _mm_set_epi8,
 };
 #[cfg(target_arch = "x86_64")]
 use core::arch::x86_64::{
@@ -18,9 +18,9 @@ use core::arch::x86_64::{
     _mm256_cmpgt_epi8, _mm256_lddqu_si256, _mm256_madd_epi16, _mm256_maddubs_epi16,
     _mm256_movemask_epi8, _mm256_mul_epu32, _mm256_or_si256, _mm256_packus_epi32,
     _mm256_permute2x128_si256, _mm256_set1_epi8, _mm256_set_epi16, _mm256_set_epi32,
-    _mm256_set_epi8, _mm256_srli_epi64, _mm_and_si128, _mm_bslli_si128, _mm_cmpgt_epi8,
-    _mm_cvtsi128_si64, _mm_lddqu_si128, _mm_madd_epi16, _mm_maddubs_epi16, _mm_movemask_epi8,
-    _mm_or_si128, _mm_packus_epi32, _mm_set1_epi8, _mm_set_epi16, _mm_set_epi64x, _mm_set_epi8,
+    _mm256_set_epi8, _mm256_srli_epi64, _mm_and_si128, _mm_cmpgt_epi8, _mm_cvtsi128_si64,
+    _mm_lddqu_si128, _mm_madd_epi16, _mm_maddubs_epi16, _mm_movemask_epi8, _mm_or_si128,
+    _mm_packus_epi32, _mm_set1_epi8, _mm_set_epi16, _mm_set_epi8,
 };
 
 const CHAR_MAX: i8 = b'9' as i8;
@@ -47,13 +47,6 @@ unsafe fn to_numbers(chunk: __m128i) -> __m128i {
 }
 
 #[inline(always)]
-unsafe fn process_and(chunk: __m128i, lval: i64) -> __m128i {
-    let mult = _mm_set_epi64x(0, lval);
-
-    _mm_and_si128(chunk, mult)
-}
-
-#[inline(always)]
 unsafe fn process_gt(cmp_left: __m128i, cmp_right: __m128i) -> __m128i {
     _mm_cmpgt_epi8(cmp_left, cmp_right)
 }
@@ -63,20 +56,18 @@ unsafe fn process_avx_gt(cmp_left: __m256i, cmp_right: __m256i) -> __m256i {
     _mm256_cmpgt_epi8(cmp_left, cmp_right)
 }
 
-/// combine numbers [ 0x0038 | 0x0022 | 0x000c | 0x005a | 0x004e | 0x0038 | 0x0022 | 0x000c ( 56 | 34 | 12 | 90 | 78 | 56 | 34 | 12 ) ]
 #[inline(always)]
-unsafe fn mult_10(chunk: __m128i) -> __m128i {
-    let mult = _mm_set_epi8(1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10);
-
-    _mm_maddubs_epi16(chunk, mult)
+unsafe fn checker(check: __m128i, check2: __m128i) -> u32 {
+    let chunk = _mm_or_si128(check, check2);
+    let res = _mm_movemask_epi8(chunk);
+    res.trailing_zeros()
 }
 
-/// combine again   [ 0x0000 | 0x0d80 | 0x0000 | 0x2334 | 0x0000 | 0x162e | 0x0000 | 0x04d2 ( 0 | 3456 | 0 | 9012 | 0 | 5678 | 0 | 1234) ]
 #[inline(always)]
-unsafe fn mult_100(chunk: __m128i) -> __m128i {
-    let mult = _mm_set_epi16(1, 100, 1, 100, 1, 100, 1, 100);
-
-    _mm_madd_epi16(chunk, mult)
+unsafe fn checker_avx(check: __m256i, check2: __m256i) -> u32 {
+    let chunk = _mm256_or_si256(check, check2);
+    let res = _mm256_movemask_epi8(chunk);
+    res.trailing_zeros()
 }
 
 #[cfg(target_arch = "x86")]
@@ -97,66 +88,52 @@ unsafe fn to_u32x4(chunk: __m128i) -> [u32; 4] {
 }
 
 #[inline(always)]
-unsafe fn process_internal(mut chunk: __m128i) -> __m128i {
-    chunk = mult_100(chunk);
+unsafe fn process_mult1(chunk: __m128i, mult1: __m128i) -> __m128i {
+    _mm_maddubs_epi16(chunk, mult1)
+}
+
+#[inline(always)]
+unsafe fn process_small(mut chunk: __m128i, mult1: __m128i, mult2: __m128i) -> __m128i {
+    // combine numbers [ 0x0038 | 0x0022 | 0x000c | 0x005a | 0x004e | 0x0038 | 0x0022 | 0x000c ( 56 | 34 | 12 | 90 | 78 | 56 | 34 | 12 ) ]
+    chunk = process_mult1(chunk, mult1);
+
+    // combine again   [ 0x0000 | 0x0d80 | 0x0000 | 0x2334 | 0x0000 | 0x162e | 0x0000 | 0x04d2 ( 0 | 3456 | 0 | 9012 | 0 | 5678 | 0 | 1234) ]
+    _mm_madd_epi16(chunk, mult2)
+}
+
+#[inline(always)]
+unsafe fn process_medium(
+    mut chunk: __m128i,
+    mult1: __m128i,
+    mult2: __m128i,
+    mult4: __m128i,
+) -> __m128i {
+    chunk = process_small(chunk, mult1, mult2);
 
     // remove extra bytes [ (64 bits, same as the right ) | 0x0d80 | 0x2334 | 0x162e | 0x04d2 ( 3456 | 9012 | 5678 | 1234) ]
     chunk = _mm_packus_epi32(chunk, chunk);
 
     // _mm_set_epi16(1, 10000, 0, 0, 0, 0, 1, 10000);
 
-    let mult = _mm_set_epi16(0, 0, 0, 0, 1, 10000, 1, 10000);
     // combine again [ (64 bits, zeroes) | 0x055f2cc0 | 0x00bc614e ( 90123456 | 12345678 ) ]
-    _mm_madd_epi16(chunk, mult)
+    _mm_madd_epi16(chunk, mult4)
 }
 
 #[inline(always)]
-unsafe fn checker(check: __m128i, check2: __m128i) -> u32 {
-    let chunk = _mm_or_si128(check, check2);
-    let res = _mm_movemask_epi8(chunk);
-    res.trailing_zeros()
-}
-
-#[inline(always)]
-unsafe fn checker_avx(check: __m256i, check2: __m256i) -> u32 {
-    let chunk = _mm256_or_si256(check, check2);
-    let res = _mm256_movemask_epi8(chunk);
-    res.trailing_zeros()
-}
-
-#[inline(always)]
-unsafe fn process_small(mut chunk: __m128i) -> u64 {
-    let mult = _mm_set_epi8(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 10, 1, 10);
-    chunk = _mm_maddubs_epi16(chunk, mult);
-
-    chunk = mult_100(chunk);
-
-    to_u64(chunk)
-    // std::mem::transmute::<__m128i, [u32; 4]>(chunk)[3] as u64 // same performance
-}
-
-#[inline(always)]
-unsafe fn process_medium(mut chunk: __m128i) -> u64 {
-    let mult = _mm_set_epi8(0, 0, 0, 0, 0, 0, 0, 0, 1, 10, 1, 10, 1, 10, 1, 10);
-    chunk = _mm_maddubs_epi16(chunk, mult);
-
-    chunk = process_internal(chunk);
-
-    to_u64(chunk)
-}
-
-#[inline(always)]
-unsafe fn process_big(mut chunk: __m128i) -> u64 {
-    let mult = _mm_set_epi8(1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10);
-    chunk = _mm_maddubs_epi16(chunk, mult);
-
-    chunk = process_internal(chunk);
+unsafe fn process_big(
+    mut chunk: __m128i,
+    mult1: __m128i,
+    mult2: __m128i,
+    mult4: __m128i,
+    mult8: u64,
+) -> u64 {
+    chunk = process_medium(chunk, mult1, mult2, mult4);
 
     // let chunk = to_u64(chunk);
     // ((chunk & 0xFFFF_FFFF) * 100_000_000) + (chunk >> 32)
 
     let arr = to_u32x4(chunk);
-    (arr[0] as u64 * 100_000_000) + (arr[1] as u64)
+    (arr[0] as u64 * mult8) + (arr[1] as u64)
 }
 
 #[inline(always)]
@@ -176,62 +153,121 @@ unsafe fn parse_simd_sse(
     mut chunk: __m128i,
 ) -> Result<(u64, usize), AtoiSimdError> {
     let res = match len {
-        // somehow it's faster that way
-        0..=1 => return parse_unchecked_64(s, len),
         2 => {
             let mult = _mm_set_epi8(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 10);
-            chunk = _mm_maddubs_epi16(chunk, mult);
-
+            chunk = process_mult1(chunk, mult);
             to_u64(chunk)
-            // std::mem::transmute::<__m128i, [u16; 8]>(chunk)[7] as u64 // same performance
         }
         3 => {
-            chunk = _mm_bslli_si128(chunk, 1);
-            process_small(chunk)
+            chunk = process_small(
+                chunk,
+                _mm_set_epi8(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 10),
+                _mm_set_epi16(0, 0, 0, 0, 0, 0, 1, 10),
+            );
+            to_u64(chunk)
         }
-        4 => process_small(chunk),
+        4 => {
+            chunk = process_small(
+                chunk,
+                _mm_set_epi8(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 10, 1, 10),
+                _mm_set_epi16(0, 0, 0, 0, 0, 0, 1, 100),
+            );
+            to_u64(chunk)
+        }
         5 => {
-            chunk = _mm_bslli_si128(chunk, 3);
-            process_medium(chunk)
+            chunk = process_medium(
+                chunk,
+                _mm_set_epi8(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 10, 1, 10),
+                _mm_set_epi16(0, 0, 0, 0, 0, 1, 1, 100),
+                _mm_set_epi16(0, 0, 0, 0, 0, 0, 1, 10),
+            );
+            to_u64(chunk)
         }
         6 => {
-            chunk = _mm_bslli_si128(chunk, 2);
-            process_medium(chunk)
+            chunk = process_medium(
+                chunk,
+                _mm_set_epi8(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 10, 1, 10, 1, 10),
+                _mm_set_epi16(0, 0, 0, 0, 0, 1, 1, 100),
+                _mm_set_epi16(0, 0, 0, 0, 0, 0, 1, 100),
+            );
+            to_u64(chunk)
         }
         7 => {
-            chunk = _mm_bslli_si128(chunk, 1);
-            process_medium(chunk)
+            chunk = process_medium(
+                chunk,
+                _mm_set_epi8(0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 10, 1, 10, 1, 10),
+                _mm_set_epi16(0, 0, 0, 0, 1, 10, 1, 100),
+                _mm_set_epi16(0, 0, 0, 0, 0, 0, 1, 1000),
+            );
+            to_u64(chunk)
         }
-        8 => process_medium(chunk),
-        9 => {
-            chunk = _mm_bslli_si128(chunk, 7);
-            process_big(chunk)
+        8 => {
+            chunk = process_medium(
+                chunk,
+                _mm_set_epi8(0, 0, 0, 0, 0, 0, 0, 0, 1, 10, 1, 10, 1, 10, 1, 10),
+                _mm_set_epi16(0, 0, 0, 0, 1, 100, 1, 100),
+                _mm_set_epi16(0, 0, 0, 0, 0, 0, 1, 10000),
+            );
+            to_u64(chunk)
         }
-        10 => {
-            chunk = _mm_bslli_si128(chunk, 6);
-            process_big(chunk)
-        }
-        11 => {
-            chunk = _mm_bslli_si128(chunk, 5);
-            process_big(chunk)
-        }
-        12 => {
-            chunk = _mm_bslli_si128(chunk, 4);
-            process_big(chunk)
-        }
-        13 => {
-            chunk = _mm_bslli_si128(chunk, 3);
-            process_big(chunk)
-        }
-        14 => {
-            chunk = _mm_bslli_si128(chunk, 2);
-            process_big(chunk)
-        }
-        15 => {
-            chunk = _mm_bslli_si128(chunk, 1);
-            process_big(chunk)
-        }
-        16 => process_big(chunk),
+        9 => process_big(
+            chunk,
+            _mm_set_epi8(0, 0, 0, 0, 0, 0, 0, 1, 1, 10, 1, 10, 1, 10, 1, 10),
+            _mm_set_epi16(0, 0, 0, 1, 1, 100, 1, 100),
+            _mm_set_epi16(0, 0, 0, 0, 0, 1, 1, 10000),
+            10,
+        ),
+        10 => process_big(
+            chunk,
+            _mm_set_epi8(0, 0, 0, 0, 0, 0, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10),
+            _mm_set_epi16(0, 0, 0, 1, 1, 100, 1, 100),
+            _mm_set_epi16(0, 0, 0, 0, 0, 1, 1, 10000),
+            100,
+        ),
+        11 => process_big(
+            chunk,
+            _mm_set_epi8(0, 0, 0, 0, 0, 1, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10),
+            _mm_set_epi16(0, 0, 1, 10, 1, 100, 1, 100),
+            _mm_set_epi16(0, 0, 0, 0, 0, 1, 1, 10000),
+            1000,
+        ),
+        12 => process_big(
+            chunk,
+            _mm_set_epi8(0, 0, 0, 0, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10),
+            _mm_set_epi16(0, 0, 1, 100, 1, 100, 1, 100),
+            _mm_set_epi16(0, 0, 0, 0, 0, 1, 1, 10000),
+            10_000,
+        ),
+        13 => process_big(
+            chunk,
+            _mm_set_epi8(0, 0, 0, 1, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10),
+            _mm_set_epi16(0, 1, 1, 100, 1, 100, 1, 100),
+            _mm_set_epi16(0, 0, 0, 0, 1, 10, 1, 10000),
+            100_000,
+        ),
+        14 => process_big(
+            chunk,
+            _mm_set_epi8(0, 0, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10),
+            _mm_set_epi16(0, 1, 1, 100, 1, 100, 1, 100),
+            _mm_set_epi16(0, 0, 0, 0, 1, 100, 1, 10000),
+            1_000_000,
+        ),
+        15 => process_big(
+            chunk,
+            _mm_set_epi8(0, 1, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10),
+            _mm_set_epi16(1, 10, 1, 100, 1, 100, 1, 100),
+            _mm_set_epi16(0, 0, 0, 0, 1, 1000, 1, 10000),
+            10_000_000,
+        ),
+        16 => process_big(
+            chunk,
+            _mm_set_epi8(1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10),
+            _mm_set_epi16(1, 100, 1, 100, 1, 100, 1, 100),
+            _mm_set_epi16(0, 0, 0, 0, 1, 10000, 1, 10000),
+            100_000_000,
+        ),
+        // somehow it's faster that way
+        0..=1 => return parse_unchecked_64(s, len),
         s_len => return Err(AtoiSimdError::Size(s_len, s)),
         // Do not try to separate this function to three,
         // and chain them with `_ => parse_u32(s).map(|v| v as u64)`,
@@ -376,8 +412,6 @@ pub(crate) unsafe fn parse_simd_u128(s: &[u8]) -> Result<(u128, usize), AtoiSimd
     let mut mult = process_avx_permute2x128(chunk);
 
     match len {
-        // somehow it's faster that way
-        0..=1 => return parse_unchecked_128(s, len),
         17 => {
             mult = _mm256_bsrli_epi128(mult, 1);
             chunk = _mm256_bslli_epi128(chunk, 15);
@@ -459,6 +493,8 @@ pub(crate) unsafe fn parse_simd_u128(s: &[u8]) -> Result<(u128, usize), AtoiSimd
             chunk = process_avx_or(chunk, mult);
         }
         32 => {}
+        // somehow it's faster that way
+        0..=1 => return parse_unchecked_128(s, len),
         s_len => {
             return parse_simd_sse(s, s_len, std::mem::transmute_copy(&chunk))
                 .map(|(v, l)| (v as u128, l))
