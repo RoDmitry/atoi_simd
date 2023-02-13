@@ -4,23 +4,24 @@ use crate::fallback::{parse_fb_128_pos, parse_fb_checked_neg, parse_fb_neg, pars
 use crate::AtoiSimdError;
 #[cfg(target_arch = "x86")]
 use core::arch::x86::{
-    __m128i, __m256i, _mm256_add_epi64, _mm256_and_si256, _mm256_bslli_epi128, _mm256_bsrli_epi128,
-    _mm256_cmpgt_epi8, _mm256_lddqu_si256, _mm256_madd_epi16, _mm256_maddubs_epi16,
-    _mm256_movemask_epi8, _mm256_mul_epu32, _mm256_or_si256, _mm256_packus_epi32,
-    _mm256_permute2x128_si256, _mm256_set1_epi8, _mm256_set_epi16, _mm256_set_epi32,
-    _mm256_set_epi8, _mm256_srli_epi64, _mm_and_si128, _mm_cmpgt_epi8, _mm_lddqu_si128,
-    _mm_madd_epi16, _mm_maddubs_epi16, _mm_movemask_epi8, _mm_or_si128, _mm_packus_epi32,
-    _mm_set1_epi8, _mm_set_epi16, _mm_set_epi8,
+    __m128i, __m256i, _mm256_and_si256, _mm256_bslli_epi128, _mm256_bsrli_epi128,
+    _mm256_cmpgt_epi8, _mm256_extracti128_si256, _mm256_lddqu_si256, _mm256_madd_epi16,
+    _mm256_maddubs_epi16, _mm256_movemask_epi8, _mm256_or_si256, _mm256_packus_epi32,
+    _mm256_permute2x128_si256, _mm256_permute4x64_epi64, _mm256_set1_epi8, _mm256_set_epi16,
+    _mm256_set_epi8, _mm_add_epi64, _mm_and_si128, _mm_cmpgt_epi8, _mm_lddqu_si128, _mm_madd_epi16,
+    _mm_maddubs_epi16, _mm_movemask_epi8, _mm_mul_epu32, _mm_or_si128, _mm_packus_epi32,
+    _mm_set1_epi8, _mm_set_epi16, _mm_set_epi32, _mm_set_epi8, _mm_srli_epi64,
 };
 #[cfg(target_arch = "x86_64")]
 use core::arch::x86_64::{
-    __m128i, __m256i, _mm256_add_epi64, _mm256_and_si256, _mm256_bslli_epi128, _mm256_bsrli_epi128,
-    _mm256_cmpgt_epi8, _mm256_lddqu_si256, _mm256_madd_epi16, _mm256_maddubs_epi16,
-    _mm256_movemask_epi8, _mm256_mul_epu32, _mm256_or_si256, _mm256_packus_epi32,
-    _mm256_permute2x128_si256, _mm256_set1_epi8, _mm256_set_epi16, _mm256_set_epi32,
-    _mm256_set_epi8, _mm256_srli_epi64, _mm_and_si128, _mm_cmpgt_epi8, _mm_cvtsi128_si64,
-    _mm_lddqu_si128, _mm_madd_epi16, _mm_maddubs_epi16, _mm_movemask_epi8, _mm_or_si128,
-    _mm_packus_epi32, _mm_set1_epi8, _mm_set_epi16, _mm_set_epi8,
+    __m128i, __m256i, _mm256_and_si256, _mm256_bslli_epi128, _mm256_bsrli_epi128,
+    _mm256_cmpgt_epi8, _mm256_extracti128_si256, _mm256_lddqu_si256, _mm256_madd_epi16,
+    _mm256_maddubs_epi16, _mm256_movemask_epi8, _mm256_or_si256, _mm256_packus_epi32,
+    _mm256_permute2x128_si256, _mm256_permute4x64_epi64, _mm256_set1_epi8, _mm256_set_epi16,
+    _mm256_set_epi8, _mm_add_epi64, _mm_and_si128, _mm_cmpgt_epi8, _mm_cvtsi128_si64,
+    _mm_lddqu_si128, _mm_madd_epi16, _mm_maddubs_epi16, _mm_movemask_epi8, _mm_mul_epu32,
+    _mm_or_si128, _mm_packus_epi32, _mm_set1_epi8, _mm_set_epi16, _mm_set_epi32, _mm_set_epi8,
+    _mm_srli_epi64,
 };
 
 const CHAR_MAX: i8 = b'9' as i8;
@@ -307,23 +308,44 @@ unsafe fn process_avx(mut chunk: __m256i) -> u128 {
         1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10,
         1, 10, 1, 10, 1, 10,
     );
-    // mult 10
+    // mult 1 char
     chunk = _mm256_maddubs_epi16(chunk, mult);
 
     mult = _mm256_set_epi16(
         1, 100, 1, 100, 1, 100, 1, 100, 1, 100, 1, 100, 1, 100, 1, 100,
     );
-    // mult 100
+    // mult 2
     chunk = _mm256_madd_epi16(chunk, mult);
 
     // remove extra bytes
     chunk = _mm256_packus_epi32(chunk, chunk);
 
-    // it can be used to move to the SSE intrinsics
+    // used to move to the SSE intrinsics
     // move by 64 bits ( unused | unused | third [191:128] | first [63:0] )
-    // chunk = _mm256_permute4x64_epi64(chunk, 8);
+    // but compiled assembly is different, and faster
+    // vextracti128 xmm1, ymm0, 1
+    // vpunpcklqdq xmm0, xmm0, xmm1
+    chunk = _mm256_permute4x64_epi64(chunk, 8);
+    let mut chunk = _mm256_extracti128_si256(chunk, 0);
 
-    mult = _mm256_set_epi16(
+    let mut mult = _mm_set_epi16(1, 10000, 1, 10000, 1, 10000, 1, 10000);
+    // mult 4
+    chunk = _mm_madd_epi16(chunk, mult);
+
+    mult = _mm_set_epi32(0, 100_000_000, 0, 100_000_000);
+    // mult 8
+    mult = _mm_mul_epu32(chunk, mult);
+    // add higher 32 bits of old 64 to mult
+    chunk = _mm_srli_epi64(chunk, 32);
+    chunk = _mm_add_epi64(chunk, mult);
+
+    let arr = std::mem::transmute::<__m128i, [u64; 2]>(chunk);
+
+    // mult 16
+    arr[0] as u128 * 10_000_000_000_000_000 + arr[1] as u128
+
+    // AVX intrinsics
+    /* mult = _mm256_set_epi16(
         0, 0, 0, 0, 1, 10000, 1, 10000, 0, 0, 0, 0, 1, 10000, 1, 10000,
     );
     // mult 10000
@@ -338,27 +360,8 @@ unsafe fn process_avx(mut chunk: __m256i) -> u128 {
 
     let arr = std::mem::transmute::<__m256i, [u128; 2]>(chunk);
 
-    arr[0] * 10_000_000_000_000_000 + arr[1]
+    arr[0] * 10_000_000_000_000_000 + arr[1] */
 }
-
-/*
-/// SSE intrinsics for the previous function `process_avx()`
-unsafe fn process_u128(s: &[u8]) -> u128 {
-    let mut chunk = process_m256i_to_m128i(s);
-
-    let mut mult = _mm_set_epi16(1, 10000, 1, 10000, 1, 10000, 1, 10000);
-    // mult_10000
-    chunk = _mm_madd_epi16(chunk, mult);
-
-    mult = _mm_set_epi32(0, 100_000_000, 0, 100_000_000);
-    // mult 100_000_000
-    mult = _mm_mul_epu32(chunk, mult);
-
-    let sum_chunk = _mm_srli_epi64(chunk, 32);
-    chunk = _mm_add_epi64(sum_chunk, mult);
-
-    std::mem::transmute::<__m128i, u128>(chunk)
-} */
 
 #[inline(always)]
 unsafe fn process_avx_permute2x128(chunk: __m256i) -> __m256i {
