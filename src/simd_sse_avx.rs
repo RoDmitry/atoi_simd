@@ -4,24 +4,23 @@ use crate::fallback::{parse_fb_128_pos, parse_fb_checked_neg, parse_fb_neg, pars
 use crate::AtoiSimdError;
 #[cfg(target_arch = "x86")]
 use core::arch::x86::{
-    __m128i, __m256i, _mm256_and_si256, _mm256_bslli_epi128, _mm256_bsrli_epi128,
-    _mm256_cmpgt_epi8, _mm256_extracti128_si256, _mm256_lddqu_si256, _mm256_madd_epi16,
-    _mm256_maddubs_epi16, _mm256_movemask_epi8, _mm256_or_si256, _mm256_packus_epi32,
-    _mm256_permute2x128_si256, _mm256_permute4x64_epi64, _mm256_set1_epi8, _mm256_set_epi16,
-    _mm256_set_epi8, _mm_add_epi64, _mm_and_si128, _mm_cmpgt_epi8, _mm_lddqu_si128, _mm_madd_epi16,
-    _mm_maddubs_epi16, _mm_movemask_epi8, _mm_mul_epu32, _mm_or_si128, _mm_packus_epi32,
-    _mm_set1_epi8, _mm_set_epi16, _mm_set_epi32, _mm_set_epi8, _mm_srli_epi64,
+    __m128i, __m256i, _mm256_alignr_epi8, _mm256_and_si256, _mm256_cmpgt_epi8,
+    _mm256_extracti128_si256, _mm256_lddqu_si256, _mm256_madd_epi16, _mm256_maddubs_epi16,
+    _mm256_movemask_epi8, _mm256_or_si256, _mm256_packus_epi32, _mm256_permute2x128_si256,
+    _mm256_permute4x64_epi64, _mm256_set1_epi8, _mm256_set_epi16, _mm256_set_epi8, _mm_add_epi64,
+    _mm_and_si128, _mm_cmpgt_epi8, _mm_lddqu_si128, _mm_madd_epi16, _mm_maddubs_epi16,
+    _mm_movemask_epi8, _mm_mul_epu32, _mm_or_si128, _mm_packus_epi32, _mm_set1_epi8, _mm_set_epi16,
+    _mm_set_epi32, _mm_set_epi8, _mm_srli_epi64,
 };
 #[cfg(target_arch = "x86_64")]
 use core::arch::x86_64::{
-    __m128i, __m256i, _mm256_and_si256, _mm256_bslli_epi128, _mm256_bsrli_epi128,
-    _mm256_cmpgt_epi8, _mm256_extracti128_si256, _mm256_lddqu_si256, _mm256_madd_epi16,
-    _mm256_maddubs_epi16, _mm256_movemask_epi8, _mm256_or_si256, _mm256_packus_epi32,
-    _mm256_permute2x128_si256, _mm256_permute4x64_epi64, _mm256_set1_epi8, _mm256_set_epi16,
-    _mm256_set_epi8, _mm_add_epi64, _mm_and_si128, _mm_cmpgt_epi8, _mm_cvtsi128_si64,
-    _mm_lddqu_si128, _mm_madd_epi16, _mm_maddubs_epi16, _mm_movemask_epi8, _mm_mul_epu32,
-    _mm_or_si128, _mm_packus_epi32, _mm_set1_epi8, _mm_set_epi16, _mm_set_epi32, _mm_set_epi8,
-    _mm_srli_epi64,
+    __m128i, __m256i, _mm256_alignr_epi8, _mm256_and_si256, _mm256_cmpgt_epi8,
+    _mm256_extracti128_si256, _mm256_lddqu_si256, _mm256_madd_epi16, _mm256_maddubs_epi16,
+    _mm256_movemask_epi8, _mm256_or_si256, _mm256_packus_epi32, _mm256_permute2x128_si256,
+    _mm256_permute4x64_epi64, _mm256_set1_epi8, _mm256_set_epi16, _mm256_set_epi8, _mm_add_epi64,
+    _mm_and_si128, _mm_cmpgt_epi8, _mm_cvtsi128_si64, _mm_lddqu_si128, _mm_madd_epi16,
+    _mm_maddubs_epi16, _mm_movemask_epi8, _mm_mul_epu32, _mm_or_si128, _mm_packus_epi32,
+    _mm_set1_epi8, _mm_set_epi16, _mm_set_epi32, _mm_set_epi8, _mm_srli_epi64,
 };
 
 const CHAR_MAX: i8 = b'9' as i8;
@@ -364,11 +363,6 @@ unsafe fn process_avx(mut chunk: __m256i) -> u128 {
 }
 
 #[inline(always)]
-unsafe fn process_avx_permute2x128(chunk: __m256i) -> __m256i {
-    _mm256_permute2x128_si256(chunk, chunk, 8)
-}
-
-#[inline(always)]
 unsafe fn process_avx_or(chunk: __m256i, mult: __m256i) -> __m256i {
     _mm256_or_si256(chunk, mult)
 }
@@ -412,97 +406,32 @@ pub(crate) unsafe fn parse_simd_u128(s: &[u8]) -> Result<(u128, usize), AtoiSimd
 
     len = len.min(checker_avx(check_high, check_low) as usize);
 
-    let mut mult = process_avx_permute2x128(chunk);
+    let mult = _mm256_permute2x128_si256(chunk, chunk, 40);
 
-    match len {
-        17 => {
-            mult = _mm256_bsrli_epi128(mult, 1);
-            chunk = _mm256_bslli_epi128(chunk, 15);
-            chunk = process_avx_or(chunk, mult);
-        }
-        18 => {
-            mult = _mm256_bsrli_epi128(mult, 2);
-            chunk = _mm256_bslli_epi128(chunk, 14);
-            chunk = process_avx_or(chunk, mult);
-        }
-        19 => {
-            mult = _mm256_bsrli_epi128(mult, 3);
-            chunk = _mm256_bslli_epi128(chunk, 13);
-            chunk = process_avx_or(chunk, mult);
-        }
-        20 => {
-            // maybe can be optimized even further with _mm256_permutevar8x32_epi32
-            mult = _mm256_bsrli_epi128(mult, 4);
-            chunk = _mm256_bslli_epi128(chunk, 12);
-            chunk = process_avx_or(chunk, mult);
-        }
-        21 => {
-            mult = _mm256_bsrli_epi128(mult, 5);
-            chunk = _mm256_bslli_epi128(chunk, 11);
-            chunk = process_avx_or(chunk, mult);
-        }
-        22 => {
-            mult = _mm256_bsrli_epi128(mult, 6);
-            chunk = _mm256_bslli_epi128(chunk, 10);
-            chunk = process_avx_or(chunk, mult);
-        }
-        23 => {
-            mult = _mm256_bsrli_epi128(mult, 7);
-            chunk = _mm256_bslli_epi128(chunk, 9);
-            chunk = process_avx_or(chunk, mult);
-        }
-        24 => {
-            // maybe can be optimized even further with _mm256_permute4x64_epi64
-            mult = _mm256_bsrli_epi128(mult, 8);
-            chunk = _mm256_bslli_epi128(chunk, 8);
-            chunk = process_avx_or(chunk, mult);
-        }
-        25 => {
-            mult = _mm256_bsrli_epi128(mult, 9);
-            chunk = _mm256_bslli_epi128(chunk, 7);
-            chunk = process_avx_or(chunk, mult);
-        }
-        26 => {
-            mult = _mm256_bsrli_epi128(mult, 10);
-            chunk = _mm256_bslli_epi128(chunk, 6);
-            chunk = process_avx_or(chunk, mult);
-        }
-        27 => {
-            mult = _mm256_bsrli_epi128(mult, 11);
-            chunk = _mm256_bslli_epi128(chunk, 5);
-            chunk = process_avx_or(chunk, mult);
-        }
-        28 => {
-            // maybe can be optimized even further with _mm256_permutevar8x32_epi32
-            // let mult = _mm256_set_epi32(6, 5, 4, 3, 2, 1, 0, 0);
-            // chunk = _mm256_permutevar8x32_epi32(chunk, mult);
-            mult = _mm256_bsrli_epi128(mult, 12);
-            chunk = _mm256_bslli_epi128(chunk, 4);
-            chunk = process_avx_or(chunk, mult);
-        }
-        29 => {
-            mult = _mm256_bsrli_epi128(mult, 13);
-            chunk = _mm256_bslli_epi128(chunk, 3);
-            chunk = process_avx_or(chunk, mult);
-        }
-        30 => {
-            mult = _mm256_bsrli_epi128(mult, 14);
-            chunk = _mm256_bslli_epi128(chunk, 2);
-            chunk = process_avx_or(chunk, mult);
-        }
-        31 => {
-            mult = _mm256_bsrli_epi128(mult, 15);
-            chunk = _mm256_bslli_epi128(chunk, 1);
-            chunk = process_avx_or(chunk, mult);
-        }
-        32 => {}
+    chunk = match len {
+        17 => _mm256_alignr_epi8(chunk, mult, 1),
+        18 => _mm256_alignr_epi8(chunk, mult, 2),
+        19 => _mm256_alignr_epi8(chunk, mult, 3),
+        20 => _mm256_alignr_epi8(chunk, mult, 4),
+        21 => _mm256_alignr_epi8(chunk, mult, 5),
+        22 => _mm256_alignr_epi8(chunk, mult, 6),
+        23 => _mm256_alignr_epi8(chunk, mult, 7),
+        24 => _mm256_alignr_epi8(chunk, mult, 8),
+        25 => _mm256_alignr_epi8(chunk, mult, 9),
+        26 => _mm256_alignr_epi8(chunk, mult, 10),
+        27 => _mm256_alignr_epi8(chunk, mult, 11),
+        28 => _mm256_alignr_epi8(chunk, mult, 12),
+        29 => _mm256_alignr_epi8(chunk, mult, 13),
+        30 => _mm256_alignr_epi8(chunk, mult, 14),
+        31 => _mm256_alignr_epi8(chunk, mult, 15),
+        32 => chunk,
         // somehow it's faster that way
         0..=1 => return parse_unchecked_128(s, len),
         s_len => {
             return parse_simd_sse(s, s_len, std::mem::transmute_copy(&chunk))
                 .map(|(v, l)| (v as u128, l))
         }
-    }
+    };
 
     Ok((process_avx(chunk), len))
 }
