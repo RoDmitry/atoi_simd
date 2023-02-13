@@ -4,23 +4,23 @@ use crate::fallback::{parse_fb_128_pos, parse_fb_checked_neg, parse_fb_neg, pars
 use crate::AtoiSimdError;
 #[cfg(target_arch = "x86")]
 use core::arch::x86::{
-    __m128i, __m256i, _mm256_alignr_epi8, _mm256_and_si256, _mm256_cmpgt_epi8,
-    _mm256_extracti128_si256, _mm256_lddqu_si256, _mm256_madd_epi16, _mm256_maddubs_epi16,
-    _mm256_movemask_epi8, _mm256_or_si256, _mm256_packus_epi32, _mm256_permute2x128_si256,
-    _mm256_permute4x64_epi64, _mm256_set1_epi8, _mm256_set_epi16, _mm256_set_epi8, _mm_add_epi64,
-    _mm_and_si128, _mm_cmpgt_epi8, _mm_lddqu_si128, _mm_madd_epi16, _mm_maddubs_epi16,
-    _mm_movemask_epi8, _mm_mul_epu32, _mm_or_si128, _mm_packus_epi32, _mm_set1_epi8, _mm_set_epi16,
-    _mm_set_epi32, _mm_set_epi8, _mm_srli_epi64,
+    __m128i, __m256i, _mm256_and_si256, _mm256_cmpgt_epi8, _mm256_extracti128_si256,
+    _mm256_lddqu_si256, _mm256_madd_epi16, _mm256_maddubs_epi16, _mm256_movemask_epi8,
+    _mm256_or_si256, _mm256_packus_epi32, _mm256_permute4x64_epi64, _mm256_set1_epi8,
+    _mm256_set_epi16, _mm256_set_epi8, _mm_add_epi64, _mm_and_si128, _mm_cmpgt_epi8,
+    _mm_lddqu_si128, _mm_madd_epi16, _mm_maddubs_epi16, _mm_movemask_epi8, _mm_mul_epu32,
+    _mm_or_si128, _mm_packus_epi32, _mm_set1_epi8, _mm_set_epi16, _mm_set_epi32, _mm_set_epi64x,
+    _mm_set_epi8, _mm_srli_epi64,
 };
 #[cfg(target_arch = "x86_64")]
 use core::arch::x86_64::{
-    __m128i, __m256i, _mm256_alignr_epi8, _mm256_and_si256, _mm256_cmpgt_epi8,
-    _mm256_extracti128_si256, _mm256_lddqu_si256, _mm256_madd_epi16, _mm256_maddubs_epi16,
-    _mm256_movemask_epi8, _mm256_or_si256, _mm256_packus_epi32, _mm256_permute2x128_si256,
-    _mm256_permute4x64_epi64, _mm256_set1_epi8, _mm256_set_epi16, _mm256_set_epi8, _mm_add_epi64,
-    _mm_and_si128, _mm_cmpgt_epi8, _mm_cvtsi128_si64, _mm_lddqu_si128, _mm_madd_epi16,
-    _mm_maddubs_epi16, _mm_movemask_epi8, _mm_mul_epu32, _mm_or_si128, _mm_packus_epi32,
-    _mm_set1_epi8, _mm_set_epi16, _mm_set_epi32, _mm_set_epi8, _mm_srli_epi64,
+    __m128i, __m256i, _mm256_and_si256, _mm256_cmpgt_epi8, _mm256_extracti128_si256,
+    _mm256_lddqu_si256, _mm256_madd_epi16, _mm256_maddubs_epi16, _mm256_movemask_epi8,
+    _mm256_or_si256, _mm256_packus_epi32, _mm256_permute4x64_epi64, _mm256_set1_epi8,
+    _mm256_set_epi16, _mm256_set_epi8, _mm_add_epi64, _mm_and_si128, _mm_cmpgt_epi8,
+    _mm_cvtsi128_si64, _mm_lddqu_si128, _mm_madd_epi16, _mm_maddubs_epi16, _mm_movemask_epi8,
+    _mm_mul_epu32, _mm_or_si128, _mm_packus_epi32, _mm_set1_epi8, _mm_set_epi16, _mm_set_epi32,
+    _mm_set_epi64x, _mm_set_epi8, _mm_srli_epi64,
 };
 
 const CHAR_MAX: i8 = b'9' as i8;
@@ -302,20 +302,18 @@ fn parse_simd_sse_checked(s: &[u8]) -> Result<(u64, usize), AtoiSimdError> {
 /// Parses string of *only* digits
 /// Uses AVX/AVX2 intrinsics
 #[inline(always)]
-unsafe fn process_avx(mut chunk: __m256i) -> u128 {
-    let mut mult = _mm256_set_epi8(
-        1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10,
-        1, 10, 1, 10, 1, 10,
-    );
+unsafe fn process_avx(
+    mut chunk: __m256i,
+    mult1: __m256i,
+    mult2: __m256i,
+    mult4: i64,
+    mult8: i32,
+    mult16: u128,
+) -> u128 {
     // mult 1 char
-    chunk = _mm256_maddubs_epi16(chunk, mult);
-
-    mult = _mm256_set_epi16(
-        1, 100, 1, 100, 1, 100, 1, 100, 1, 100, 1, 100, 1, 100, 1, 100,
-    );
+    chunk = _mm256_maddubs_epi16(chunk, mult1);
     // mult 2
-    chunk = _mm256_madd_epi16(chunk, mult);
-
+    chunk = _mm256_madd_epi16(chunk, mult2);
     // remove extra bytes
     chunk = _mm256_packus_epi32(chunk, chunk);
 
@@ -327,13 +325,13 @@ unsafe fn process_avx(mut chunk: __m256i) -> u128 {
     chunk = _mm256_permute4x64_epi64(chunk, 8);
     let mut chunk = _mm256_extracti128_si256(chunk, 0);
 
-    let mut mult = _mm_set_epi16(1, 10000, 1, 10000, 1, 10000, 1, 10000);
+    let mut mult = _mm_set_epi64x(mult4, 0x1_2710_0001_2710);
     // mult 4
     chunk = _mm_madd_epi16(chunk, mult);
 
-    mult = _mm_set_epi32(0, 100_000_000, 0, 100_000_000);
+    mult = _mm_set_epi32(0, mult8, 0, 100_000_000);
     // mult 8
-    mult = _mm_mul_epu32(chunk, mult);
+    let mult = _mm_mul_epu32(chunk, mult);
     // add higher 32 bits of old 64 to mult
     chunk = _mm_srli_epi64(chunk, 32);
     chunk = _mm_add_epi64(chunk, mult);
@@ -341,7 +339,7 @@ unsafe fn process_avx(mut chunk: __m256i) -> u128 {
     let arr = std::mem::transmute::<__m128i, [u64; 2]>(chunk);
 
     // mult 16
-    arr[0] as u128 * 10_000_000_000_000_000 + arr[1] as u128
+    arr[0] as u128 * mult16 + arr[1] as u128
 
     // AVX intrinsics
     /* mult = _mm256_set_epi16(
@@ -386,7 +384,10 @@ pub(crate) unsafe fn parse_simd_u128(s: &[u8]) -> Result<(u128, usize), AtoiSimd
         return parse_simd_sse_checked(s).map(|(v, l)| (v as u128, l));
     }
 
-    let mut chunk = read_avx(s);
+    let chunk = read_avx(s);
+    // to numbers
+    let chunk_num = _mm256_and_si256(chunk, _mm256_set1_epi8(0xF));
+
     let cmp_max = _mm256_set_epi8(
         CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
         CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
@@ -401,39 +402,213 @@ pub(crate) unsafe fn parse_simd_u128(s: &[u8]) -> Result<(u128, usize), AtoiSimd
     );
     let check_high = process_avx_gt(chunk, cmp_max);
     let check_low = process_avx_gt(cmp_min, chunk);
-    // to numbers
-    chunk = _mm256_and_si256(chunk, _mm256_set1_epi8(0xF));
-
     len = len.min(checker_avx(check_high, check_low) as usize);
 
-    let mult = _mm256_permute2x128_si256(chunk, chunk, 40);
-
-    chunk = match len {
-        17 => _mm256_alignr_epi8(chunk, mult, 1),
-        18 => _mm256_alignr_epi8(chunk, mult, 2),
-        19 => _mm256_alignr_epi8(chunk, mult, 3),
-        20 => _mm256_alignr_epi8(chunk, mult, 4),
-        21 => _mm256_alignr_epi8(chunk, mult, 5),
-        22 => _mm256_alignr_epi8(chunk, mult, 6),
-        23 => _mm256_alignr_epi8(chunk, mult, 7),
-        24 => _mm256_alignr_epi8(chunk, mult, 8),
-        25 => _mm256_alignr_epi8(chunk, mult, 9),
-        26 => _mm256_alignr_epi8(chunk, mult, 10),
-        27 => _mm256_alignr_epi8(chunk, mult, 11),
-        28 => _mm256_alignr_epi8(chunk, mult, 12),
-        29 => _mm256_alignr_epi8(chunk, mult, 13),
-        30 => _mm256_alignr_epi8(chunk, mult, 14),
-        31 => _mm256_alignr_epi8(chunk, mult, 15),
-        32 => chunk,
+    let (mult1, mult2, mult4, mult8, mult16) = match len {
+        17 => (
+            _mm256_set_epi8(
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, /*16*/ 1, 10, 1, 10, 1, 10, 1,
+                10, 1, 10, 1, 10, 1, 10, 1, 10,
+            ),
+            _mm256_set_epi16(
+                0, 0, 0, 0, 0, 0, 0, 1, /*8*/ 1, 100, 1, 100, 1, 100, 1, 100,
+            ),
+            1,
+            1,
+            10,
+        ),
+        18 => (
+            _mm256_set_epi8(
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 10, /*16*/ 1, 10, 1, 10, 1, 10,
+                1, 10, 1, 10, 1, 10, 1, 10, 1, 10,
+            ),
+            _mm256_set_epi16(
+                0, 0, 0, 0, 0, 0, 0, 1, /*8*/ 1, 100, 1, 100, 1, 100, 1, 100,
+            ),
+            1,
+            1,
+            100,
+        ),
+        19 => (
+            _mm256_set_epi8(
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 10, /*16*/ 1, 10, 1, 10, 1, 10,
+                1, 10, 1, 10, 1, 10, 1, 10, 1, 10,
+            ),
+            _mm256_set_epi16(
+                0, 0, 0, 0, 0, 0, 1, 10, /*8*/ 1, 100, 1, 100, 1, 100, 1, 100,
+            ),
+            1,
+            1,
+            1000,
+        ),
+        20 => (
+            _mm256_set_epi8(
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 10, 1, 10, /*16*/ 1, 10, 1, 10, 1, 10,
+                1, 10, 1, 10, 1, 10, 1, 10, 1, 10,
+            ),
+            _mm256_set_epi16(
+                0, 0, 0, 0, 0, 0, 1, 100, /*8*/ 1, 100, 1, 100, 1, 100, 1, 100,
+            ),
+            1,
+            1,
+            10_000,
+        ),
+        21 => (
+            _mm256_set_epi8(
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 10, 1, 10, /*16*/ 1, 10, 1, 10, 1, 10,
+                1, 10, 1, 10, 1, 10, 1, 10, 1, 10,
+            ),
+            _mm256_set_epi16(
+                0, 0, 0, 0, 0, 1, 1, 100, /*8*/ 1, 100, 1, 100, 1, 100, 1, 100,
+            ),
+            0x1_000A, // 1, 10
+            1,
+            100_000,
+        ),
+        22 => (
+            _mm256_set_epi8(
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 10, 1, 10, 1, 10, /*16*/ 1, 10, 1, 10, 1, 10,
+                1, 10, 1, 10, 1, 10, 1, 10, 1, 10,
+            ),
+            _mm256_set_epi16(
+                0, 0, 0, 0, 0, 1, 1, 100, /*8*/ 1, 100, 1, 100, 1, 100, 1, 100,
+            ),
+            0x1_0064, // 1, 100
+            1,
+            1000_000,
+        ),
+        23 => (
+            _mm256_set_epi8(
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 10, 1, 10, 1, 10, /*16*/ 1, 10, 1, 10, 1, 10,
+                1, 10, 1, 10, 1, 10, 1, 10, 1, 10,
+            ),
+            _mm256_set_epi16(
+                0, 0, 0, 0, 1, 10, 1, 100, /*8*/ 1, 100, 1, 100, 1, 100, 1, 100,
+            ),
+            0x1_03E8, // 1, 1000
+            1,
+            10_000_000,
+        ),
+        24 => (
+            _mm256_set_epi8(
+                0, 0, 0, 0, 0, 0, 0, 0, 1, 10, 1, 10, 1, 10, 1, 10, /*16*/ 1, 10, 1, 10, 1,
+                10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10,
+            ),
+            _mm256_set_epi16(
+                0, 0, 0, 0, 1, 100, 1, 100, /*8*/ 1, 100, 1, 100, 1, 100, 1, 100,
+            ),
+            0x1_2710, // 1, 10000
+            1,
+            100_000_000,
+        ),
+        25 => (
+            _mm256_set_epi8(
+                0, 0, 0, 0, 0, 0, 0, 1, 1, 10, 1, 10, 1, 10, 1, 10, /*16*/ 1, 10, 1, 10, 1,
+                10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10,
+            ),
+            _mm256_set_epi16(
+                0, 0, 0, 1, 1, 100, 1, 100, /*8*/ 1, 100, 1, 100, 1, 100, 1, 100,
+            ),
+            0x1_0001_2710, // 1, 1, 10000
+            10,
+            1000_000_000,
+        ),
+        26 => (
+            _mm256_set_epi8(
+                0, 0, 0, 0, 0, 0, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, /*16*/ 1, 10, 1, 10, 1,
+                10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10,
+            ),
+            _mm256_set_epi16(
+                0, 0, 0, 1, 1, 100, 1, 100, /*8*/ 1, 100, 1, 100, 1, 100, 1, 100,
+            ),
+            0x1_0001_2710, // 1, 1, 10000
+            100,
+            10_000_000_000,
+        ),
+        27 => (
+            _mm256_set_epi8(
+                0, 0, 0, 0, 0, 1, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, /*16*/ 1, 10, 1, 10, 1,
+                10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10,
+            ),
+            _mm256_set_epi16(
+                0, 0, 1, 10, 1, 100, 1, 100, /*8*/ 1, 100, 1, 100, 1, 100, 1, 100,
+            ),
+            0x1_0001_2710, // 1, 1, 10000
+            1000,
+            100_000_000_000,
+        ),
+        28 => (
+            _mm256_set_epi8(
+                0, 0, 0, 0, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, /*16*/ 1, 10, 1, 10, 1,
+                10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10,
+            ),
+            _mm256_set_epi16(
+                0, 0, 1, 100, 1, 100, 1, 100, /*8*/ 1, 100, 1, 100, 1, 100, 1, 100,
+            ),
+            0x1_0001_2710, // 1, 1, 10000
+            10_000,
+            1000_000_000_000,
+        ),
+        29 => (
+            _mm256_set_epi8(
+                0, 0, 0, 1, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, /*16*/ 1, 10, 1, 10, 1,
+                10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10,
+            ),
+            _mm256_set_epi16(
+                0, 1, 1, 100, 1, 100, 1, 100, /*8*/ 1, 100, 1, 100, 1, 100, 1, 100,
+            ),
+            0x1_000A_0001_2710, // 1, 10, 1, 10000
+            100_000,
+            10_000_000_000_000,
+        ),
+        30 => (
+            _mm256_set_epi8(
+                0, 0, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, /*16*/ 1, 10, 1, 10, 1,
+                10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10,
+            ),
+            _mm256_set_epi16(
+                0, 1, 1, 100, 1, 100, 1, 100, /*8*/ 1, 100, 1, 100, 1, 100, 1, 100,
+            ),
+            0x1_0064_0001_2710, // 1, 100, 1, 10000
+            1000_000,
+            100_000_000_000_000,
+        ),
+        31 => (
+            _mm256_set_epi8(
+                0, 1, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, /*16*/ 1, 10, 1, 10, 1,
+                10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10,
+            ),
+            _mm256_set_epi16(
+                1, 10, 1, 100, 1, 100, 1, 100, /*8*/ 1, 100, 1, 100, 1, 100, 1, 100,
+            ),
+            0x1_03E8_0001_2710, // 1, 1000, 1, 10000
+            10_000_000,
+            1000_000_000_000_000,
+        ),
+        32 => (
+            _mm256_set_epi8(
+                1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, /*16*/ 1, 10, 1, 10,
+                1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10,
+            ),
+            _mm256_set_epi16(
+                1, 100, 1, 100, 1, 100, 1, 100, /*8*/ 1, 100, 1, 100, 1, 100, 1, 100,
+            ),
+            0x1_2710_0001_2710, // 1, 10000, 1, 10000
+            100_000_000,
+            10_000_000_000_000_000,
+        ),
         // somehow it's faster that way
         0..=1 => return parse_unchecked_128(s, len),
         s_len => {
-            return parse_simd_sse(s, s_len, std::mem::transmute_copy(&chunk))
+            return parse_simd_sse(s, s_len, std::mem::transmute_copy(&chunk_num))
                 .map(|(v, l)| (v as u128, l))
         }
     };
 
-    Ok((process_avx(chunk), len))
+    Ok((
+        process_avx(chunk_num, mult1, mult2, mult4, mult8, mult16),
+        len,
+    ))
 }
 
 #[inline(always)]
