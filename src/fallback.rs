@@ -65,7 +65,7 @@ pub(crate) fn parse_fb_neg<const MIN: i64>(s: &[u8]) -> Result<(i64, usize), Ato
                         let digit = (c & 0xF) as i64;
 
                         if overflow_neg!(res * 10 - digit, MIN) {
-                            return Err(AtoiSimdError::Overflow64(MIN as u64, s));
+                            return Err(AtoiSimdError::Overflow64Neg(MIN, s));
                         }
 
                         res = res * 10 - digit;
@@ -127,7 +127,7 @@ pub(crate) fn parse_fb_128_neg(s: &[u8]) -> Result<(i128, usize), AtoiSimdError>
                         let digit = (c & 0xF) as i128;
 
                         if overflow_neg!(res * 10 - digit, i128::MIN) {
-                            return Err(AtoiSimdError::Overflow128(i128::MIN as u128, s));
+                            return Err(AtoiSimdError::Overflow128Neg(i128::MIN, s));
                         }
 
                         res = res * 10 - digit;
@@ -155,7 +155,7 @@ pub(crate) fn parse_fb_checked_pos<const MAX: u64>(s: &[u8]) -> Result<u64, Atoi
 pub(crate) fn parse_fb_checked_neg<const MIN: i64>(s: &[u8]) -> Result<i64, AtoiSimdError> {
     let (res, len) = parse_fb_neg::<{ MIN }>(s)?;
     if len < s.len() {
-        return Err(AtoiSimdError::Invalid64(res as u64, len));
+        return Err(AtoiSimdError::Invalid64(-res as u64, len));
     }
     Ok(res)
 }
@@ -173,7 +173,7 @@ pub(crate) fn parse_fb_checked_128_pos(s: &[u8]) -> Result<u128, AtoiSimdError> 
 pub(crate) fn parse_fb_checked_128_neg(s: &[u8]) -> Result<i128, AtoiSimdError> {
     let (res, len) = parse_fb_128_neg(s)?;
     if len < s.len() {
-        return Err(AtoiSimdError::Invalid128(res as u128, len));
+        return Err(AtoiSimdError::Invalid128(-res as u128, len));
     }
     Ok(res)
 }
