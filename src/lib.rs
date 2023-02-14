@@ -29,7 +29,6 @@
 //! assert_eq!(atoi_simd::parse::<i64>("-2345".as_bytes()).unwrap(), -2345_i64);
 //! ```
 #![allow(clippy::comparison_chain)]
-#![allow(clippy::collapsible_else_if)]
 
 mod error;
 mod fallback;

@@ -439,7 +439,7 @@ pub(crate) unsafe fn parse_simd_u128(s: &[u8]) -> Result<(u128, usize), AtoiSimd
             ),
             1,
             1,
-            1000,
+            1_000,
         ),
         20 => (
             _mm256_set_epi8(
@@ -475,7 +475,7 @@ pub(crate) unsafe fn parse_simd_u128(s: &[u8]) -> Result<(u128, usize), AtoiSimd
             ),
             0x1_0064, // 1, 100
             1,
-            1000_000,
+            1_000_000,
         ),
         23 => (
             _mm256_set_epi8(
@@ -511,7 +511,7 @@ pub(crate) unsafe fn parse_simd_u128(s: &[u8]) -> Result<(u128, usize), AtoiSimd
             ),
             0x1_0001_2710, // 1, 1, 10000
             10,
-            1000_000_000,
+            1_000_000_000,
         ),
         26 => (
             _mm256_set_epi8(
@@ -547,7 +547,7 @@ pub(crate) unsafe fn parse_simd_u128(s: &[u8]) -> Result<(u128, usize), AtoiSimd
             ),
             0x1_0001_2710, // 1, 1, 10000
             10_000,
-            1000_000_000_000,
+            1_000_000_000_000,
         ),
         29 => (
             _mm256_set_epi8(
@@ -570,7 +570,7 @@ pub(crate) unsafe fn parse_simd_u128(s: &[u8]) -> Result<(u128, usize), AtoiSimd
                 0, 1, 1, 100, 1, 100, 1, 100, /*8*/ 1, 100, 1, 100, 1, 100, 1, 100,
             ),
             0x1_0064_0001_2710, // 1, 100, 1, 10000
-            1000_000,
+            1_000_000,
             100_000_000_000_000,
         ),
         31 => (
@@ -583,7 +583,7 @@ pub(crate) unsafe fn parse_simd_u128(s: &[u8]) -> Result<(u128, usize), AtoiSimd
             ),
             0x1_03E8_0001_2710, // 1, 1000, 1, 10000
             10_000_000,
-            1000_000_000_000_000,
+            1_000_000_000_000_000,
         ),
         32 => (
             _mm256_set_epi8(
