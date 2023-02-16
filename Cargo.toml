@@ -2,7 +2,7 @@
 name = "atoi_simd"
 version = "0.10.0"
 authors = ["Dmitry Rodionov <18184039+RoDmitry@users.noreply.github.com>"]
-description = "Rust fast `&[u8]` to integer parser"
+description = "Fast `&[u8]` to integer parser"
 repository = "https://github.com/RoDmitry/atoi_simd"
 homepage = "https://github.com/RoDmitry/atoi_simd"
 readme = "README.md"

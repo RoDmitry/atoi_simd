@@ -73,7 +73,7 @@ unsafe fn checker_avx(check: __m256i, check2: __m256i) -> u32 {
 #[cfg(target_arch = "x86")]
 #[inline(always)]
 unsafe fn to_u64(chunk: __m128i) -> u64 {
-    std::mem::transmute::<__m128i, [u64; 2]>(chunk)[0]
+    std::mem::transmute_copy(&chunk)
 }
 
 #[cfg(target_arch = "x86_64")]
@@ -82,10 +82,10 @@ unsafe fn to_u64(chunk: __m128i) -> u64 {
     _mm_cvtsi128_si64(chunk) as u64
 }
 
-#[inline(always)]
+/* #[inline(always)]
 unsafe fn to_u32x4(chunk: __m128i) -> [u32; 4] {
     std::mem::transmute(chunk)
-}
+} */
 
 #[inline(always)]
 unsafe fn process_mult1(chunk: __m128i, mult1: __m128i) -> __m128i {
@@ -129,11 +129,11 @@ unsafe fn process_big(
 ) -> u64 {
     chunk = process_medium(chunk, mult1, mult2, mult4);
 
-    // let chunk = to_u64(chunk);
-    // ((chunk & 0xFFFF_FFFF) * 100_000_000) + (chunk >> 32)
+    let res = to_u64(chunk);
+    ((res & 0xFFFF_FFFF) * mult8) + (res >> 32)
 
-    let arr = to_u32x4(chunk);
-    (arr[0] as u64 * mult8) + (arr[1] as u64)
+    // let arr = to_u32x4(chunk);
+    // (arr[0] as u64 * mult8) + (arr[1] as u64)
 }
 
 #[inline(always)]
@@ -358,11 +358,6 @@ unsafe fn process_avx(
     let arr = std::mem::transmute::<__m256i, [u128; 2]>(chunk);
 
     arr[0] * 10_000_000_000_000_000 + arr[1] */
-}
-
-#[inline(always)]
-unsafe fn process_avx_or(chunk: __m256i, mult: __m256i) -> __m256i {
-    _mm256_or_si256(chunk, mult)
 }
 
 #[inline(always)]
