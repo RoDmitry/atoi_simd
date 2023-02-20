@@ -49,9 +49,49 @@ You can run `cargo bench` on your machine.
 
 More information you can find [here](https://rodmitry.github.io/atoi_simd_benchmark).
 
-v0.6+ is even faster!
+<details open><summary>v0.10.1</summary>
 
-<details open><summary>v0.4-v0.5</summary>
+<b>Rust 1.67.1</b>, Windows 10, Intel i7 9700K, "target-feature" set
+
+![benchmark 64](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.10.1/benchmark%2064/report/lines.svg?raw=true)
+
+![benchmark 128](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.10.1/benchmark%20128/report/lines.svg?raw=true)
+
+#### `parse::<u64>()`
+
+![parse::\<u64>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.10.1/benchmark%2064/u64/report/lines.svg?raw=true)
+
+#### `str::parse::<u64>()`
+
+![str::parse::\<u64>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.10.1/benchmark%2064/str%20u64/report/lines.svg?raw=true)
+
+#### `parse::<i64>()`
+
+![parse::\<i64>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.10.1/benchmark%2064/i64/report/lines.svg?raw=true)
+
+#### `str::parse::<i64>()`
+
+![str::parse::\<i64>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.10.1/benchmark%2064/str%20i64/report/lines.svg?raw=true)
+
+#### `parse::<u128>()`
+
+![parse::\<u128>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.10.1/benchmark%20128/u128/report/lines.svg?raw=true)
+
+#### `str::parse::<u128>()`
+
+![str::parse::\<u128>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.10.1/benchmark%20128/str%20u128/report/lines.svg?raw=true)
+
+#### `parse::<i128>()`
+
+![parse::\<i128>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.10.1/benchmark%20128/i128/report/lines.svg?raw=true)
+
+#### `str::parse::<i128>()`
+
+![str::parse::\<i128>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.10.1/benchmark%20128/str%20i128/report/lines.svg?raw=true)
+
+</details>
+
+<details><summary>v0.4-v0.5</summary>
 
 <b>Rust 1.63</b>, Windows 10, Intel i7 9700K, "target-feature" set
 
