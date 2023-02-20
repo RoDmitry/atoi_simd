@@ -331,7 +331,7 @@ unsafe fn process_avx(
 
     mult = _mm_set_epi32(0, mult8, 0, 100_000_000);
     // mult 8
-    let mult = _mm_mul_epu32(chunk, mult);
+    mult = _mm_mul_epu32(chunk, mult);
     // add higher 32 bits of old 64 to mult
     chunk = _mm_srli_epi64(chunk, 32);
     chunk = _mm_add_epi64(chunk, mult);
@@ -345,11 +345,11 @@ unsafe fn process_avx(
     /* mult = _mm256_set_epi16(
         0, 0, 0, 0, 1, 10000, 1, 10000, 0, 0, 0, 0, 1, 10000, 1, 10000,
     );
-    // mult 10000
+    // mult 4
     chunk = _mm256_madd_epi16(chunk, mult);
 
     mult = _mm256_set_epi32(0, 0, 0, 100_000_000, 0, 0, 0, 100_000_000);
-    // mult 100_000_000
+    // mult 8
     mult = _mm256_mul_epu32(chunk, mult);
 
     chunk = _mm256_srli_epi64(chunk, 32);
@@ -357,7 +357,7 @@ unsafe fn process_avx(
 
     let arr = std::mem::transmute::<__m256i, [u128; 2]>(chunk);
 
-    arr[0] * 10_000_000_000_000_000 + arr[1] */
+    arr[0] * mult16 + arr[1] */
 }
 
 #[inline(always)]
