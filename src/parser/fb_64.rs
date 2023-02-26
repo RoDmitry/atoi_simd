@@ -107,12 +107,12 @@ impl Parser<i64> for i64 {
 impl ParserPos<u128> for u128 {
     #[inline(always)]
     fn atoi_simd_parse_pos(s: &[u8]) -> Result<u128, AtoiSimdError> {
-        parse_fb_checked_128_pos(s)
+        parse_fb_checked_128_pos::<{ u128::MAX }>(s)
     }
 
     #[inline(always)]
     fn atoi_simd_parse_until_invalid_pos(s: &[u8]) -> Result<(u128, usize), AtoiSimdError> {
-        parse_fb_128_pos(s)
+        parse_fb_128_pos::<{ u128::MAX }>(s)
     }
 }
 impl Parser<u128> for u128 {}
@@ -120,12 +120,12 @@ impl Parser<u128> for u128 {}
 impl ParserPos<i128> for i128 {
     #[inline(always)]
     fn atoi_simd_parse_pos(s: &[u8]) -> Result<i128, AtoiSimdError> {
-        parse_fb_checked_128_pos(s).map(|v| v as i128)
+        parse_fb_checked_128_pos::<{ i128::MAX as u128 }>(s).map(|v| v as i128)
     }
 
     #[inline(always)]
     fn atoi_simd_parse_until_invalid_pos(s: &[u8]) -> Result<(i128, usize), AtoiSimdError> {
-        parse_fb_128_pos(s).map(|(v, i)| (v as i128, i))
+        parse_fb_128_pos::<{ i128::MAX as u128 }>(s).map(|(v, i)| (v as i128, i))
     }
 }
 

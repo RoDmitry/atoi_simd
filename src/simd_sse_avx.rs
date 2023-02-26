@@ -4,23 +4,25 @@ use crate::fallback::{parse_fb_128_pos, parse_fb_checked_neg, parse_fb_neg, pars
 use crate::AtoiSimdError;
 #[cfg(target_arch = "x86")]
 use core::arch::x86::{
-    __m128i, __m256i, _mm256_and_si256, _mm256_cmpgt_epi8, _mm256_extracti128_si256,
-    _mm256_lddqu_si256, _mm256_madd_epi16, _mm256_maddubs_epi16, _mm256_movemask_epi8,
-    _mm256_or_si256, _mm256_packus_epi32, _mm256_permute4x64_epi64, _mm256_set1_epi8,
-    _mm256_set_epi16, _mm256_set_epi8, _mm_add_epi64, _mm_and_si128, _mm_cmpgt_epi8,
-    _mm_lddqu_si128, _mm_madd_epi16, _mm_maddubs_epi16, _mm_movemask_epi8, _mm_mul_epu32,
-    _mm_or_si128, _mm_packus_epi32, _mm_set1_epi8, _mm_set_epi16, _mm_set_epi32, _mm_set_epi64x,
-    _mm_set_epi8, _mm_srli_epi64,
+    __m128i, __m256i, _mm256_add_epi64, _mm256_and_si256, _mm256_cmpgt_epi8,
+    _mm256_extracti128_si256, _mm256_lddqu_si256, _mm256_madd_epi16, _mm256_maddubs_epi16,
+    _mm256_movemask_epi8, _mm256_mul_epu32, _mm256_or_si256, _mm256_packus_epi32,
+    _mm256_permute4x64_epi64, _mm256_set1_epi8, _mm256_set_epi16, _mm256_set_epi32,
+    _mm256_set_epi8, _mm256_set_m128i, _mm256_srli_epi64, _mm_add_epi64, _mm_and_si128,
+    _mm_cmpgt_epi8, _mm_lddqu_si128, _mm_madd_epi16, _mm_maddubs_epi16, _mm_movemask_epi8,
+    _mm_mul_epu32, _mm_or_si128, _mm_packus_epi32, _mm_set1_epi8, _mm_set_epi16, _mm_set_epi32,
+    _mm_set_epi64x, _mm_set_epi8, _mm_srli_epi64,
 };
 #[cfg(target_arch = "x86_64")]
 use core::arch::x86_64::{
-    __m128i, __m256i, _mm256_and_si256, _mm256_cmpgt_epi8, _mm256_extracti128_si256,
-    _mm256_lddqu_si256, _mm256_madd_epi16, _mm256_maddubs_epi16, _mm256_movemask_epi8,
-    _mm256_or_si256, _mm256_packus_epi32, _mm256_permute4x64_epi64, _mm256_set1_epi8,
-    _mm256_set_epi16, _mm256_set_epi8, _mm_add_epi64, _mm_and_si128, _mm_cmpgt_epi8,
-    _mm_cvtsi128_si64, _mm_lddqu_si128, _mm_madd_epi16, _mm_maddubs_epi16, _mm_movemask_epi8,
-    _mm_mul_epu32, _mm_or_si128, _mm_packus_epi32, _mm_set1_epi8, _mm_set_epi16, _mm_set_epi32,
-    _mm_set_epi64x, _mm_set_epi8, _mm_srli_epi64,
+    __m128i, __m256i, _mm256_add_epi64, _mm256_and_si256, _mm256_cmpgt_epi8,
+    _mm256_extracti128_si256, _mm256_lddqu_si256, _mm256_madd_epi16, _mm256_maddubs_epi16,
+    _mm256_movemask_epi8, _mm256_mul_epu32, _mm256_or_si256, _mm256_packus_epi32,
+    _mm256_permute4x64_epi64, _mm256_set1_epi8, _mm256_set_epi16, _mm256_set_epi32,
+    _mm256_set_epi8, _mm256_set_m128i, _mm256_srli_epi64, _mm_add_epi64, _mm_and_si128,
+    _mm_cmpgt_epi8, _mm_cvtsi128_si64, _mm_lddqu_si128, _mm_madd_epi16, _mm_maddubs_epi16,
+    _mm_movemask_epi8, _mm_mul_epu32, _mm_or_si128, _mm_packus_epi32, _mm_set1_epi8, _mm_set_epi16,
+    _mm_set_epi32, _mm_set_epi64x, _mm_set_epi8, _mm_srli_epi64,
 };
 
 const CHAR_MAX: i8 = b'9' as i8;
@@ -29,12 +31,12 @@ const CHAR_MIN: i8 = b'0' as i8;
 /// s = "1234567890123456"
 #[inline(always)]
 unsafe fn read(s: &[u8]) -> __m128i {
-    _mm_lddqu_si128(std::mem::transmute_copy(&s))
+    _mm_lddqu_si128(core::mem::transmute_copy(&s))
 }
 
 #[inline(always)]
 unsafe fn read_avx(s: &[u8]) -> __m256i {
-    _mm256_lddqu_si256(std::mem::transmute_copy(&s))
+    _mm256_lddqu_si256(core::mem::transmute_copy(&s))
 }
 
 /// converts chars  [ 0x36353433323130393837363534333231 ]
@@ -73,7 +75,7 @@ unsafe fn checker_avx(check: __m256i, check2: __m256i) -> u32 {
 #[cfg(target_arch = "x86")]
 #[inline(always)]
 unsafe fn to_u64(chunk: __m128i) -> u64 {
-    std::mem::transmute_copy(&chunk)
+    core::mem::transmute_copy(&chunk)
 }
 
 #[cfg(target_arch = "x86_64")]
@@ -84,7 +86,7 @@ unsafe fn to_u64(chunk: __m128i) -> u64 {
 
 /* #[inline(always)]
 unsafe fn to_u32x4(chunk: __m128i) -> [u32; 4] {
-    std::mem::transmute(chunk)
+    core::mem::transmute(chunk)
 } */
 
 #[inline(always)]
@@ -277,7 +279,7 @@ unsafe fn parse_simd_sse(
 }
 
 #[inline(always)]
-fn parse_simd_sse_checked(s: &[u8]) -> Result<(u64, usize), AtoiSimdError> {
+fn simd_sse_check(s: &[u8]) -> Result<(usize, __m128i), AtoiSimdError> {
     unsafe {
         let mut chunk = read(s);
         let cmp_high = _mm_set_epi8(
@@ -295,6 +297,14 @@ fn parse_simd_sse_checked(s: &[u8]) -> Result<(u64, usize), AtoiSimdError> {
 
         let len = s.len().min(checker(check_high, check_low) as usize);
 
+        Ok((len, chunk))
+    }
+}
+
+#[inline(always)]
+fn parse_simd_sse_checked(s: &[u8]) -> Result<(u64, usize), AtoiSimdError> {
+    unsafe {
+        let (len, chunk) = simd_sse_check(s)?;
         parse_simd_sse(s, len, chunk)
     }
 }
@@ -336,7 +346,7 @@ unsafe fn process_avx(
     chunk = _mm_srli_epi64(chunk, 32);
     chunk = _mm_add_epi64(chunk, mult);
 
-    let arr = std::mem::transmute::<__m128i, [u64; 2]>(chunk);
+    let arr = core::mem::transmute::<__m128i, [u64; 2]>(chunk);
 
     // mult 16
     arr[0] as u128 * mult16 + arr[1] as u128
@@ -355,9 +365,64 @@ unsafe fn process_avx(
     chunk = _mm256_srli_epi64(chunk, 32);
     chunk = _mm256_add_epi64(chunk, mult);
 
-    let arr = std::mem::transmute::<__m256i, [u128; 2]>(chunk);
+    let arr = core::mem::transmute::<__m256i, [u128; 2]>(chunk);
 
     arr[0] * mult16 + arr[1] */
+}
+
+/// Parses string of *only* digits
+/// Uses AVX/AVX2 intrinsics
+#[inline(always)]
+unsafe fn process_avx_big(
+    s: &[u8],
+    mut chunk: __m256i,
+    mut chunk_sse: __m128i,
+    mult1: __m128i,
+    mult2: __m128i,
+    mult4: __m128i,
+    mult16: u32,
+) -> Result<u128, AtoiSimdError> {
+    let mut mult = _mm256_set_epi8(
+        1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10,
+        1, 10, 1, 10, 1, 10,
+    );
+    // mult 1 char
+    chunk = _mm256_maddubs_epi16(chunk, mult);
+
+    chunk_sse = process_small(chunk_sse, mult1, mult2);
+
+    mult = _mm256_set_epi16(
+        1, 100, 1, 100, 1, 100, 1, 100, 1, 100, 1, 100, 1, 100, 1, 100,
+    );
+    // mult 2
+    chunk = _mm256_madd_epi16(chunk, mult);
+    // remove extra bytes
+    chunk = _mm256_packus_epi32(chunk, chunk);
+
+    chunk_sse = _mm_packus_epi32(chunk_sse, chunk_sse);
+
+    // move by 64 bits ( unused | unused | third [191:128] | first [63:0] )
+    // compiled assembly is different, and faster
+    chunk = _mm256_permute4x64_epi64(chunk, 8);
+    let chunk_tmp = _mm256_extracti128_si256(chunk, 0);
+    chunk = _mm256_set_m128i(chunk_sse, chunk_tmp);
+
+    mult = _mm256_set_m128i(mult4, _mm_set_epi16(1, 10000, 1, 10000, 1, 10000, 1, 10000));
+    // mult 4
+    chunk = _mm256_madd_epi16(chunk, mult);
+
+    mult = _mm256_set_epi32(0, 0, 0, 1, 0, 100_000_000, 0, 100_000_000);
+    // mult 8
+    mult = _mm256_mul_epu32(chunk, mult);
+
+    chunk = _mm256_srli_epi64(chunk, 32);
+    chunk = _mm256_add_epi64(chunk, mult);
+
+    let arr = core::mem::transmute::<__m256i, [u64; 4]>(chunk);
+
+    ((arr[0] as u128 * 10_000_000_000_000_000 + arr[1] as u128) * mult16 as u128)
+        .checked_add(arr[2] as u128)
+        .ok_or(AtoiSimdError::Overflow128(u128::MAX, s))
 }
 
 #[inline(always)]
@@ -374,7 +439,7 @@ fn parse_unchecked_128(s: &[u8], len: usize) -> Result<(u128, usize), AtoiSimdEr
 pub(crate) unsafe fn parse_simd_u128(s: &[u8]) -> Result<(u128, usize), AtoiSimdError> {
     let mut len = s.len();
     if len < 4 {
-        return parse_fb_128_pos(s);
+        return parse_fb_128_pos::<{ u128::MAX }>(s);
     } else if len < 17 {
         return parse_simd_sse_checked(s).map(|(v, l)| (v as u128, l));
     }
@@ -580,22 +645,102 @@ pub(crate) unsafe fn parse_simd_u128(s: &[u8]) -> Result<(u128, usize), AtoiSimd
             10_000_000,
             1_000_000_000_000_000,
         ),
-        32 => (
-            _mm256_set_epi8(
-                1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, /*16*/ 1, 10, 1, 10,
-                1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10,
-            ),
-            _mm256_set_epi16(
-                1, 100, 1, 100, 1, 100, 1, 100, /*8*/ 1, 100, 1, 100, 1, 100, 1, 100,
-            ),
-            0x1_2710_0001_2710, // 1, 10000, 1, 10000
-            100_000_000,
-            10_000_000_000_000_000,
-        ),
+        32 => {
+            if s.len() == 32 {
+                return Ok((
+                    process_avx(
+                        chunk_num,
+                        _mm256_set_epi8(
+                            1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, /*16*/ 1,
+                            10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10,
+                        ),
+                        _mm256_set_epi16(
+                            1, 100, 1, 100, 1, 100, 1, 100, /*8*/ 1, 100, 1, 100, 1, 100, 1,
+                            100,
+                        ),
+                        0x1_2710_0001_2710, // 1, 10000, 1, 10000
+                        100_000_000,
+                        10_000_000_000_000_000,
+                    ),
+                    len,
+                ));
+            }
+
+            let (len_sse, chunk_sse) = simd_sse_check(&s[32..])?;
+            let (mult1, mult2, mult4, mult16) = match len_sse {
+                0 => {
+                    return Ok((
+                        process_avx(
+                            chunk_num,
+                            _mm256_set_epi8(
+                                1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10,
+                                /*16*/ 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10,
+                            ),
+                            _mm256_set_epi16(
+                                1, 100, 1, 100, 1, 100, 1, 100, /*8*/ 1, 100, 1, 100, 1, 100,
+                                1, 100,
+                            ),
+                            0x1_2710_0001_2710, // 1, 10000, 1, 10000
+                            100_000_000,
+                            10_000_000_000_000_000,
+                        ),
+                        len,
+                    ));
+                }
+                1 => (
+                    _mm_set_epi8(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1),
+                    _mm_set_epi16(0, 0, 0, 0, 0, 0, 0, 1),
+                    _mm_set_epi16(0, 0, 0, 0, 0, 0, 0, 1),
+                    10,
+                ),
+                2 => (
+                    _mm_set_epi8(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 10),
+                    _mm_set_epi16(0, 0, 0, 0, 0, 0, 0, 1),
+                    _mm_set_epi16(0, 0, 0, 0, 0, 0, 0, 1),
+                    100,
+                ),
+                3 => (
+                    _mm_set_epi8(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 10),
+                    _mm_set_epi16(0, 0, 0, 0, 0, 0, 1, 10),
+                    _mm_set_epi16(0, 0, 0, 0, 0, 0, 0, 1),
+                    1_000,
+                ),
+                4 => (
+                    _mm_set_epi8(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 10, 1, 10),
+                    _mm_set_epi16(0, 0, 0, 0, 0, 0, 1, 100),
+                    _mm_set_epi16(0, 0, 0, 0, 0, 0, 0, 1),
+                    10_000,
+                ),
+                5 => (
+                    _mm_set_epi8(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 10, 1, 10),
+                    _mm_set_epi16(0, 0, 0, 0, 0, 1, 1, 100),
+                    _mm_set_epi16(0, 0, 0, 0, 0, 0, 1, 10),
+                    100_000,
+                ),
+                6 => (
+                    _mm_set_epi8(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 10, 1, 10, 1, 10),
+                    _mm_set_epi16(0, 0, 0, 0, 0, 1, 1, 100),
+                    _mm_set_epi16(0, 0, 0, 0, 0, 0, 1, 100),
+                    1_000_000,
+                ),
+                7 => (
+                    _mm_set_epi8(0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 10, 1, 10, 1, 10),
+                    _mm_set_epi16(0, 0, 0, 0, 1, 10, 1, 100),
+                    _mm_set_epi16(0, 0, 0, 0, 0, 0, 1, 1_000),
+                    10_000_000,
+                ),
+                s_len => return Err(AtoiSimdError::Size(s_len, s)),
+            };
+
+            return Ok((
+                process_avx_big(s, chunk_num, chunk_sse, mult1, mult2, mult4, mult16)?,
+                len_sse + 32,
+            ));
+        }
         // somehow it's faster that way
         0..=1 => return parse_unchecked_128(s, len),
         s_len => {
-            return parse_simd_sse(s, s_len, std::mem::transmute_copy(&chunk_num))
+            return parse_simd_sse(s, s_len, core::mem::transmute_copy(&chunk_num))
                 .map(|(v, l)| (v as u128, l))
         }
     };
@@ -639,6 +784,24 @@ pub(crate) fn parse_simd_checked_u128(s: &[u8]) -> Result<u128, AtoiSimdError> {
         return Err(AtoiSimdError::Invalid128(res, len));
     }
     Ok(res)
+}
+
+#[inline(always)]
+pub(crate) fn parse_simd_i128(s: &[u8]) -> Result<(i128, usize), AtoiSimdError> {
+    let (res, len) = unsafe { parse_simd_u128(s)? };
+    if res > i128::MAX as u128 {
+        return Err(AtoiSimdError::Overflow128(i128::MAX as u128, s));
+    }
+    Ok((res as i128, len))
+}
+
+#[inline(always)]
+pub(crate) fn parse_simd_checked_i128(s: &[u8]) -> Result<i128, AtoiSimdError> {
+    let res = parse_simd_checked_u128(s)?;
+    if res > i128::MAX as u128 {
+        return Err(AtoiSimdError::Overflow128(i128::MAX as u128, s));
+    }
+    Ok(res as i128)
 }
 
 #[inline(always)]
@@ -800,4 +963,38 @@ pub(crate) fn parse_simd_checked_i64_neg(s: &[u8]) -> Result<i64, AtoiSimdError>
         }
     }
     Ok(-(res as i64))
+}
+
+#[inline(always)]
+pub(crate) fn parse_simd_i128_neg(s: &[u8]) -> Result<(i128, usize), AtoiSimdError> {
+    let (res, len) = unsafe { parse_simd_u128(s)? };
+    if len > 39 {
+        return Err(AtoiSimdError::Size(len, s));
+    } else if len == 39 {
+        let min = i128::MAX as u128 + 1;
+        if res > min {
+            return Err(AtoiSimdError::Overflow128Neg(i128::MIN, s));
+        } else if res == min {
+            return Ok((i128::MIN, len));
+        }
+    }
+    Ok((-(res as i128), len))
+}
+
+#[inline(always)]
+pub(crate) fn parse_simd_checked_i128_neg(s: &[u8]) -> Result<i128, AtoiSimdError> {
+    let len = s.len();
+    if len > 39 {
+        return Err(AtoiSimdError::Size(len, s));
+    }
+    let res = parse_simd_checked_u128(s)?;
+    if len == 39 {
+        let min = i128::MAX as u128 + 1;
+        if res > min {
+            return Err(AtoiSimdError::Overflow128Neg(i128::MIN, s));
+        } else if res == min {
+            return Ok(i128::MIN);
+        }
+    }
+    Ok(-(res as i128))
 }

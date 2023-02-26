@@ -528,7 +528,7 @@ fn test_parse_u128() {
             );
         }
     }
-    for i in '0'..='2' {
+    for i in '0'..='9' {
         test_each_position(&s, parse::<u128>);
         s.push(i);
         assert_eq!(
@@ -547,10 +547,14 @@ fn test_parse_u128() {
         1234567890_1234567890_1234567890_12_u128
     );
 
-    // fallback does not give an error
-    /* if parse::<u128>("123456789012345678901234567890123".as_bytes()).is_ok() {
+    assert_eq!(
+        parse::<u128>("340282366920938463463374607431768211455".as_bytes()).unwrap(),
+        u128::MAX
+    );
+
+    if parse::<u128>("340282366920938463463374607431768211456".as_bytes()).is_ok() {
         panic!("error");
-    } */
+    }
 }
 
 #[test]
@@ -594,7 +598,7 @@ fn test_parse_i128() {
             );
         }
     }
-    for i in '0'..='2' {
+    for i in '0'..='9' {
         test_each_position(&s, parse::<i128>);
         s.push(i);
         s_neg.push(i);
@@ -638,10 +642,23 @@ fn test_parse_i128() {
         -1234567890_1234567890_1234567890_12_i128
     );
 
-    // fallback does not give an error
-    /* if parse::<i128>("123456789012345678901234567890123".as_bytes()).is_ok() {
+    assert_eq!(
+        parse::<i128>("170141183460469231731687303715884105727".as_bytes()).unwrap(),
+        i128::MAX
+    );
+
+    assert_eq!(
+        parse::<i128>("-170141183460469231731687303715884105728".as_bytes()).unwrap(),
+        i128::MIN
+    );
+
+    if parse::<i128>("170141183460469231731687303715884105728".as_bytes()).is_ok() {
         panic!("error");
-    } */
+    }
+
+    if parse::<i128>("-170141183460469231731687303715884105729".as_bytes()).is_ok() {
+        panic!("error");
+    }
 }
 
 #[test]

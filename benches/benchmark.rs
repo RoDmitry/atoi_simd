@@ -173,6 +173,26 @@ fn benchmark(c: &mut Criterion) {
     // bench_until_invalid_128(&mut bench_group, &str);
     bench_128(&mut bench_group, &str);
 
+    str = "123456789012345678901234567890123".to_owned();
+    // bench_until_invalid_128(&mut bench_group, &str);
+    bench_128(&mut bench_group, &str);
+
+    str = "1234567890123456789012345678901234".to_owned();
+    // bench_until_invalid_128(&mut bench_group, &str);
+    bench_128(&mut bench_group, &str);
+
+    str = "123456789012345678901234567890123456".to_owned();
+    // bench_until_invalid_128(&mut bench_group, &str);
+    bench_128(&mut bench_group, &str);
+
+    str = "12345678901234567890123456789012345678".to_owned();
+    // bench_until_invalid_128(&mut bench_group, &str);
+    bench_128(&mut bench_group, &str);
+
+    str = "123456789012345678901234567890123456789".to_owned();
+    // bench_until_invalid_128(&mut bench_group, &str);
+    bench_128(&mut bench_group, &str);
+
     bench_group.finish();
 }
 

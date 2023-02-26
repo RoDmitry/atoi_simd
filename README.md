@@ -10,7 +10,6 @@ Faster on x86_64 (uses SIMD, SSE4.1, AVX2), but can be used even if you don't ha
 Supports negative values and validates the input.
 
 Supported output types: u8, i8, u16, i16, u32, i32, u64, i64, u128, i128, usize, isize.
-The 128 bit max slice length is 32 numbers (33 with '-' sign), because it's limited by AVX2.
 
 Has good test coverage, and can be considered safe.
 
@@ -28,6 +27,8 @@ For Windows PowerShell you can set it with `$Env:RUSTFLAGS='-C target-feature=+s
 By default the `target-feature` is set in `./.cargo/config.toml`, but seems like it works only inside this project.
 
 If you have `&str` then use `.as_bytes()`
+
+Supports `no_std` with `--no-default-features`
 
 Maybe todo:
 There is a posibility to parse base 16 input, by first finding (a,b,c,d,e,f) and then increment them by 9

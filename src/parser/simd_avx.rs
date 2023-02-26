@@ -120,24 +120,24 @@ impl Parser<u128> for u128 {}
 impl ParserPos<i128> for i128 {
     #[inline(always)]
     fn atoi_simd_parse_pos(s: &[u8]) -> Result<i128, AtoiSimdError> {
-        parse_simd_checked_u128(s).map(|v| v as i128)
+        parse_simd_checked_i128(s)
     }
 
     #[inline(always)]
     fn atoi_simd_parse_until_invalid_pos(s: &[u8]) -> Result<(i128, usize), AtoiSimdError> {
-        unsafe { parse_simd_u128(s).map(|(v, i)| (v as i128, i)) }
+        parse_simd_i128(s)
     }
 }
 
 impl ParserNeg<i128> for i128 {
     #[inline(always)]
     fn atoi_simd_parse_neg(s: &[u8]) -> Result<i128, AtoiSimdError> {
-        parse_simd_checked_u128(s).map(|v| -(v as i128))
+        parse_simd_checked_i128_neg(s)
     }
 
     #[inline(always)]
     fn atoi_simd_parse_until_invalid_neg(s: &[u8]) -> Result<(i128, usize), AtoiSimdError> {
-        unsafe { parse_simd_u128(s).map(|(v, i)| (-(v as i128), i)) }
+        parse_simd_i128_neg(s)
     }
 }
 

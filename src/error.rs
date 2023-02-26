@@ -1,4 +1,4 @@
-use std::{fmt, str::from_utf8};
+use core::{fmt, str::from_utf8};
 
 #[derive(Debug, Clone, Copy)]
 pub enum AtoiSimdError<'a> {
@@ -72,4 +72,5 @@ impl fmt::Display for AtoiSimdError<'_> {
     }
 }
 
+#[cfg(feature = "std")]
 impl std::error::Error for AtoiSimdError<'_> {}
