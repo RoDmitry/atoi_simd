@@ -1,4 +1,4 @@
-//! # Rust fast `&[u8]` to integer parser
+//! # Fast `&[u8]` to integer parser
 //!
 //! Faster on x86_64 (uses SIMD, SSE4.1, AVX2), but can be used even if you don't have x86_64 SIMD capable cpu.
 //!
