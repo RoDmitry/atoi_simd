@@ -1,15 +1,20 @@
 use super::*;
 use crate::fallback::*;
+use arrayvec::ArrayString;
 
-const INVALID_CHARS: [&str; 6] = ["/", ":", "\0", "\x7f", "!", "a"];
+const INVALID_CHARS: [char; 6] = ['/', ':', '\0', '\x7f', '!', 'a'];
 
 fn test_each_position<T: Copy>(s: &str, func: fn(&[u8]) -> Result<T, AtoiSimdError>) {
+    let mut s_new = ArrayString::<40>::new();
     for j in 0..=s.len() {
         for &ch_str in INVALID_CHARS.iter() {
-            let s_new = (&s[0..j]).to_owned() + ch_str + &s[j..s.len()];
+            s_new.push_str(&s[0..j]);
+            s_new.push(ch_str);
+            s_new.push_str(&s[j..s.len()]);
             if func(s_new.as_bytes()).is_ok() {
                 panic!("error {}", s_new);
             }
+            s_new.clear();
         }
     }
 }
@@ -46,7 +51,7 @@ fn test_parse_u8() {
 
     assert_eq!(parse::<u8>("0".as_bytes()).unwrap(), 0_u8);
 
-    let mut s = String::with_capacity(10);
+    let mut s = ArrayString::<10>::new();
     for i in '1'..='3' {
         test_each_position_u8(&s);
         s.push(i);
@@ -71,11 +76,10 @@ fn test_parse_i8() {
     }
 
     assert_eq!(parse::<i8>("0".as_bytes()).unwrap(), 0_i8);
-
     assert_eq!(parse::<i8>("-0".as_bytes()).unwrap(), 0_i8);
 
-    let mut s = String::with_capacity(19);
-    let mut s_neg = String::with_capacity(20);
+    let mut s = ArrayString::<19>::new();
+    let mut s_neg = ArrayString::<20>::new();
     s_neg.push('-');
     for i in '1'..='3' {
         test_each_position(&s, parse::<i8>);
@@ -121,7 +125,7 @@ fn test_parse_u16() {
 
     assert_eq!(parse::<u16>("0".as_bytes()).unwrap(), 0_u16);
 
-    let mut s = String::with_capacity(10);
+    let mut s = ArrayString::<10>::new();
     for i in '1'..='5' {
         test_each_position_u16(&s);
         s.push(i);
@@ -149,11 +153,10 @@ fn test_parse_i16() {
     }
 
     assert_eq!(parse::<i16>("0".as_bytes()).unwrap(), 0_i16);
-
     assert_eq!(parse::<i16>("-0".as_bytes()).unwrap(), 0_i16);
 
-    let mut s = String::with_capacity(19);
-    let mut s_neg = String::with_capacity(20);
+    let mut s = ArrayString::<19>::new();
+    let mut s_neg = ArrayString::<20>::new();
     s_neg.push('-');
     for i in '1'..='5' {
         test_each_position(&s, parse::<i16>);
@@ -202,7 +205,7 @@ fn test_parse_u32() {
 
     assert_eq!(parse::<u32>("0".as_bytes()).unwrap(), 0_u32);
 
-    let mut s = String::with_capacity(10);
+    let mut s = ArrayString::<10>::new();
     for i in '1'..='9' {
         test_each_position_u32(&s);
         s.push(i);
@@ -236,11 +239,10 @@ fn test_parse_i32() {
     }
 
     assert_eq!(parse::<i32>("0".as_bytes()).unwrap(), 0_i32);
-
     assert_eq!(parse::<i32>("-0".as_bytes()).unwrap(), 0_i32);
 
-    let mut s = String::with_capacity(19);
-    let mut s_neg = String::with_capacity(20);
+    let mut s = ArrayString::<19>::new();
+    let mut s_neg = ArrayString::<20>::new();
     s_neg.push('-');
     for i in '1'..='9' {
         test_each_position(&s, parse::<i32>);
@@ -300,7 +302,7 @@ fn test_parse_u64() {
 
     assert_eq!(parse::<u64>("0".as_bytes()).unwrap(), 0_u64);
 
-    let mut s = String::with_capacity(20);
+    let mut s = ArrayString::<20>::new();
     for i in '1'..='9' {
         test_each_position_u64(&s);
         s.push(i);
@@ -349,7 +351,7 @@ fn test_parse_fb_pos() {
         0_u64
     );
 
-    let mut s = String::with_capacity(20);
+    let mut s = ArrayString::<20>::new();
     for i in '1'..='9' {
         test_each_position_fb_pos::<{ u64::MAX }>(&s);
         s.push(i);
@@ -398,7 +400,7 @@ fn test_parse_fb_neg() {
         0_i64
     );
 
-    let mut s = String::with_capacity(20);
+    let mut s = ArrayString::<20>::new();
     for i in '1'..='9' {
         test_each_position_fb_neg::<{ i64::MIN }>(&s);
         s.push(i);
@@ -437,11 +439,10 @@ fn test_parse_i64() {
     }
 
     assert_eq!(parse::<i64>("0".as_bytes()).unwrap(), 0_i64);
-
     assert_eq!(parse::<i64>("-0".as_bytes()).unwrap(), 0_i64);
 
-    let mut s = String::with_capacity(19);
-    let mut s_neg = String::with_capacity(20);
+    let mut s = ArrayString::<19>::new();
+    let mut s_neg = ArrayString::<20>::new();
     s_neg.push('-');
     for i in '1'..='9' {
         test_each_position(&s, parse::<i64>);
@@ -509,7 +510,7 @@ fn test_parse_u128() {
 
     assert_eq!(parse::<u128>("0".as_bytes()).unwrap(), 0_u128);
 
-    let mut s = String::with_capacity(32);
+    let mut s = ArrayString::<39>::new();
     for i in '1'..='9' {
         test_each_position(&s, parse::<u128>);
         s.push(i);
@@ -564,11 +565,10 @@ fn test_parse_i128() {
     }
 
     assert_eq!(parse::<i128>("0".as_bytes()).unwrap(), 0_i128);
-
     assert_eq!(parse::<i128>("-0".as_bytes()).unwrap(), 0_i128);
 
-    let mut s = String::with_capacity(32);
-    let mut s_neg = String::with_capacity(33);
+    let mut s = ArrayString::<39>::new();
+    let mut s_neg = ArrayString::<40>::new();
     s_neg.push('-');
     for i in '1'..='9' {
         test_each_position(&s, parse::<i128>);
