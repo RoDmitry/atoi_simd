@@ -35,6 +35,12 @@
 mod error;
 mod fallback;
 mod parser;
+#[cfg(all(
+    target_feature = "sse2",
+    target_feature = "sse3",
+    target_feature = "sse4.1",
+    target_feature = "ssse3"
+))]
 mod simd_sse_avx;
 #[cfg(test)]
 mod test;

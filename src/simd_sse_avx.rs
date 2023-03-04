@@ -1,9 +1,6 @@
 #![allow(dead_code)]
 
-use crate::fallback::{parse_fb_128_pos, parse_fb_checked_neg, parse_fb_neg, parse_fb_pos};
-use crate::AtoiSimdError;
-#[cfg(target_arch = "x86")]
-use core::arch::x86::{
+use self::arch::{
     __m128i, __m256i, _mm256_add_epi64, _mm256_and_si256, _mm256_cmpgt_epi8,
     _mm256_extracti128_si256, _mm256_lddqu_si256, _mm256_madd_epi16, _mm256_maddubs_epi16,
     _mm256_movemask_epi8, _mm256_mul_epu32, _mm256_or_si256, _mm256_packus_epi32,
@@ -13,17 +10,12 @@ use core::arch::x86::{
     _mm_mul_epu32, _mm_or_si128, _mm_packus_epi32, _mm_set1_epi8, _mm_set_epi16, _mm_set_epi32,
     _mm_set_epi64x, _mm_set_epi8, _mm_srli_epi64,
 };
+use crate::fallback::{parse_fb_128_pos, parse_fb_checked_neg, parse_fb_neg, parse_fb_pos};
+use crate::AtoiSimdError;
+#[cfg(target_arch = "x86")]
+use core::arch::x86 as arch;
 #[cfg(target_arch = "x86_64")]
-use core::arch::x86_64::{
-    __m128i, __m256i, _mm256_add_epi64, _mm256_and_si256, _mm256_cmpgt_epi8,
-    _mm256_extracti128_si256, _mm256_lddqu_si256, _mm256_madd_epi16, _mm256_maddubs_epi16,
-    _mm256_movemask_epi8, _mm256_mul_epu32, _mm256_or_si256, _mm256_packus_epi32,
-    _mm256_permute4x64_epi64, _mm256_set1_epi8, _mm256_set_epi16, _mm256_set_epi32,
-    _mm256_set_epi8, _mm256_set_m128i, _mm256_srli_epi64, _mm_add_epi64, _mm_and_si128,
-    _mm_cmpgt_epi8, _mm_cvtsi128_si64, _mm_lddqu_si128, _mm_madd_epi16, _mm_maddubs_epi16,
-    _mm_movemask_epi8, _mm_mul_epu32, _mm_or_si128, _mm_packus_epi32, _mm_set1_epi8, _mm_set_epi16,
-    _mm_set_epi32, _mm_set_epi64x, _mm_set_epi8, _mm_srli_epi64,
-};
+use core::arch::x86_64 as arch;
 
 const CHAR_MAX: i8 = b'9' as i8;
 const CHAR_MIN: i8 = b'0' as i8;
@@ -81,7 +73,7 @@ unsafe fn to_u64(chunk: __m128i) -> u64 {
 #[cfg(target_arch = "x86_64")]
 #[inline(always)]
 unsafe fn to_u64(chunk: __m128i) -> u64 {
-    _mm_cvtsi128_si64(chunk) as u64
+    arch::_mm_cvtsi128_si64(chunk) as u64
 }
 
 /* #[inline(always)]
