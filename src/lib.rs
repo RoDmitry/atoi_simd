@@ -35,6 +35,7 @@
 mod error;
 mod fallback;
 mod parser;
+mod safe_unchecked;
 #[cfg(all(
     target_feature = "sse2",
     target_feature = "sse3",

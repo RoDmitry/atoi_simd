@@ -9,6 +9,7 @@ use self::arch::{
     _mm_set_epi64x, _mm_set_epi8, _mm_srli_epi64,
 };
 use crate::fallback::{parse_fb_128_pos, parse_fb_checked_neg, parse_fb_neg, parse_fb_pos};
+use crate::safe_unchecked::SafeUnchecked;
 use crate::AtoiSimdError;
 #[cfg(target_arch = "x86")]
 use core::arch::x86 as arch;
@@ -133,7 +134,7 @@ fn parse_unchecked_64(s: &[u8], len: usize) -> Result<(u64, usize), AtoiSimdErro
     if len == 0 {
         return Err(AtoiSimdError::Empty);
     }
-    Ok(((s[0] & 0xF) as u64, len))
+    Ok(((*s.safe_unchecked(0) & 0xF) as u64, len))
 }
 
 /// Parses string of *only* digits
@@ -339,7 +340,7 @@ unsafe fn process_avx(
     let arr = core::mem::transmute::<__m128i, [u64; 2]>(chunk);
 
     // mult 16
-    arr[0] as u128 * mult16 + arr[1] as u128
+    *arr.safe_unchecked(0) as u128 * mult16 + *arr.safe_unchecked(1) as u128
 
     // AVX intrinsics
     /* mult = _mm256_set_epi16(
@@ -410,8 +411,9 @@ unsafe fn process_avx_big(
 
     let arr = core::mem::transmute::<__m256i, [u64; 4]>(chunk);
 
-    ((arr[0] as u128 * 10_000_000_000_000_000 + arr[1] as u128) * mult16 as u128)
-        .checked_add(arr[2] as u128)
+    ((*arr.safe_unchecked(0) as u128 * 10_000_000_000_000_000 + *arr.safe_unchecked(1) as u128)
+        * mult16 as u128)
+        .checked_add(*arr.safe_unchecked(2) as u128)
         .ok_or(AtoiSimdError::Overflow128(u128::MAX, s))
 }
 
@@ -420,7 +422,7 @@ fn parse_unchecked_128(s: &[u8], len: usize) -> Result<(u128, usize), AtoiSimdEr
     if len == 0 {
         return Err(AtoiSimdError::Empty);
     }
-    Ok(((s[0] & 0xF) as u128, len))
+    Ok(((*s.safe_unchecked(0) & 0xF) as u128, len))
 }
 
 /// Parses string of *only* digits. String length must be 1..=32.
@@ -656,7 +658,7 @@ pub(crate) unsafe fn parse_simd_u128(s: &[u8]) -> Result<(u128, usize), AtoiSimd
                 ));
             }
 
-            let (len_sse, chunk_sse) = simd_sse_check(&s[32..])?;
+            let (len_sse, chunk_sse) = simd_sse_check(s.safe_unchecked(32..))?;
             let (mult1, mult2, mult4, mult16) = match len_sse {
                 0 => {
                     return Ok((

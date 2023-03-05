@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+use crate::safe_unchecked::SafeUnchecked;
 use crate::AtoiSimdError;
 
 macro_rules! overflow {
@@ -24,12 +25,12 @@ pub(crate) fn parse_fb_pos<const MAX: u64>(s: &[u8]) -> Result<(u64, usize), Ato
     if s.len() == i {
         return Err(AtoiSimdError::Empty);
     }
-    match s[i] {
+    match s.safe_unchecked(i) {
         c @ b'0'..=b'9' => {
             let mut res = (c & 0xF) as u64;
             i += 1;
             while s.len() > i {
-                match s[i] {
+                match s.safe_unchecked(i) {
                     c @ b'0'..=b'9' => {
                         let digit = (c & 0xF) as u64;
 
@@ -55,12 +56,12 @@ pub(crate) fn parse_fb_neg<const MIN: i64>(s: &[u8]) -> Result<(i64, usize), Ato
     if s.len() == i {
         return Err(AtoiSimdError::Empty);
     }
-    match s[i] {
+    match s.safe_unchecked(i) {
         c @ b'0'..=b'9' => {
             let mut res = -((c & 0xF) as i64);
             i += 1;
             while s.len() > i {
-                match s[i] {
+                match s.safe_unchecked(i) {
                     c @ b'0'..=b'9' => {
                         let digit = (c & 0xF) as i64;
 
@@ -86,12 +87,12 @@ pub(crate) fn parse_fb_128_pos<const MAX: u128>(s: &[u8]) -> Result<(u128, usize
     if s.len() == i {
         return Err(AtoiSimdError::Empty);
     }
-    match s[i] {
+    match s.safe_unchecked(i) {
         c @ b'0'..=b'9' => {
             let mut res = (c & 0xF) as u128;
             i += 1;
             while s.len() > i {
-                match s[i] {
+                match s.safe_unchecked(i) {
                     c @ b'0'..=b'9' => {
                         let digit = (c & 0xF) as u128;
 
@@ -117,12 +118,12 @@ pub(crate) fn parse_fb_128_neg(s: &[u8]) -> Result<(i128, usize), AtoiSimdError>
     if s.len() == i {
         return Err(AtoiSimdError::Empty);
     }
-    match s[i] {
+    match s.safe_unchecked(i) {
         c @ b'0'..=b'9' => {
             let mut res = -((c & 0xF) as i128);
             i += 1;
             while s.len() > i {
-                match s[i] {
+                match s.safe_unchecked(i) {
                     c @ b'0'..=b'9' => {
                         let digit = (c & 0xF) as i128;
 
