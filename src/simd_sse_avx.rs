@@ -799,7 +799,7 @@ pub(crate) fn parse_simd_checked_i128(s: &[u8]) -> Result<i128, AtoiSimdError> {
 #[inline(always)]
 pub(crate) fn parse_simd<const MAX: u64>(s: &[u8]) -> Result<(u64, usize), AtoiSimdError> {
     if s.len() < 4 {
-        return parse_fb_pos::<{ MAX }>(s);
+        return parse_fb_pos::<MAX>(s);
     }
     let (res, len) = parse_simd_sse_checked(s)?;
     if res > MAX {
@@ -822,7 +822,7 @@ pub(crate) fn parse_simd_checked<const MAX: u64>(s: &[u8]) -> Result<u64, AtoiSi
 #[inline(always)]
 pub(crate) fn parse_simd_neg<const MIN: i64>(s: &[u8]) -> Result<(i64, usize), AtoiSimdError> {
     if s.len() < 4 {
-        return parse_fb_neg::<{ MIN }>(s);
+        return parse_fb_neg::<MIN>(s);
     }
     let (res, len) = parse_simd_sse_checked(s)?;
     let min = -MIN as u64;
@@ -838,7 +838,7 @@ pub(crate) fn parse_simd_neg<const MIN: i64>(s: &[u8]) -> Result<(i64, usize), A
 #[inline(always)]
 pub(crate) fn parse_simd_checked_neg<const MIN: i64>(s: &[u8]) -> Result<i64, AtoiSimdError> {
     if s.len() < 4 {
-        return parse_fb_checked_neg::<{ MIN }>(s);
+        return parse_fb_checked_neg::<MIN>(s);
     }
     let res = parse_simd_checked_pre_u64(s)?;
     let min = -MIN as u64;
