@@ -9,7 +9,7 @@ readme = "README.md"
 keywords = ["atoi", "parseint", "parse", "u8", "simd"]
 categories = ["parsing", "no-std"]
 license = "MIT OR Apache-2.0"
-edition = "2018"
+edition = "2021"
 
 [lib]
 name = "atoi_simd"

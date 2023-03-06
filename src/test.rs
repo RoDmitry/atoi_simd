@@ -35,12 +35,12 @@ fn test_each_position_u64(s: &str) {
     test_each_position(s, |s_new| parse::<u64>(s_new))
 }
 
-fn test_each_position_fb_pos<const MAX: u64>(s: &str) {
-    test_each_position(s, |s_new| parse_fb_checked_pos::<MAX>(s_new))
+fn test_each_position_fb_64_pos<const MAX: u64, const LEN_MORE: usize>(s: &str) {
+    test_each_position(s, |s_new| parse_fb_checked_64_pos::<MAX, LEN_MORE>(s_new))
 }
 
-fn test_each_position_fb_neg<const MIN: i64>(s: &str) {
-    test_each_position(s, |s_new| parse_fb_checked_neg::<MIN>(s_new))
+fn test_each_position_fb_64_neg<const MIN: i64>(s: &str) {
+    test_each_position(s, |s_new| parse_fb_checked_64_neg(s_new))
 }
 
 #[test]
@@ -342,92 +342,89 @@ fn test_parse_u64() {
 
 #[test]
 fn test_parse_fb_pos() {
-    if parse_fb_checked_pos::<{ u64::MAX }>("".as_bytes()).is_ok() {
+    if parse_fb_checked_64_pos::<{ u64::MAX }, 4>("".as_bytes()).is_ok() {
         panic!("error");
     }
 
     assert_eq!(
-        parse_fb_checked_pos::<{ u64::MAX }>("0".as_bytes()).unwrap(),
+        parse_fb_checked_64_pos::<{ u64::MAX }, 4>("0".as_bytes()).unwrap(),
         0_u64
     );
 
     let mut s = ArrayString::<20>::new();
     for i in '1'..='9' {
-        test_each_position_fb_pos::<{ u64::MAX }>(&s);
+        test_each_position_fb_64_pos::<{ u64::MAX }, 4>(&s);
         s.push(i);
         assert_eq!(
-            parse_fb_checked_pos::<{ u64::MAX }>(s.as_bytes()).unwrap(),
+            parse_fb_checked_64_pos::<{ u64::MAX }, 4>(s.as_bytes()).unwrap(),
             s.parse::<u64>().unwrap()
         );
     }
     for i in '0'..='9' {
-        test_each_position_fb_pos::<{ u64::MAX }>(&s);
+        test_each_position_fb_64_pos::<{ u64::MAX }, 4>(&s);
         s.push(i);
         assert_eq!(
-            parse_fb_checked_pos::<{ u64::MAX }>(s.as_bytes()).unwrap(),
+            parse_fb_checked_64_pos::<{ u64::MAX }, 4>(s.as_bytes()).unwrap(),
             s.parse::<u64>().unwrap()
         );
     }
-    test_each_position_fb_pos::<{ u64::MAX }>(&s);
+    test_each_position_fb_64_pos::<{ u64::MAX }, 4>(&s);
     s.push('0');
     assert_eq!(
-        parse_fb_checked_pos::<{ u64::MAX }>(s.as_bytes()).unwrap(),
+        parse_fb_checked_64_pos::<{ u64::MAX }, 4>(s.as_bytes()).unwrap(),
         s.parse::<u64>().unwrap()
     );
 
     assert_eq!(
-        parse_fb_checked_pos::<{ u64::MAX }>("18446744073709551615".as_bytes()).unwrap(),
+        parse_fb_checked_64_pos::<{ u64::MAX }, 4>("18446744073709551615".as_bytes()).unwrap(),
         u64::MAX
     );
 
-    if parse_fb_checked_pos::<{ u64::MAX }>("18446744073709551616".as_bytes()).is_ok() {
+    if parse_fb_checked_64_pos::<{ u64::MAX }, 4>("18446744073709551616".as_bytes()).is_ok() {
         panic!("error");
     }
 
-    if parse_fb_checked_pos::<{ u64::MAX }>("99999999999999999999".as_bytes()).is_ok() {
+    if parse_fb_checked_64_pos::<{ u64::MAX }, 4>("99999999999999999999".as_bytes()).is_ok() {
         panic!("error");
     }
 }
 
 #[test]
 fn test_parse_fb_neg() {
-    if parse_fb_checked_neg::<{ i64::MIN }>("".as_bytes()).is_ok() {
+    if parse_fb_checked_64_neg("".as_bytes()).is_ok() {
         panic!("error");
     }
 
-    assert_eq!(
-        parse_fb_checked_neg::<{ i64::MIN }>("0".as_bytes()).unwrap(),
-        0_i64
-    );
+    assert_eq!(parse_fb_checked_64_neg("0".as_bytes()).unwrap(), 0_i64);
 
     let mut s = ArrayString::<20>::new();
     for i in '1'..='9' {
-        test_each_position_fb_neg::<{ i64::MIN }>(&s);
+        test_each_position_fb_64_neg::<{ i64::MIN }>(&s);
         s.push(i);
         assert_eq!(
-            parse_fb_checked_neg::<{ i64::MIN }>(s.as_bytes()).unwrap(),
+            parse_fb_checked_64_neg(s.as_bytes()).unwrap(),
             -s.parse::<i64>().unwrap()
         );
     }
     for i in '0'..='9' {
-        test_each_position_fb_neg::<{ i64::MIN }>(&s);
+        test_each_position_fb_64_neg::<{ i64::MIN }>(&s);
         s.push(i);
         assert_eq!(
-            parse_fb_checked_neg::<{ i64::MIN }>(s.as_bytes()).unwrap(),
+            parse_fb_checked_64_neg(s.as_bytes()).unwrap(),
             -s.parse::<i64>().unwrap()
         );
     }
 
     assert_eq!(
-        parse_fb_checked_neg::<{ i64::MIN }>("9223372036854775808".as_bytes()).unwrap(),
+        parse_fb_checked_64_neg("9223372036854775808".as_bytes()).unwrap(),
         i64::MIN
     );
 
-    if parse_fb_checked_neg::<{ i64::MIN }>("9223372036854775809".as_bytes()).is_ok() {
+    if parse_fb_checked_64_neg("9223372036854775809".as_bytes()).is_ok() {
         panic!("error");
     }
 
-    if parse_fb_checked_neg::<{ i64::MIN }>("99999999999999999999".as_bytes()).is_ok() {
+    if parse_fb_checked_64_neg("99999999999999999999".as_bytes()).is_ok() {
         panic!("error");
     }
 }
