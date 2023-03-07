@@ -8,8 +8,8 @@ use self::arch::{
     _mm_mul_epu32, _mm_or_si128, _mm_packus_epi32, _mm_set1_epi8, _mm_set_epi16, _mm_set_epi32,
     _mm_set_epi64x, _mm_set_epi8, _mm_srli_epi64,
 };
-use crate::fallback::{parse_fb_128_pos, parse_fb_checked_neg, parse_fb_neg, parse_fb_pos};
 use crate::safe_unchecked::SafeUnchecked;
+use crate::short::{parse_short_checked_neg, parse_short_neg, parse_short_pos};
 use crate::AtoiSimdError;
 #[cfg(target_arch = "x86")]
 use core::arch::x86 as arch;
@@ -431,7 +431,7 @@ fn parse_unchecked_128(s: &[u8], len: usize) -> Result<(u128, usize), AtoiSimdEr
 pub(crate) unsafe fn parse_simd_u128(s: &[u8]) -> Result<(u128, usize), AtoiSimdError> {
     let mut len = s.len();
     if len < 4 {
-        return parse_fb_128_pos::<{ u128::MAX }>(s);
+        return parse_short_pos::<{ u64::MAX }>(s).map(|(v, l)| (v as u128, l));
     } else if len < 17 {
         return parse_simd_sse_checked(s).map(|(v, l)| (v as u128, l));
     }
@@ -746,7 +746,7 @@ pub(crate) unsafe fn parse_simd_u128(s: &[u8]) -> Result<(u128, usize), AtoiSimd
 #[inline(always)]
 fn parse_simd_checked_pre_u64(s: &[u8]) -> Result<u64, AtoiSimdError> {
     let (res, len) = if s.len() < 4 {
-        parse_fb_pos::<{ u64::MAX }>(s)
+        parse_short_pos::<{ u64::MAX }>(s)
     } else {
         parse_simd_sse_checked(s)
     }?;
@@ -759,7 +759,7 @@ fn parse_simd_checked_pre_u64(s: &[u8]) -> Result<u64, AtoiSimdError> {
 #[inline(always)]
 fn parse_simd_checked_pre_i64_neg(s: &[u8]) -> Result<i64, AtoiSimdError> {
     let (res, len) = if s.len() < 4 {
-        parse_fb_neg::<{ i64::MIN }>(s)
+        parse_short_neg::<{ i64::MIN }>(s)
     } else {
         parse_simd_sse_checked(s).map(|(v, l)| (-(v as i64), l))
     }?;
@@ -799,7 +799,7 @@ pub(crate) fn parse_simd_checked_i128(s: &[u8]) -> Result<i128, AtoiSimdError> {
 #[inline(always)]
 pub(crate) fn parse_simd<const MAX: u64>(s: &[u8]) -> Result<(u64, usize), AtoiSimdError> {
     if s.len() < 4 {
-        return parse_fb_pos::<MAX>(s);
+        return parse_short_pos::<MAX>(s);
     }
     let (res, len) = parse_simd_sse_checked(s)?;
     if res > MAX {
@@ -822,7 +822,7 @@ pub(crate) fn parse_simd_checked<const MAX: u64>(s: &[u8]) -> Result<u64, AtoiSi
 #[inline(always)]
 pub(crate) fn parse_simd_neg<const MIN: i64>(s: &[u8]) -> Result<(i64, usize), AtoiSimdError> {
     if s.len() < 4 {
-        return parse_fb_neg::<MIN>(s);
+        return parse_short_neg::<MIN>(s);
     }
     let (res, len) = parse_simd_sse_checked(s)?;
     let min = -MIN as u64;
@@ -838,7 +838,7 @@ pub(crate) fn parse_simd_neg<const MIN: i64>(s: &[u8]) -> Result<(i64, usize), A
 #[inline(always)]
 pub(crate) fn parse_simd_checked_neg<const MIN: i64>(s: &[u8]) -> Result<i64, AtoiSimdError> {
     if s.len() < 4 {
-        return parse_fb_checked_neg::<MIN>(s);
+        return parse_short_checked_neg::<MIN>(s);
     }
     let res = parse_simd_checked_pre_u64(s)?;
     let min = -MIN as u64;
@@ -855,7 +855,7 @@ pub(crate) fn parse_simd_checked_neg<const MIN: i64>(s: &[u8]) -> Result<i64, At
 pub(crate) fn parse_simd_u64(s: &[u8]) -> Result<(u64, usize), AtoiSimdError> {
     let len = s.len();
     if len < 4 {
-        return parse_fb_pos::<{ u64::MAX }>(s);
+        return parse_short_pos::<{ u64::MAX }>(s);
     } else if len < 17 {
         return parse_simd_sse_checked(s);
     }
@@ -887,7 +887,7 @@ pub(crate) fn parse_simd_checked_u64(s: &[u8]) -> Result<u64, AtoiSimdError> {
 pub(crate) fn parse_simd_i64(s: &[u8]) -> Result<(i64, usize), AtoiSimdError> {
     let len = s.len();
     if len < 4 {
-        return parse_fb_pos::<{ i64::MAX as u64 }>(s).map(|(v, i)| (v as i64, i));
+        return parse_short_pos::<{ i64::MAX as u64 }>(s).map(|(v, i)| (v as i64, i));
     } else if len < 17 {
         return parse_simd_sse_checked(s).map(|(v, i)| (v as i64, i));
     }
@@ -919,7 +919,7 @@ pub(crate) fn parse_simd_checked_i64(s: &[u8]) -> Result<i64, AtoiSimdError> {
 pub(crate) fn parse_simd_i64_neg(s: &[u8]) -> Result<(i64, usize), AtoiSimdError> {
     let len = s.len();
     if len < 4 {
-        return parse_fb_neg::<{ i64::MIN }>(s);
+        return parse_short_neg::<{ i64::MIN }>(s);
     } else if len < 17 {
         return parse_simd_sse_checked(s).map(|(v, i)| (-(v as i64), i));
     }

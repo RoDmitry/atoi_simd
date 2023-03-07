@@ -1,0 +1,93 @@
+#![allow(dead_code)]
+
+use crate::safe_unchecked::SafeUnchecked;
+use crate::AtoiSimdError;
+
+macro_rules! overflow {
+    ($curr:ident * 10 + $more:ident, $max:expr) => {
+        $curr >= $max / 10 && ($curr > $max / 10 || $more > $max % 10)
+    };
+}
+
+macro_rules! overflow_neg {
+    ($curr:ident * 10 - $more:ident, $max:expr) => {
+        $curr <= $max / 10 && ($curr < $max / 10 || $more > -($max % 10))
+    };
+}
+
+#[inline(always)]
+pub(crate) fn parse_short_pos<const MAX: u64>(s: &[u8]) -> Result<(u64, usize), AtoiSimdError> {
+    let mut i = 0;
+    if s.len() == i {
+        return Err(AtoiSimdError::Empty);
+    }
+    match s.safe_unchecked(i) {
+        c @ b'0'..=b'9' => {
+            let mut res = (c & 0xF) as u64;
+            i += 1;
+            while s.len() > i {
+                match s.safe_unchecked(i) {
+                    c @ b'0'..=b'9' => {
+                        let digit = (c & 0xF) as u64;
+
+                        if MAX < 1024 {
+                            if overflow!(res * 10 + digit, MAX) {
+                                return Err(AtoiSimdError::Overflow(MAX as u128, s));
+                            }
+                        }
+
+                        res = res * 10 + digit;
+                        i += 1;
+                    }
+                    _ => return Ok((res, i)),
+                }
+            }
+            Ok((res, i))
+        }
+        _ => Err(AtoiSimdError::Empty),
+    }
+}
+
+#[inline(always)]
+pub(crate) fn parse_short_neg<const MIN: i64>(s: &[u8]) -> Result<(i64, usize), AtoiSimdError> {
+    let mut i = 0;
+    if s.len() == i {
+        return Err(AtoiSimdError::Empty);
+    }
+    match s.safe_unchecked(i) {
+        c @ b'0'..=b'9' => {
+            let mut res = -((c & 0xF) as i64);
+            i += 1;
+            while s.len() > i {
+                match s.safe_unchecked(i) {
+                    c @ b'0'..=b'9' => {
+                        let digit = (c & 0xF) as i64;
+
+                        if MIN > -1024 {
+                            if overflow_neg!(res * 10 - digit, MIN) {
+                                // can't overflow, because MIN is smaller than i64::MIN
+                                return Err(AtoiSimdError::Overflow(-MIN as u128, s));
+                            }
+                        }
+
+                        res = res * 10 - digit;
+                        i += 1;
+                    }
+                    _ => return Ok((res, i)),
+                }
+            }
+            Ok((res, i))
+        }
+        _ => Err(AtoiSimdError::Empty),
+    }
+}
+
+#[inline(always)]
+pub(crate) fn parse_short_checked_neg<const MIN: i64>(s: &[u8]) -> Result<i64, AtoiSimdError> {
+    let (res, len) = parse_short_neg::<MIN>(s)?;
+    if len < s.len() {
+        return Err(AtoiSimdError::Invalid64(-res as u64, len));
+    }
+
+    Ok(res)
+}

@@ -9,6 +9,13 @@ macro_rules! overflow {
     };
 }
 
+/* #[inline(always)]
+fn check_4(val: u32) -> usize {
+    ((((val & 0xF0F0_F0F0) | (((val.wrapping_add(0x0606_0606)) & 0xF0F0_F0F0) >> 4)) ^ 0x3333_3333)
+        .trailing_zeros()
+        >> 3) as usize // same as divide by 8 (drops extra bits from right)
+} */
+
 #[inline(always)]
 fn check_8(val: u64) -> usize {
     ((((val & 0xF0F0_F0F0_F0F0_F0F0)
@@ -29,6 +36,13 @@ fn check_16(val: u128) -> usize {
         >> 3) as usize // same as divide by 8 (drops extra bits from right)
 }
 
+/* #[inline(always)]
+fn process_4(mut val: u32, len: usize) -> u32 {
+    val <<= 32_usize.saturating_sub(len << 3); // << 3 - same as mult by 8
+    val = (val & 0x0F0F_0F0F).wrapping_mul(0xA01) >> 8;
+    (val & 0x00FF_00FF).wrapping_mul(0x64_0001) >> 16
+} */
+
 #[inline(always)]
 fn process_8(mut val: u64, len: usize) -> u64 {
     val <<= 64_usize.saturating_sub(len << 3); // << 3 - same as mult by 8
@@ -46,6 +60,18 @@ fn process_16(mut val: u128, len: usize) -> u128 {
     (val & 0x0000_0000_FFFF_FFFF_0000_0000_FFFF_FFFF).wrapping_mul(0x5F5_E100_0000_0000_0000_0001)
         >> 64
 }
+
+/* #[inline(always)]
+fn parse_4(s: &[u8]) -> Result<(u32, usize), AtoiSimdError> {
+    let val: u32 = unsafe { *(s.as_ptr().cast()) };
+    // let val: u64 = unsafe { *core::mem::transmute_copy::<&[u8], *const u64>(&s) };
+    let len = check_4(val).min(s.len());
+    if len == 0 {
+        return Err(AtoiSimdError::Empty);
+    }
+    let val = process_4(val, len);
+    Ok((val, len))
+} */
 
 #[inline(always)]
 fn parse_8(s: &[u8]) -> Result<(u64, usize), AtoiSimdError> {
@@ -225,3 +251,35 @@ pub(crate) fn parse_fb_checked_128_neg(s: &[u8]) -> Result<i128, AtoiSimdError> 
     }
     Ok(res)
 }
+
+/* #[inline(always)]
+pub(crate) fn parse_short_pos<const MAX: u64>(s: &[u8]) -> Result<(u64, usize), AtoiSimdError> {
+    let (val, len) = parse_4(s)?;
+    let val = val as u64;
+    if val > MAX {
+        return Err(AtoiSimdError::Overflow(MAX as u128, s));
+    }
+
+    Ok((val, len))
+}
+
+#[inline(always)]
+pub(crate) fn parse_short_neg<const MIN: i64>(s: &[u8]) -> Result<(i64, usize), AtoiSimdError> {
+    let (val, len) = parse_4(s)?;
+    let val = -(val as i64);
+    if val < MIN {
+        return Err(AtoiSimdError::Overflow(-MIN as u128, s));
+    }
+
+    Ok((val, len))
+}
+
+#[inline(always)]
+pub(crate) fn parse_short_checked_neg<const MIN: i64>(s: &[u8]) -> Result<i64, AtoiSimdError> {
+    let (res, len) = parse_short_neg::<MIN>(s)?;
+    if len < s.len() {
+        return Err(AtoiSimdError::Invalid64(-res as u64, len));
+    }
+
+    Ok(res)
+} */
