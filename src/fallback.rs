@@ -9,12 +9,6 @@ macro_rules! overflow {
     };
 }
 
-macro_rules! overflow_neg {
-    ($curr:ident, $shift:expr, $more:ident, $max:expr) => {
-        $curr <= $max / $shift && ($curr < $max / $shift || $more > -($max % $shift))
-    };
-}
-
 #[inline(always)]
 fn check_8(val: u64) -> usize {
     ((((val & 0xF0F0_F0F0_F0F0_F0F0)
@@ -81,7 +75,7 @@ pub(crate) fn parse_fb_pos<const MAX: u64>(s: &[u8]) -> Result<(u64, usize), Ato
     let (val, len) = parse_16(s)?;
     let val = val as u64;
     if val > MAX {
-        return Err(AtoiSimdError::Overflow64(MAX, s));
+        return Err(AtoiSimdError::Overflow(MAX as u128, s));
     }
 
     Ok((val, len))
@@ -92,7 +86,7 @@ pub(crate) fn parse_fb_neg<const MIN: i64>(s: &[u8]) -> Result<(i64, usize), Ato
     let (val, len) = parse_16(s)?;
     let val = -(val as i64);
     if val < MIN {
-        return Err(AtoiSimdError::Overflow64Neg(MIN, s));
+        return Err(AtoiSimdError::Overflow(-MIN as u128, s));
     }
 
     Ok((val, len))
@@ -103,46 +97,35 @@ pub(crate) fn parse_fb_64_pos<const MAX: u64, const LEN_MORE: usize>(
     s: &[u8],
 ) -> Result<(u64, usize), AtoiSimdError> {
     let (val, len) = parse_16(s)?;
-    let val = val as u64;
     if len < 16 {
-        return Ok((val, len));
+        return Ok((val as u64, len));
     }
+
     let (more, len) = match parse_8(s.safe_unchecked(16..)) {
         Ok((v, l)) => (v, l),
-        Err(AtoiSimdError::Empty) => return Ok((val, len)),
+        Err(AtoiSimdError::Empty) => return Ok((val as u64, len)),
         Err(e) => return Err(e),
     };
-    let ten_to_power_len_more = 10_u64.pow(LEN_MORE as u32);
     if len > LEN_MORE {
         return Err(AtoiSimdError::Size(len + 16, s));
-    } else if len == LEN_MORE && overflow!(val, ten_to_power_len_more, more, MAX) {
-        return Err(AtoiSimdError::Overflow64(MAX, s));
     }
-    let res = val * 10_u64.pow(len as u32) + more;
 
-    Ok((res, len + 16))
+    let res = val * 10_u128.pow(len as u32) + more as u128;
+    if len == LEN_MORE && res > MAX as u128 {
+        return Err(AtoiSimdError::Overflow(MAX as u128, s));
+    }
+
+    Ok((res as u64, len + 16))
 }
 
 #[inline(always)]
 pub(crate) fn parse_fb_64_neg(s: &[u8]) -> Result<(i64, usize), AtoiSimdError> {
-    let (val, len) = parse_16(s)?;
-    let val = -(val as i64);
-    if len < 16 {
-        return Ok((val, len));
+    let (val, len) = parse_fb_64_pos::<{ i64::MAX as u64 + 1 }, 3>(s)?;
+    if val > i64::MAX as u64 {
+        return Ok((i64::MIN, len));
     }
-    let (more, len) = match parse_8(s.safe_unchecked(16..)) {
-        Ok((v, l)) => (v as i64, l),
-        Err(AtoiSimdError::Empty) => return Ok((val, len)),
-        Err(e) => return Err(e),
-    };
-    if len > 3 {
-        return Err(AtoiSimdError::Size(len + 16, s));
-    } else if len == 3 && overflow_neg!(val, 1000, more, i64::MIN) {
-        return Err(AtoiSimdError::Overflow64Neg(i64::MIN, s));
-    }
-    let res = val * 10_i64.pow(len as u32) - more;
 
-    Ok((res, len + 16))
+    Ok((-(val as i64), len))
 }
 
 #[inline(always)]
@@ -170,7 +153,7 @@ pub(crate) fn parse_fb_128_pos<const MAX: u128>(s: &[u8]) -> Result<(u128, usize
     if len > 7 {
         return Err(AtoiSimdError::Size(len + 32, s));
     } else if len == 7 && overflow!(val, 10_000_000, more, MAX) {
-        return Err(AtoiSimdError::Overflow128(MAX, s));
+        return Err(AtoiSimdError::Overflow(MAX, s));
     }
     let res = val * 10_u128.pow(len as u32) + more;
 
@@ -179,35 +162,12 @@ pub(crate) fn parse_fb_128_pos<const MAX: u128>(s: &[u8]) -> Result<(u128, usize
 
 #[inline(always)]
 pub(crate) fn parse_fb_128_neg(s: &[u8]) -> Result<(i128, usize), AtoiSimdError> {
-    let (val, len) = parse_16(s)?;
-    let mut val = -(val as i128);
-    if len < 16 {
-        return Ok((val, len));
+    let (val, len) = parse_fb_128_pos::<{ i128::MAX as u128 + 1 }>(s)?;
+    if val > i128::MAX as u128 {
+        return Ok((i128::MIN, len));
     }
 
-    let (more, len) = match parse_16(s.safe_unchecked(16..)) {
-        Ok((v, l)) => (v as i128, l),
-        Err(AtoiSimdError::Empty) => return Ok((val, len)),
-        Err(e) => return Err(e),
-    };
-    val = val * 10_i128.pow(len as u32) - more;
-    if len < 16 {
-        return Ok((val, len + 16));
-    }
-
-    let (more, len) = match parse_8(s.safe_unchecked(32..)) {
-        Ok((v, l)) => (v as i128, l),
-        Err(AtoiSimdError::Empty) => return Ok((val, 32)),
-        Err(e) => return Err(e),
-    };
-    if len > 7 {
-        return Err(AtoiSimdError::Size(len + 32, s));
-    } else if len == 7 && overflow_neg!(val, 10_000_000, more, i128::MIN) {
-        return Err(AtoiSimdError::Overflow128Neg(i128::MIN, s));
-    }
-    let res = val * 10_i128.pow(len as u32) - more;
-
-    Ok((res, len + 32))
+    Ok((-(val as i128), len))
 }
 
 #[inline(always)]

@@ -341,7 +341,7 @@ fn test_parse_u64() {
 }
 
 #[test]
-fn test_parse_fb_pos() {
+fn test_parse_fb_64_pos() {
     if parse_fb_checked_64_pos::<{ u64::MAX }, 4>("".as_bytes()).is_ok() {
         panic!("error");
     }
@@ -390,7 +390,7 @@ fn test_parse_fb_pos() {
 }
 
 #[test]
-fn test_parse_fb_neg() {
+fn test_parse_fb_64_neg() {
     if parse_fb_checked_64_neg("".as_bytes()).is_ok() {
         panic!("error");
     }
