@@ -30,10 +30,8 @@ pub(crate) fn parse_short_pos<const MAX: u64>(s: &[u8]) -> Result<(u64, usize), 
                     c @ b'0'..=b'9' => {
                         let digit = (c & 0xF) as u64;
 
-                        if MAX < 1024 {
-                            if overflow!(res * 10 + digit, MAX) {
-                                return Err(AtoiSimdError::Overflow(MAX as u128, s));
-                            }
+                        if MAX < 1024 && overflow!(res * 10 + digit, MAX) {
+                            return Err(AtoiSimdError::Overflow(MAX as u128, s));
                         }
 
                         res = res * 10 + digit;
@@ -63,11 +61,9 @@ pub(crate) fn parse_short_neg<const MIN: i64>(s: &[u8]) -> Result<(i64, usize), 
                     c @ b'0'..=b'9' => {
                         let digit = (c & 0xF) as i64;
 
-                        if MIN > -1024 {
-                            if overflow_neg!(res * 10 - digit, MIN) {
-                                // can't overflow, because MIN is smaller than i64::MIN
-                                return Err(AtoiSimdError::Overflow(-MIN as u128, s));
-                            }
+                        if MIN > -1024 && overflow_neg!(res * 10 - digit, MIN) {
+                            // can't overflow, because MIN is smaller than i64::MIN
+                            return Err(AtoiSimdError::Overflow(-MIN as u128, s));
                         }
 
                         res = res * 10 - digit;
