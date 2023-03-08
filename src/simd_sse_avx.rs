@@ -1,3 +1,5 @@
+#![allow(dead_code)] // used when you don't have avx
+
 use self::arch::{
     __m128i, __m256i, _mm256_add_epi64, _mm256_and_si256, _mm256_cmpgt_epi8,
     _mm256_extracti128_si256, _mm256_lddqu_si256, _mm256_madd_epi16, _mm256_maddubs_epi16,
