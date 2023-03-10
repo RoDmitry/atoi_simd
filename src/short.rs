@@ -82,7 +82,7 @@ pub(crate) fn parse_short_neg<const MIN: i64>(s: &[u8]) -> Result<(i64, usize), 
 pub(crate) fn parse_short_checked_neg<const MIN: i64>(s: &[u8]) -> Result<i64, AtoiSimdError> {
     let (res, len) = parse_short_neg::<MIN>(s)?;
     if len < s.len() {
-        return Err(AtoiSimdError::Invalid64(-res as u64, len));
+        return Err(AtoiSimdError::Invalid64(-res as u64, len, s));
     }
 
     Ok(res)

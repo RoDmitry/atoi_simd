@@ -753,7 +753,7 @@ fn parse_simd_checked_pre_u64(s: &[u8]) -> Result<u64, AtoiSimdError> {
         parse_simd_sse_checked(s)
     }?;
     if len < s.len() {
-        return Err(AtoiSimdError::Invalid64(res, len));
+        return Err(AtoiSimdError::Invalid64(res, len, s));
     }
     Ok(res)
 }
@@ -766,7 +766,7 @@ fn parse_simd_checked_pre_i64_neg(s: &[u8]) -> Result<i64, AtoiSimdError> {
         parse_simd_sse_checked(s).map(|(v, l)| (-(v as i64), l))
     }?;
     if len < s.len() {
-        return Err(AtoiSimdError::Invalid64(-res as u64, len));
+        return Err(AtoiSimdError::Invalid64(-res as u64, len, s));
     }
     Ok(res)
 }
@@ -775,7 +775,7 @@ fn parse_simd_checked_pre_i64_neg(s: &[u8]) -> Result<i64, AtoiSimdError> {
 pub(crate) fn parse_simd_checked_u128(s: &[u8]) -> Result<u128, AtoiSimdError> {
     let (res, len) = unsafe { parse_simd_u128(s)? };
     if len < s.len() {
-        return Err(AtoiSimdError::Invalid128(res, len));
+        return Err(AtoiSimdError::Invalid128(res, len, s));
     }
     Ok(res)
 }

@@ -5,8 +5,8 @@ pub enum AtoiSimdError<'a> {
     Empty,
     Size(usize, &'a [u8]),
     Overflow(u128, &'a [u8]),
-    Invalid64(u64, usize),
-    Invalid128(u128, usize),
+    Invalid64(u64, usize, &'a [u8]),
+    Invalid128(u128, usize, &'a [u8]),
 }
 
 impl fmt::Display for AtoiSimdError<'_> {
@@ -23,18 +23,18 @@ impl fmt::Display for AtoiSimdError<'_> {
                     max, input
                 )
             }
-            Self::Invalid64(res, index) => {
+            Self::Invalid64(res, index, input) => {
                 write!(
                     f,
-                    "atoi_simd invalid at index: {} it must contain only digits, starting with: {}",
-                    index, res,
+                    "atoi_simd invalid at index: {} it must contain only digits, starting with: {}  input: {:X?}",
+                    index, res, input
                 )
             }
-            Self::Invalid128(res, index) => {
+            Self::Invalid128(res, index, input) => {
                 write!(
                     f,
-                    "atoi_simd invalid at index: {} it must contain only digits, starting with: {}",
-                    index, res,
+                    "atoi_simd invalid at index: {} it must contain only digits, starting with: {} input: {:X?}",
+                    index, res, input
                 )
             }
         }

@@ -113,13 +113,7 @@ fn benchmark_group_max_20(
 ) {
     // let mut str = "321".to_owned();
     let mut str = String::new();
-    for i in '1'..='5' {
-        str.push(i);
-        func(bench_group, &str);
-    }
-
-    str = "123456".to_owned();
-    for i in '7'..='9' {
+    for i in '1'..='9' {
         str.push(i);
         func(bench_group, &str);
     }

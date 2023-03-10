@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 use crate::safe_unchecked::SafeUnchecked;
+use crate::short::parse_short_pos;
 use crate::AtoiSimdError;
 
 macro_rules! overflow {
@@ -36,12 +37,12 @@ fn check_16(val: u128) -> usize {
         >> 3) as usize // same as divide by 8 (drops extra bits from right)
 }
 
-/* #[inline(always)]
+#[inline(always)]
 fn process_4(mut val: u32, len: usize) -> u32 {
     val <<= 32_usize.saturating_sub(len << 3); // << 3 - same as mult by 8
     val = (val & 0x0F0F_0F0F).wrapping_mul(0xA01) >> 8;
     (val & 0x00FF_00FF).wrapping_mul(0x64_0001) >> 16
-} */
+}
 
 #[inline(always)]
 fn process_8(mut val: u64, len: usize) -> u64 {
@@ -122,26 +123,43 @@ pub(crate) fn parse_fb_neg<const MIN: i64>(s: &[u8]) -> Result<(i64, usize), Ato
 pub(crate) fn parse_fb_64_pos<const MAX: u64, const LEN_MORE: usize>(
     s: &[u8],
 ) -> Result<(u64, usize), AtoiSimdError> {
-    let (val, len) = parse_16(s)?;
-    if len < 16 {
-        return Ok((val as u64, len));
+    if s.len() < 9 {
+        return parse_short_pos::<MAX>(s);
     }
+    let val: u64 = unsafe { *(s.as_ptr().cast()) };
+    let mut len = check_8(val).min(s.len());
+    let val = match len {
+        0 => return Err(AtoiSimdError::Empty),
+        1 => return Ok(((*s.safe_unchecked(0) & 0xF) as u64, len)),
+        2..=4 => return Ok((process_4(val as u32, len) as u64, len)),
+        5..=7 => return Ok((process_8(val, len), len)),
+        8 => {
+            let mut val: u64 = unsafe { *(s.safe_unchecked(8..).as_ptr().cast()) };
+            len = (check_8(val) + 8).min(s.len());
+            val = process_16(unsafe { *(s.as_ptr().cast()) }, len) as u64;
+            if len < 16 {
+                return Ok((val, len));
+            }
+            val
+        }
+        _ => unreachable!(),
+    };
 
     let (more, len) = match parse_8(s.safe_unchecked(16..)) {
         Ok((v, l)) => (v, l),
-        Err(AtoiSimdError::Empty) => return Ok((val as u64, len)),
+        Err(AtoiSimdError::Empty) => return Ok((val, len)),
         Err(e) => return Err(e),
     };
     if len > LEN_MORE {
         return Err(AtoiSimdError::Size(len + 16, s));
     }
-
-    let res = val * 10_u128.pow(len as u32) + more as u128;
-    if len == LEN_MORE && res > MAX as u128 {
+    let shift = 10_u64.pow(len as u32);
+    if len == LEN_MORE && overflow!(val, shift, more, MAX) {
         return Err(AtoiSimdError::Overflow(MAX as u128, s));
     }
+    let res = val * shift + more;
 
-    Ok((res as u64, len + 16))
+    Ok((res, len + 16))
 }
 
 #[inline(always)]
@@ -156,10 +174,27 @@ pub(crate) fn parse_fb_64_neg(s: &[u8]) -> Result<(i64, usize), AtoiSimdError> {
 
 #[inline(always)]
 pub(crate) fn parse_fb_128_pos<const MAX: u128>(s: &[u8]) -> Result<(u128, usize), AtoiSimdError> {
-    let (mut val, len) = parse_16(s)?;
-    if len < 16 {
-        return Ok((val, len));
+    if s.len() < 9 {
+        return parse_short_pos::<{ u64::MAX }>(s).map(|(v, l)| (v as u128, l));
     }
+    let val: u64 = unsafe { *(s.as_ptr().cast()) };
+    let mut len = check_8(val).min(s.len());
+    let mut val = match len {
+        0 => return Err(AtoiSimdError::Empty),
+        1 => return Ok(((*s.safe_unchecked(0) & 0xF) as u128, len)),
+        2..=4 => return Ok((process_4(val as u32, len) as u128, len)),
+        5..=7 => return Ok((process_8(val, len) as u128, len)),
+        8 => {
+            let val: u64 = unsafe { *(s.safe_unchecked(8..).as_ptr().cast()) };
+            len = (check_8(val) + 8).min(s.len());
+            let val = process_16(unsafe { *(s.as_ptr().cast()) }, len);
+            if len < 16 {
+                return Ok((val, len));
+            }
+            val
+        }
+        _ => unreachable!(),
+    };
 
     let (more, len) = match parse_16(s.safe_unchecked(16..)) {
         Ok((v, l)) => (v, l),
@@ -200,7 +235,7 @@ pub(crate) fn parse_fb_128_neg(s: &[u8]) -> Result<(i128, usize), AtoiSimdError>
 pub(crate) fn parse_fb_checked_pos<const MAX: u64>(s: &[u8]) -> Result<u64, AtoiSimdError> {
     let (res, len) = parse_fb_pos::<MAX>(s)?;
     if len < s.len() {
-        return Err(AtoiSimdError::Invalid64(res, len));
+        return Err(AtoiSimdError::Invalid64(res, len, s));
     }
     Ok(res)
 }
@@ -209,7 +244,7 @@ pub(crate) fn parse_fb_checked_pos<const MAX: u64>(s: &[u8]) -> Result<u64, Atoi
 pub(crate) fn parse_fb_checked_neg<const MIN: i64>(s: &[u8]) -> Result<i64, AtoiSimdError> {
     let (res, len) = parse_fb_neg::<MIN>(s)?;
     if len < s.len() {
-        return Err(AtoiSimdError::Invalid64(-res as u64, len));
+        return Err(AtoiSimdError::Invalid64(-res as u64, len, s));
     }
     Ok(res)
 }
@@ -220,7 +255,7 @@ pub(crate) fn parse_fb_checked_64_pos<const MAX: u64, const LEN_MORE: usize>(
 ) -> Result<u64, AtoiSimdError> {
     let (res, len) = parse_fb_64_pos::<MAX, LEN_MORE>(s)?;
     if len < s.len() {
-        return Err(AtoiSimdError::Invalid64(res, len));
+        return Err(AtoiSimdError::Invalid64(res, len, s));
     }
     Ok(res)
 }
@@ -229,7 +264,7 @@ pub(crate) fn parse_fb_checked_64_pos<const MAX: u64, const LEN_MORE: usize>(
 pub(crate) fn parse_fb_checked_64_neg(s: &[u8]) -> Result<i64, AtoiSimdError> {
     let (res, len) = parse_fb_64_neg(s)?;
     if len < s.len() {
-        return Err(AtoiSimdError::Invalid64(-res as u64, len));
+        return Err(AtoiSimdError::Invalid64(-res as u64, len, s));
     }
     Ok(res)
 }
@@ -238,7 +273,7 @@ pub(crate) fn parse_fb_checked_64_neg(s: &[u8]) -> Result<i64, AtoiSimdError> {
 pub(crate) fn parse_fb_checked_128_pos<const MAX: u128>(s: &[u8]) -> Result<u128, AtoiSimdError> {
     let (res, len) = parse_fb_128_pos::<MAX>(s)?;
     if len < s.len() {
-        return Err(AtoiSimdError::Invalid128(res, len));
+        return Err(AtoiSimdError::Invalid128(res, len, s));
     }
     Ok(res)
 }
@@ -247,7 +282,7 @@ pub(crate) fn parse_fb_checked_128_pos<const MAX: u128>(s: &[u8]) -> Result<u128
 pub(crate) fn parse_fb_checked_128_neg(s: &[u8]) -> Result<i128, AtoiSimdError> {
     let (res, len) = parse_fb_128_neg(s)?;
     if len < s.len() {
-        return Err(AtoiSimdError::Invalid128(-res as u128, len));
+        return Err(AtoiSimdError::Invalid128(-res as u128, len, s));
     }
     Ok(res)
 }
