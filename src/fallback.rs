@@ -130,7 +130,7 @@ pub(crate) fn parse_fb_64_pos<const MAX: u64, const LEN_MORE: usize>(
     let mut len = check_8(val).min(s.len());
     let val = match len {
         0 => return Err(AtoiSimdError::Empty),
-        1 => return Ok(((*s.safe_unchecked(0) & 0xF) as u64, len)),
+        1 => return Ok((val & 0xF, len)),
         2..=4 => return Ok((process_4(val as u32, len) as u64, len)),
         5..=7 => return Ok((process_8(val, len), len)),
         8 => {
@@ -181,7 +181,7 @@ pub(crate) fn parse_fb_128_pos<const MAX: u128>(s: &[u8]) -> Result<(u128, usize
     let mut len = check_8(val).min(s.len());
     let mut val = match len {
         0 => return Err(AtoiSimdError::Empty),
-        1 => return Ok(((*s.safe_unchecked(0) & 0xF) as u128, len)),
+        1 => return Ok(((val & 0xF) as u128, len)),
         2..=4 => return Ok((process_4(val as u32, len) as u128, len)),
         5..=7 => return Ok((process_8(val, len) as u128, len)),
         8 => {

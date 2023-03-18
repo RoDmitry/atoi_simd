@@ -1,6 +1,9 @@
 use super::*;
 use crate::fallback::*;
 use arrayvec::ArrayString;
+use core::cmp::PartialEq;
+use core::fmt::Debug;
+use core::str::FromStr;
 
 const INVALID_CHARS: [char; 6] = ['/', ':', '\0', '\x7f', '!', 'a'];
 
@@ -14,6 +17,28 @@ fn test_each_position<T: Copy>(s: &str, func: fn(&[u8]) -> Result<T, AtoiSimdErr
             if func(s_new.as_bytes()).is_ok() {
                 panic!("error {}", s_new);
             }
+            s_new.clear();
+        }
+    }
+}
+
+fn test_each_position_until_invalid<T: Copy + Debug + PartialEq + FromStr>(
+    s: &str,
+    func: fn(&[u8]) -> Result<(T, usize), AtoiSimdError>,
+) where
+    <T as FromStr>::Err: Debug,
+{
+    let mut s_new = ArrayString::<40>::new();
+    for j in 1..=s.len() {
+        for &ch_str in INVALID_CHARS.iter() {
+            let ts = &s[0..j];
+            s_new.push_str(ts);
+            s_new.push(ch_str);
+            s_new.push_str(&s[j..s.len()]);
+            assert_eq!(
+                func(s_new.as_bytes()).unwrap(),
+                (ts.parse::<T>().unwrap(), j)
+            );
             s_new.clear();
         }
     }
@@ -41,6 +66,10 @@ fn test_each_position_fb_64_pos<const MAX: u64, const LEN_MORE: usize>(s: &str) 
 
 fn test_each_position_fb_64_neg<const MIN: i64>(s: &str) {
     test_each_position(s, |s_new| parse_fb_checked_64_neg(s_new))
+}
+
+fn test_each_position_until_invalid_u64(s: &str) {
+    test_each_position_until_invalid(s, |s_new| parse_until_invalid::<u64>(s_new))
 }
 
 #[test]
@@ -336,6 +365,55 @@ fn test_parse_u64() {
     }
 
     if parse::<u64>("99999999999999999999".as_bytes()).is_ok() {
+        panic!("error");
+    }
+}
+
+#[test]
+fn test_parse_until_invalid_u64() {
+    if parse_until_invalid::<u64>("".as_bytes()).is_ok() {
+        panic!("error");
+    }
+
+    assert_eq!(
+        parse_until_invalid::<u64>("0".as_bytes()).unwrap(),
+        (0_u64, 1_usize)
+    );
+
+    let mut s = ArrayString::<20>::new();
+    for i in '1'..='9' {
+        test_each_position_until_invalid_u64(&s);
+        s.push(i);
+        assert_eq!(
+            parse_until_invalid::<u64>(s.as_bytes()).unwrap(),
+            (s.parse::<u64>().unwrap(), s.len())
+        );
+    }
+    for i in '0'..='9' {
+        test_each_position_until_invalid_u64(&s);
+        s.push(i);
+        assert_eq!(
+            parse_until_invalid::<u64>(s.as_bytes()).unwrap(),
+            (s.parse::<u64>().unwrap(), s.len())
+        );
+    }
+    test_each_position_until_invalid_u64(&s);
+    s.push('0');
+    assert_eq!(
+        parse_until_invalid::<u64>(s.as_bytes()).unwrap(),
+        (s.parse::<u64>().unwrap(), s.len())
+    );
+
+    assert_eq!(
+        parse_until_invalid::<u64>("18446744073709551615".as_bytes()).unwrap(),
+        (u64::MAX, 20)
+    );
+
+    if parse_until_invalid::<u64>("18446744073709551616".as_bytes()).is_ok() {
+        panic!("error");
+    }
+
+    if parse_until_invalid::<u64>("99999999999999999999".as_bytes()).is_ok() {
         panic!("error");
     }
 }

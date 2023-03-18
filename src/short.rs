@@ -62,7 +62,7 @@ pub(crate) fn parse_short_neg<const MIN: i64>(s: &[u8]) -> Result<(i64, usize), 
                         let digit = (c & 0xF) as i64;
 
                         if MIN > -1024 && overflow_neg!(res * 10 - digit, MIN) {
-                            // can't overflow, because MIN is smaller than i64::MIN
+                            // can't overflow, because MIN is bigger than i64::MIN
                             return Err(AtoiSimdError::Overflow(-MIN as u128, s));
                         }
 
