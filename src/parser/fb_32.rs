@@ -118,7 +118,7 @@ impl ParserPos<usize> for usize {
 
     #[inline(always)]
     fn atoi_simd_parse_until_invalid_pos(s: &[u8]) -> Result<(usize, usize), AtoiSimdError> {
-        parse_fb_pos::<{ usize::MAX as u64 }>(s).map(|(v, i)| (v as usize, i))
+        parse_fb_pos::<{ u32::MAX as u64 }>(s).map(|(v, i)| (v as usize, i))
     }
 }
 
@@ -126,12 +126,12 @@ impl ParserPos<usize> for usize {
 impl ParserPos<isize> for isize {
     #[inline(always)]
     fn atoi_simd_parse_pos(s: &[u8]) -> Result<isize, AtoiSimdError> {
-        parse_fb_checked_pos::<{ isize::MAX as u64 }>(s).map(|v| v as isize)
+        parse_fb_checked_pos::<{ i32::MAX as u64 }>(s).map(|v| v as isize)
     }
 
     #[inline(always)]
     fn atoi_simd_parse_until_invalid_pos(s: &[u8]) -> Result<(isize, usize), AtoiSimdError> {
-        parse_fb_pos::<{ isize::MAX as u64 }>(s).map(|(v, i)| (v as isize, i))
+        parse_fb_pos::<{ i32::MAX as u64 }>(s).map(|(v, i)| (v as isize, i))
     }
 }
 
@@ -139,11 +139,11 @@ impl ParserPos<isize> for isize {
 impl ParserNeg<isize> for isize {
     #[inline(always)]
     fn atoi_simd_parse_neg(s: &[u8]) -> Result<isize, AtoiSimdError> {
-        parse_fb_checked_neg::<{ isize::MIN as i64 }>(s).map(|v| v as isize)
+        parse_fb_checked_neg::<{ i32::MIN as i64 }>(s).map(|v| v as isize)
     }
 
     #[inline(always)]
     fn atoi_simd_parse_until_invalid_neg(s: &[u8]) -> Result<(isize, usize), AtoiSimdError> {
-        parse_fb_neg::<{ isize::MIN as i64 }>(s).map(|(v, i)| (v as isize, i))
+        parse_fb_neg::<{ i32::MIN as i64 }>(s).map(|(v, i)| (v as isize, i))
     }
 }
