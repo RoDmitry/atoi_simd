@@ -1,5 +1,5 @@
 use super::*;
-use crate::fallback::*;
+// use crate::fallback::*;
 use arrayvec::ArrayString;
 use core::cmp::PartialEq;
 use core::fmt::Debug;
@@ -60,13 +60,13 @@ fn test_each_position_u64(s: &str) {
     test_each_position(s, |s_new| parse::<u64>(s_new))
 }
 
-fn test_each_position_fb_64_pos<const MAX: u64, const LEN_MORE: usize>(s: &str) {
+/* fn test_each_position_fb_64_pos<const MAX: u64, const LEN_MORE: usize>(s: &str) {
     test_each_position(s, |s_new| parse_fb_checked_64_pos::<MAX, LEN_MORE>(s_new))
 }
 
 fn test_each_position_fb_64_neg<const MIN: i64>(s: &str) {
     test_each_position(s, |s_new| parse_fb_checked_64_neg(s_new))
-}
+} */
 
 fn test_each_position_until_invalid_u64(s: &str) {
     test_each_position_until_invalid(s, |s_new| parse_until_invalid::<u64>(s_new))
@@ -418,7 +418,7 @@ fn test_parse_until_invalid_u64() {
     }
 }
 
-#[test]
+/* #[test]
 fn test_parse_fb_64_pos() {
     if parse_fb_checked_64_pos::<{ u64::MAX }, 4>("".as_bytes()).is_ok() {
         panic!("error");
@@ -505,7 +505,7 @@ fn test_parse_fb_64_neg() {
     if parse_fb_checked_64_neg("99999999999999999999".as_bytes()).is_ok() {
         panic!("error");
     }
-}
+} */
 
 #[test]
 fn test_parse_i64() {

@@ -33,6 +33,12 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 mod error;
+#[cfg(not(all(
+    target_feature = "sse2",
+    target_feature = "sse3",
+    target_feature = "sse4.1",
+    target_feature = "ssse3"
+)))]
 mod fallback;
 mod parser;
 mod safe_unchecked;
