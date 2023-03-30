@@ -134,7 +134,7 @@ pub(crate) fn parse_fb_64_pos<const MAX: u64, const LEN_MORE: usize>(
         2..=4 => return Ok((process_4(val as u32, len) as u64, len)),
         5..=7 => return Ok((process_8(val, len), len)),
         8 => {
-            let mut val: u64 = unsafe { *(s.safe_unchecked(8..).as_ptr().cast()) };
+            let mut val: u64 = unsafe { *(s.get_safe_unchecked(8..).as_ptr().cast()) };
             len = (check_8(val) + 8).min(s.len());
             val = process_16(unsafe { *(s.as_ptr().cast()) }, len) as u64;
             if len < 16 {
@@ -145,7 +145,7 @@ pub(crate) fn parse_fb_64_pos<const MAX: u64, const LEN_MORE: usize>(
         _ => unsafe { core::hint::unreachable_unchecked() },
     };
 
-    let (more, len) = match parse_8(s.safe_unchecked(16..)) {
+    let (more, len) = match parse_8(s.get_safe_unchecked(16..)) {
         Ok((v, l)) => (v, l),
         Err(AtoiSimdError::Empty) => return Ok((val, len)),
         Err(e) => return Err(e),
@@ -185,7 +185,7 @@ pub(crate) fn parse_fb_128_pos<const MAX: u128>(s: &[u8]) -> Result<(u128, usize
         2..=4 => return Ok((process_4(val as u32, len) as u128, len)),
         5..=7 => return Ok((process_8(val, len) as u128, len)),
         8 => {
-            let val: u64 = unsafe { *(s.safe_unchecked(8..).as_ptr().cast()) };
+            let val: u64 = unsafe { *(s.get_safe_unchecked(8..).as_ptr().cast()) };
             len = (check_8(val) + 8).min(s.len());
             let val = process_16(unsafe { *(s.as_ptr().cast()) }, len);
             if len < 16 {
@@ -197,7 +197,7 @@ pub(crate) fn parse_fb_128_pos<const MAX: u128>(s: &[u8]) -> Result<(u128, usize
     };
 
     // can be optimized parsing by 64 bits as above
-    let (more, len) = match parse_16(s.safe_unchecked(16..)) {
+    let (more, len) = match parse_16(s.get_safe_unchecked(16..)) {
         Ok((v, l)) => (v, l),
         Err(AtoiSimdError::Empty) => return Ok((val, len)),
         Err(e) => return Err(e),
@@ -207,7 +207,7 @@ pub(crate) fn parse_fb_128_pos<const MAX: u128>(s: &[u8]) -> Result<(u128, usize
         return Ok((val, len + 16));
     }
 
-    let (more, len) = match parse_8(s.safe_unchecked(32..)) {
+    let (more, len) = match parse_8(s.get_safe_unchecked(32..)) {
         Ok((v, l)) => (v as u128, l),
         Err(AtoiSimdError::Empty) => return Ok((val, 32)),
         Err(e) => return Err(e),

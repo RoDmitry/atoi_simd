@@ -136,7 +136,7 @@ fn parse_unchecked_64(s: &[u8], len: usize) -> Result<(u64, usize), AtoiSimdErro
     if len == 0 {
         return Err(AtoiSimdError::Empty);
     }
-    Ok(((*s.safe_unchecked(0) & 0xF) as u64, len))
+    Ok(((*s.get_safe_unchecked(0) & 0xF) as u64, len))
 }
 
 /// Parses string of *only* digits
@@ -272,26 +272,24 @@ unsafe fn parse_simd_sse(
 }
 
 #[inline(always)]
-fn simd_sse_check(s: &[u8]) -> Result<(usize, __m128i), AtoiSimdError> {
-    unsafe {
-        let mut chunk = read(s);
-        let cmp_high = _mm_set_epi8(
-            CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-            CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-        );
-        let cmp_low = _mm_set_epi8(
-            CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-            CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-        );
-        let check_high = process_gt(chunk, cmp_high);
-        let check_low = process_gt(cmp_low, chunk);
+unsafe fn simd_sse_check(s: &[u8]) -> Result<(usize, __m128i), AtoiSimdError> {
+    let mut chunk = read(s);
+    let cmp_high = _mm_set_epi8(
+        CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+        CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
+    );
+    let cmp_low = _mm_set_epi8(
+        CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+        CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
+    );
+    let check_high = process_gt(chunk, cmp_high);
+    let check_low = process_gt(cmp_low, chunk);
 
-        chunk = to_numbers(chunk);
+    chunk = to_numbers(chunk);
 
-        let len = s.len().min(checker(check_high, check_low) as usize);
+    let len = s.len().min(checker(check_high, check_low) as usize);
 
-        Ok((len, chunk))
-    }
+    Ok((len, chunk))
 }
 
 #[inline(always)]
@@ -342,7 +340,7 @@ unsafe fn process_avx(
     let arr = core::mem::transmute::<__m128i, [u64; 2]>(chunk);
 
     // mult 16
-    *arr.safe_unchecked(0) as u128 * mult16 + *arr.safe_unchecked(1) as u128
+    *arr.get_safe_unchecked(0) as u128 * mult16 + *arr.get_safe_unchecked(1) as u128
 
     // AVX intrinsics
     /* mult = _mm256_set_epi16(
@@ -413,9 +411,10 @@ unsafe fn process_avx_big(
 
     let arr = core::mem::transmute::<__m256i, [u64; 4]>(chunk);
 
-    ((*arr.safe_unchecked(0) as u128 * 10_000_000_000_000_000 + *arr.safe_unchecked(1) as u128)
+    ((*arr.get_safe_unchecked(0) as u128 * 10_000_000_000_000_000
+        + *arr.get_safe_unchecked(1) as u128)
         * mult16 as u128)
-        .checked_add(*arr.safe_unchecked(2) as u128)
+        .checked_add(*arr.get_safe_unchecked(2) as u128)
         .ok_or(AtoiSimdError::Overflow(u128::MAX, s))
 }
 
@@ -424,7 +423,7 @@ fn parse_unchecked_128(s: &[u8], len: usize) -> Result<(u128, usize), AtoiSimdEr
     if len == 0 {
         return Err(AtoiSimdError::Empty);
     }
-    Ok(((*s.safe_unchecked(0) & 0xF) as u128, len))
+    Ok(((*s.get_safe_unchecked(0) & 0xF) as u128, len))
 }
 
 /// Parses string of *only* digits. String length must be 1..=32.
@@ -660,7 +659,7 @@ pub(crate) unsafe fn parse_simd_u128(s: &[u8]) -> Result<(u128, usize), AtoiSimd
                 ));
             }
 
-            let (len_sse, chunk_sse) = simd_sse_check(s.safe_unchecked(32..))?;
+            let (len_sse, chunk_sse) = simd_sse_check(s.get_safe_unchecked(32..))?;
             let (mult1, mult2, mult4, mult16) = match len_sse {
                 0 => {
                     return Ok((

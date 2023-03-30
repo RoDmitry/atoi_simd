@@ -61,7 +61,7 @@ pub(crate) fn atoi_simd_parse_signed<T: ParserPos<T> + ParserNeg<T>>(
     s: &[u8],
 ) -> Result<T, AtoiSimdError> {
     if *s.first().ok_or(AtoiSimdError::Empty)? == b'-' {
-        T::atoi_simd_parse_neg(s.safe_unchecked(1..))
+        T::atoi_simd_parse_neg(s.get_safe_unchecked(1..))
     } else {
         T::atoi_simd_parse_pos(s)
     }
@@ -72,7 +72,7 @@ pub(crate) fn atoi_simd_parse_until_invalid_signed<T: ParserPos<T> + ParserNeg<T
     s: &[u8],
 ) -> Result<(T, usize), AtoiSimdError> {
     if *s.first().ok_or(AtoiSimdError::Empty)? == b'-' {
-        T::atoi_simd_parse_until_invalid_neg(s.safe_unchecked(1..)).map(|(v, i)| (v, i + 1))
+        T::atoi_simd_parse_until_invalid_neg(s.get_safe_unchecked(1..)).map(|(v, i)| (v, i + 1))
     } else {
         T::atoi_simd_parse_until_invalid_pos(s)
     }

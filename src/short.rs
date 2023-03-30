@@ -21,12 +21,12 @@ pub(crate) fn parse_short_pos<const MAX: u64>(s: &[u8]) -> Result<(u64, usize), 
     if s.len() == i {
         return Err(AtoiSimdError::Empty);
     }
-    match s.safe_unchecked(i) {
+    match s.get_safe_unchecked(i) {
         c @ b'0'..=b'9' => {
             let mut res = (c & 0xF) as u64;
             i += 1;
             while s.len() > i {
-                match s.safe_unchecked(i) {
+                match s.get_safe_unchecked(i) {
                     c @ b'0'..=b'9' => {
                         let digit = (c & 0xF) as u64;
 
@@ -52,12 +52,12 @@ pub(crate) fn parse_short_neg<const MIN: i64>(s: &[u8]) -> Result<(i64, usize), 
     if s.len() == i {
         return Err(AtoiSimdError::Empty);
     }
-    match s.safe_unchecked(i) {
+    match s.get_safe_unchecked(i) {
         c @ b'0'..=b'9' => {
             let mut res = -((c & 0xF) as i64);
             i += 1;
             while s.len() > i {
-                match s.safe_unchecked(i) {
+                match s.get_safe_unchecked(i) {
                     c @ b'0'..=b'9' => {
                         let digit = (c & 0xF) as i64;
 
