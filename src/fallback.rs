@@ -142,7 +142,7 @@ pub(crate) fn parse_fb_64_pos<const MAX: u64, const LEN_MORE: usize>(
             }
             val
         }
-        _ => unreachable!(),
+        _ => unsafe { core::hint::unreachable_unchecked() },
     };
 
     let (more, len) = match parse_8(s.safe_unchecked(16..)) {
@@ -193,9 +193,10 @@ pub(crate) fn parse_fb_128_pos<const MAX: u128>(s: &[u8]) -> Result<(u128, usize
             }
             val
         }
-        _ => unreachable!(),
+        _ => unsafe { core::hint::unreachable_unchecked() },
     };
 
+    // can be optimized parsing by 64 bits as above
     let (more, len) = match parse_16(s.safe_unchecked(16..)) {
         Ok((v, l)) => (v, l),
         Err(AtoiSimdError::Empty) => return Ok((val, len)),
