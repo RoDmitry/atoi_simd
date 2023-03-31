@@ -1,0 +1,57 @@
+name: Rust
+
+on:
+  push:
+    branches: ['master']
+  pull_request:
+    branches: ['master']
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Server AVX2 compatibility
+      run: rustc --print=cfg -C target-cpu=native | grep avx2 || exit 1
+    - name: Check
+      run: cargo check --verbose
+    - name: Clippy
+      run: cargo clippy --verbose
+    - name: Format
+      run: cargo fmt -- --check
+  test:
+    strategy:
+      matrix:
+        rustflags:
+          - ""
+          - "-C target-feature=+sse2,+sse3,+sse4.1,+ssse3"
+          - "-C target-feature=+sse2,+sse3,+sse4.1,+ssse3,+avx,+avx2"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        env:
+          RUSTFLAGS: ${{ matrix.rustflags }}
+
+      - name: Prepare
+        # gcc-multilib is needed for i686
+        run: sudo apt-get update && sudo apt-get install -y gcc-multilib && rm -f .cargo/config.toml
+
+      - name: Std
+        run: cargo test --verbose
+
+      - name: No Std
+        run: cargo test --no-default-features --verbose
+
+      # - uses: actions-rs/toolchain@v1
+      #   with:
+      #     toolchain: stable
+      #     target: i686-unknown-linux-gnu
+      #     override: true
+      - name: Install i686 target
+        run: rustup target add i686-unknown-linux-gnu
+      - name: i686 (32 bits)
+        run: cargo test --target=i686-unknown-linux-gnu --verbose
