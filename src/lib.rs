@@ -1,6 +1,6 @@
 //! # Fast `&[u8]` to integer parser
 //!
-//! Faster on x86_64 (uses SIMD, SSE4.1, AVX2), but can be used even if you don't have x86_64 SIMD capable cpu.
+//! Faster on x86_64 (uses SIMD, SSE4.1, AVX2), but can be used even if you don't have x86_64 SIMD capable cpu (and it will be still faster than str::parse).
 //!
 //! Supports negative values and validates the input.
 //!

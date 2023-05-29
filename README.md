@@ -5,7 +5,7 @@
 
 Got the idea from [here](https://rust-malaysia.github.io/code/2020/07/11/faster-integer-parsing.html) ([source](https://github.com/pickfire/parseint)).
 
-Faster on x86_64 (uses SIMD, SSE4.1, AVX2), but can be used even if you don't have x86_64 SIMD capable cpu.
+Faster on x86_64 (uses SIMD, SSE4.1, AVX2), but can be used even if you don't have x86_64 SIMD capable cpu (and it will be still faster than str::parse).
 
 Supports negative values and validates the input.
 
