@@ -139,7 +139,6 @@ fn parse_unchecked_64(s: &[u8], len: usize) -> Result<(u64, usize), AtoiSimdErro
     Ok(((*s.get_safe_unchecked(0) & 0xF) as u64, len))
 }
 
-/// Parses string of *only* digits
 /// Uses SSE intrinsics
 #[inline(always)]
 unsafe fn parse_simd_sse(
@@ -300,7 +299,7 @@ fn parse_simd_sse_checked(s: &[u8]) -> Result<(u64, usize), AtoiSimdError> {
     }
 }
 
-/// Parses string of *only* digits
+/// Parses *only* digits
 /// Uses AVX/AVX2 intrinsics
 #[inline(always)]
 unsafe fn process_avx(
@@ -426,7 +425,6 @@ fn parse_unchecked_128(s: &[u8], len: usize) -> Result<(u128, usize), AtoiSimdEr
     Ok(((*s.get_safe_unchecked(0) & 0xF) as u128, len))
 }
 
-/// Parses string of *only* digits. String length must be 1..=32.
 /// Uses AVX/AVX2 intrinsics
 #[inline(always)]
 pub(crate) unsafe fn parse_simd_u128(s: &[u8]) -> Result<(u128, usize), AtoiSimdError> {
@@ -961,9 +959,7 @@ pub(crate) fn parse_simd_checked_i64_neg(s: &[u8]) -> Result<i64, AtoiSimdError>
 #[inline(always)]
 pub(crate) fn parse_simd_i128_neg(s: &[u8]) -> Result<(i128, usize), AtoiSimdError> {
     let (res, len) = unsafe { parse_simd_u128(s)? };
-    if len > 39 {
-        return Err(AtoiSimdError::Size(len, s));
-    } else if len == 39 {
+    if len == 39 {
         const MAX: u128 = i128::MAX as u128 + 1;
         if res > MAX {
             return Err(AtoiSimdError::Overflow(MAX, s));
