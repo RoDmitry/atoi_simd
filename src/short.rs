@@ -15,7 +15,7 @@ macro_rules! overflow_neg {
     };
 }
 
-#[inline(always)]
+#[inline]
 pub(crate) fn parse_short_pos<const MAX: u64>(s: &[u8]) -> Result<(u64, usize), AtoiSimdError> {
     let mut i = 0;
     if s.len() == i {
@@ -46,7 +46,7 @@ pub(crate) fn parse_short_pos<const MAX: u64>(s: &[u8]) -> Result<(u64, usize), 
     }
 }
 
-#[inline(always)]
+#[inline]
 pub(crate) fn parse_short_neg<const MIN: i64>(s: &[u8]) -> Result<(i64, usize), AtoiSimdError> {
     let mut i = 0;
     if s.len() == i {

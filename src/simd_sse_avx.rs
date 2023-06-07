@@ -140,7 +140,7 @@ fn parse_unchecked_64(s: &[u8], len: usize) -> Result<(u64, usize), AtoiSimdErro
 }
 
 /// Uses SSE intrinsics
-#[inline(always)]
+#[inline]
 unsafe fn parse_simd_sse(
     s: &[u8],
     len: usize,
@@ -270,7 +270,7 @@ unsafe fn parse_simd_sse(
     Ok((res, len))
 }
 
-#[inline(always)]
+#[inline]
 unsafe fn simd_sse_check(s: &[u8]) -> Result<(usize, __m128i), AtoiSimdError> {
     let mut chunk = read(s);
     let cmp_high = _mm_set_epi8(
@@ -291,7 +291,7 @@ unsafe fn simd_sse_check(s: &[u8]) -> Result<(usize, __m128i), AtoiSimdError> {
     Ok((len, chunk))
 }
 
-#[inline(always)]
+#[inline]
 fn parse_simd_sse_checked(s: &[u8]) -> Result<(u64, usize), AtoiSimdError> {
     unsafe {
         let (len, chunk) = simd_sse_check(s)?;
@@ -426,7 +426,7 @@ fn parse_unchecked_128(s: &[u8], len: usize) -> Result<(u128, usize), AtoiSimdEr
 }
 
 /// Uses AVX/AVX2 intrinsics
-#[inline(always)]
+#[inline]
 pub(crate) unsafe fn parse_simd_u128(s: &[u8]) -> Result<(u128, usize), AtoiSimdError> {
     let mut len = s.len();
     if len < 4 {
