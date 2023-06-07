@@ -1,6 +1,6 @@
 [package]
 name = "atoi_simd"
-version = "0.12.2"
+version = "0.14.0"
 authors = ["Dmitry Rodionov <gh@rodmitry.com>"]
 description = "Fast `&[u8]` to integer parser"
 repository = "https://github.com/RoDmitry/atoi_simd"
