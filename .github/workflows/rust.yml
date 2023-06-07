@@ -2,9 +2,11 @@ name: Rust
 
 on:
   push:
-    branches: ['master']
+    branches: 
+      - master
   pull_request:
-    branches: ['master']
+    branches: 
+      - master
 
 env:
   CARGO_TERM_COLOR: always
@@ -13,16 +15,14 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-    - name: Server AVX2 compatibility
-      run: rustc --print=cfg -C target-cpu=native | grep avx2 || exit 1
-    - name: Check
-      run: cargo check --verbose
-    - name: Clippy
-      run: cargo clippy --verbose
-    - name: Format
-      run: cargo fmt -- --check
+      - name: Check
+        run: cargo check --verbose
+      - name: Clippy
+        run: cargo clippy --verbose
+      - name: Format
+        run: cargo fmt -- --check
   test:
     strategy:
       matrix:
@@ -39,6 +39,12 @@ jobs:
       - name: Prepare
         # gcc-multilib is needed for i686
         run: sudo apt-get update && sudo apt-get install -y gcc-multilib && rm -f .cargo/config.toml
+
+      - name: Rust Version
+        run: rustc -V
+
+      - name: Server AVX2 compatibility
+        run: rustc --print=cfg -C target-cpu=native | grep avx2 || exit 1
 
       - name: Std
         run: cargo test --verbose
