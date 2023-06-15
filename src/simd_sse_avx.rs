@@ -820,6 +820,7 @@ pub(crate) fn parse_simd_checked<const MAX: u64>(s: &[u8]) -> Result<u64, AtoiSi
 
 #[inline(always)]
 pub(crate) fn parse_simd_neg<const MIN: i64>(s: &[u8]) -> Result<(i64, usize), AtoiSimdError> {
+    debug_assert!(MIN < 0);
     if s.len() < 4 {
         return parse_short_neg::<MIN>(s);
     }
@@ -836,6 +837,7 @@ pub(crate) fn parse_simd_neg<const MIN: i64>(s: &[u8]) -> Result<(i64, usize), A
 
 #[inline(always)]
 pub(crate) fn parse_simd_checked_neg<const MIN: i64>(s: &[u8]) -> Result<i64, AtoiSimdError> {
+    debug_assert!(MIN < 0);
     if s.len() < 4 {
         return parse_short_checked_neg::<MIN>(s);
     }

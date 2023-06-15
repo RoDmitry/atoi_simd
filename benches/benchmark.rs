@@ -3,6 +3,37 @@ use criterion::{
     criterion_group, criterion_main, measurement::WallTime, BenchmarkGroup, BenchmarkId, Criterion,
 };
 
+/* fn bench_32(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
+    if str.len() > 10 {
+        return;
+    }
+    let str_neg = "-".to_owned() + str;
+
+    bench_group.bench_with_input(BenchmarkId::new("parse u32", str.len()), str, |b, val| {
+        b.iter(|| parse::<u32>(val.as_bytes()).unwrap())
+    });
+    bench_group.bench_with_input(BenchmarkId::new("parse i32", str.len()), str, |b, val| {
+        b.iter(|| parse::<i32>(val.as_bytes()).unwrap())
+    });
+    bench_group.bench_with_input(
+        BenchmarkId::new("parse neg i32", str.len()),
+        &str_neg,
+        |b, val| b.iter(|| parse::<i32>(val.as_bytes()).unwrap()),
+    );
+
+    bench_group.bench_with_input(BenchmarkId::new("str u32", str.len()), str, |b, val| {
+        b.iter(|| val.parse::<u32>().unwrap())
+    });
+    bench_group.bench_with_input(BenchmarkId::new("str i32", str.len()), str, |b, val| {
+        b.iter(|| val.parse::<i32>().unwrap())
+    });
+    bench_group.bench_with_input(
+        BenchmarkId::new("str neg i32", str.len()),
+        &str_neg,
+        |b, val| b.iter(|| val.parse::<i32>().unwrap()),
+    );
+} */
+
 fn bench_64(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
     let str_neg = "-".to_owned() + str;
 
@@ -134,6 +165,11 @@ fn benchmark_group_max_20(
 }
 
 fn benchmark(c: &mut Criterion) {
+    /* {
+        let mut bench_group = c.benchmark_group("benchmark 32");
+        benchmark_group_max_20(&mut bench_group, bench_32);
+        bench_group.finish();
+    } */
     {
         let mut bench_group = c.benchmark_group("benchmark 64");
         benchmark_group_max_20(&mut bench_group, bench_64);
