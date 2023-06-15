@@ -35,7 +35,9 @@ mod error;
     target_feature = "sse2",
     target_feature = "sse3",
     target_feature = "sse4.1",
-    target_feature = "ssse3"
+    target_feature = "ssse3",
+    target_feature = "avx",
+    target_feature = "avx2"
 )))]
 mod fallback;
 mod parser;
