@@ -32,7 +32,7 @@ mod fb_32;
 )))]
 mod fb_64;
 
-use crate::{safe_unchecked::SafeUnchecked, AtoiSimdError};
+use crate::{safe_unchecked::SliceGetter, AtoiSimdError};
 
 pub trait ParserPos<T>: Sized {
     fn atoi_simd_parse_pos(s: &[u8]) -> Result<T, AtoiSimdError>;

@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use crate::safe_unchecked::SafeUnchecked;
+use crate::safe_unchecked::SliceGetter;
 use crate::short::{parse_short_neg, parse_short_pos};
 use crate::AtoiSimdError;
 use core::ptr::read_unaligned;

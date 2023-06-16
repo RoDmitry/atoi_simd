@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use crate::safe_unchecked::SafeUnchecked;
+use crate::safe_unchecked::SliceGetter;
 use crate::AtoiSimdError;
 
 macro_rules! overflow {

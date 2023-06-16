@@ -10,7 +10,7 @@ use self::arch::{
     _mm_mul_epu32, _mm_or_si128, _mm_packus_epi32, _mm_set1_epi8, _mm_set_epi16, _mm_set_epi32,
     _mm_set_epi64x, _mm_set_epi8, _mm_srli_epi64,
 };
-use crate::safe_unchecked::SafeUnchecked;
+use crate::safe_unchecked::SliceGetter;
 use crate::short::{parse_short_checked_neg, parse_short_neg, parse_short_pos};
 use crate::AtoiSimdError;
 #[cfg(target_arch = "x86")]
