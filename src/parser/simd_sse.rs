@@ -116,6 +116,7 @@ impl ParserPos<usize> for usize {
         parse_simd_checked::<{ u32::MAX as u64 }>(s).map(|v| v as usize)
     }
 
+    #[inline(always)]
     fn atoi_simd_parse_until_invalid_pos(s: &[u8]) -> Result<(usize, usize), AtoiSimdError> {
         parse_simd::<{ u32::MAX as u64 }>(s).map(|(v, i)| (v as usize, i))
     }
@@ -128,6 +129,7 @@ impl ParserPos<isize> for isize {
         parse_simd_checked::<{ i32::MAX as u64 }>(s).map(|v| v as isize)
     }
 
+    #[inline(always)]
     fn atoi_simd_parse_until_invalid_pos(s: &[u8]) -> Result<(isize, usize), AtoiSimdError> {
         parse_simd::<{ i32::MAX as u64 }>(s).map(|(v, i)| (v as isize, i))
     }
@@ -140,6 +142,7 @@ impl ParserNeg<isize> for isize {
         parse_simd_checked_neg::<{ i32::MIN as i64 }>(s).map(|v| v as isize)
     }
 
+    #[inline(always)]
     fn atoi_simd_parse_until_invalid_neg(s: &[u8]) -> Result<(isize, usize), AtoiSimdError> {
         parse_simd_neg::<{ i32::MIN as i64 }>(s).map(|(v, i)| (v as isize, i))
     }
