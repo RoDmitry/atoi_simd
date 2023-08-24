@@ -1,0 +1,27 @@
+[package]
+name = "atoi_simd-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2018"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+
+[dependencies.atoi_simd]
+path = ".."
+
+# Prevent this from interfering with workspaces
+[workspace]
+members = ["."]
+
+[profile.release]
+debug = 1
+
+[[bin]]
+name = "parse_u64"
+path = "fuzz_targets/parse_u64.rs"
+test = false
+doc = false
