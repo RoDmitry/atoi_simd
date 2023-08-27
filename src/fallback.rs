@@ -19,6 +19,16 @@ fn check_4(val: u32) -> usize {
 } */
 
 #[inline(always)]
+fn read_8(s: &[u8]) -> u64 {
+    unsafe { read_unaligned(s.as_ptr().cast()) }
+}
+
+#[inline(always)]
+fn read_16(s: &[u8]) -> u128 {
+    unsafe { read_unaligned(s.as_ptr().cast()) }
+}
+
+#[inline(always)]
 fn check_8(val: u64) -> usize {
     ((((val & 0xF0F0_F0F0_F0F0_F0F0)
         | (((val.wrapping_add(0x0606_0606_0606_0606)) & 0xF0F0_F0F0_F0F0_F0F0) >> 4))
@@ -77,8 +87,7 @@ fn parse_4(s: &[u8]) -> Result<(u32, usize), AtoiSimdError> {
 
 #[inline(always)]
 fn parse_8(s: &[u8]) -> Result<(u64, usize), AtoiSimdError> {
-    let val: u64 = unsafe { read_unaligned(s.as_ptr().cast()) };
-    // let val: u64 = unsafe { *core::mem::transmute_copy::<&[u8], *const u64>(&s) };
+    let val = read_8(s);
     let len = check_8(val).min(s.len());
     if len == 0 {
         return Err(AtoiSimdError::Empty);
@@ -88,8 +97,8 @@ fn parse_8(s: &[u8]) -> Result<(u64, usize), AtoiSimdError> {
 }
 
 #[inline(always)]
-pub(crate) fn parse_16(s: &[u8]) -> Result<(u128, usize), AtoiSimdError> {
-    let val: u128 = unsafe { read_unaligned(s.as_ptr().cast()) };
+fn parse_16(s: &[u8]) -> Result<(u128, usize), AtoiSimdError> {
+    let val = read_16(s);
     let len = check_16(val).min(s.len());
     if len == 0 {
         return Err(AtoiSimdError::Empty);
@@ -134,7 +143,7 @@ pub(crate) fn parse_fb_64_pos<const MAX: u64, const LEN_MORE: usize>(
     if s.len() < 9 {
         return parse_short_pos::<MAX>(s);
     }
-    let val: u64 = unsafe { read_unaligned(s.as_ptr().cast()) };
+    let val = read_8(s);
     let mut len = check_8(val).min(s.len());
     let val = match len {
         0 => return Err(AtoiSimdError::Empty),
@@ -142,13 +151,13 @@ pub(crate) fn parse_fb_64_pos<const MAX: u64, const LEN_MORE: usize>(
         2..=4 => return Ok((process_4(val as u32, len) as u64, len)),
         5..=7 => return Ok((process_8(val, len), len)),
         8 => {
-            let mut val: u64 = unsafe { read_unaligned(s.get_safe_unchecked(8..).as_ptr().cast()) };
-            len = (check_8(val) + 8).min(s.len());
-            val = process_16(unsafe { read_unaligned(s.as_ptr().cast()) }, len) as u64;
+            let mut val_h = read_8(s.get_safe_unchecked(8..));
+            len = (check_8(val_h) + 8).min(s.len());
+            val_h = process_16(((val_h as u128) << 64) + val as u128, len) as u64;
             if len < 16 {
-                return Ok((val, len));
+                return Ok((val_h, len));
             }
-            val
+            val_h
         }
         _ => unsafe { core::hint::unreachable_unchecked() },
     };
@@ -185,7 +194,7 @@ pub(crate) fn parse_fb_128_pos<const MAX: u128>(s: &[u8]) -> Result<(u128, usize
     if s.len() < 9 {
         return parse_short_pos::<{ u64::MAX }>(s).map(|(v, l)| (v as u128, l));
     }
-    let val: u64 = unsafe { read_unaligned(s.as_ptr().cast()) };
+    let val = read_8(s);
     let mut len = check_8(val).min(s.len());
     let mut val = match len {
         0 => return Err(AtoiSimdError::Empty),
@@ -193,9 +202,9 @@ pub(crate) fn parse_fb_128_pos<const MAX: u128>(s: &[u8]) -> Result<(u128, usize
         2..=4 => return Ok((process_4(val as u32, len) as u128, len)),
         5..=7 => return Ok((process_8(val, len) as u128, len)),
         8 => {
-            let val: u64 = unsafe { read_unaligned(s.get_safe_unchecked(8..).as_ptr().cast()) };
-            len = (check_8(val) + 8).min(s.len());
-            let val = process_16(unsafe { read_unaligned(s.as_ptr().cast()) }, len);
+            let val_h = read_8(s.get_safe_unchecked(8..));
+            len = (check_8(val_h) + 8).min(s.len());
+            let val = process_16(((val_h as u128) << 64) + val as u128, len);
             if len < 16 {
                 return Ok((val, len));
             }
