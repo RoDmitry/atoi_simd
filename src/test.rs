@@ -7,6 +7,57 @@ use core::str::FromStr;
 
 const INVALID_CHARS: [char; 6] = ['/', ':', '\0', '\x7f', '!', 'a'];
 
+use std::fmt::Display;
+use std::io::Write;
+
+/// Converts the given number to string and sets the provided buffer to the result
+fn write_num<T: Copy + Display>(num: T, buf: &mut Vec<u8>) {
+    buf.clear();
+    write!(buf, "{}", num).unwrap();
+}
+
+#[test]
+fn roundtrip_all_u8() {
+    let mut buf = Vec::new();
+    for i in u8::MIN..=u8::MAX {
+        write_num(i, &mut buf);
+        let parsed = crate::parse::<u8>(&buf).expect("Failed to parse valid input!");
+        assert_eq!(i, parsed);
+    }
+}
+
+#[test]
+fn roundtrip_all_i8() {
+    let mut buf = Vec::new();
+    for i in i8::MIN..=i8::MAX {
+        write_num(i, &mut buf);
+        let parsed = crate::parse::<i8>(&buf).expect("Failed to parse valid input!");
+        assert_eq!(i, parsed);
+    }
+}
+
+#[test]
+#[cfg_attr(miri, ignore)] // too slow in miri
+fn roundtrip_all_u16() {
+    let mut buf = Vec::new();
+    for i in u16::MIN..=u16::MAX {
+        write_num(i, &mut buf);
+        let parsed = crate::parse::<u16>(&buf).expect("Failed to parse valid input!");
+        assert_eq!(i, parsed);
+    }
+}
+
+#[test]
+#[cfg_attr(miri, ignore)] // too slow in miri
+fn roundtrip_all_i16() {
+    let mut buf = Vec::new();
+    for i in i16::MIN..=i16::MAX {
+        write_num(i, &mut buf);
+        let parsed = crate::parse::<i16>(&buf).expect("Failed to parse valid input!");
+        assert_eq!(i, parsed);
+    }
+}
+
 fn test_each_position<T: Copy>(s: &str, func: fn(&[u8]) -> Result<T, AtoiSimdError>) {
     let mut s_new = ArrayString::<40>::new();
     for j in 0..=s.len() {
