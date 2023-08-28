@@ -1,10 +1,10 @@
 use super::*;
 // use crate::fallback::*;
 use arrayvec::{ArrayString, ArrayVec};
-use numtoa::NumToA;
 use core::cmp::PartialEq;
 use core::fmt::Debug;
 use core::str::FromStr;
+use numtoa::NumToA;
 
 const INVALID_CHARS: [char; 6] = ['/', ':', '\0', '\x7f', '!', 'a'];
 
