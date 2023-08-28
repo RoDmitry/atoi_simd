@@ -1,6 +1,6 @@
 use super::*;
 // use crate::fallback::*;
-use arrayvec::{ArrayString, ArrayVec};
+use arrayvec::ArrayString;
 use core::cmp::PartialEq;
 use core::fmt::Debug;
 use core::str::FromStr;
