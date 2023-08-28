@@ -148,11 +148,7 @@ fn benchmark_group_max_20(
         func(bench_group, &str);
     }
 
-    str = "123456789012".to_owned();
-    func(bench_group, &str);
-
-    str = "12345678901234".to_owned();
-    for i in '5'..='7' {
+    for i in '0'..='7' {
         str.push(i);
         func(bench_group, &str);
     }
