@@ -2,34 +2,480 @@
 
 use self::arch::{
     __m128i, __m256i, _mm256_add_epi64, _mm256_and_si256, _mm256_cmpgt_epi8,
-    _mm256_extracti128_si256, _mm256_lddqu_si256, _mm256_madd_epi16, _mm256_maddubs_epi16,
+    _mm256_extracti128_si256, _mm256_loadu_si256, _mm256_madd_epi16, _mm256_maddubs_epi16,
     _mm256_movemask_epi8, _mm256_mul_epu32, _mm256_or_si256, _mm256_packus_epi32,
     _mm256_permute4x64_epi64, _mm256_set1_epi8, _mm256_set_epi16, _mm256_set_epi32,
-    _mm256_set_epi8, _mm256_set_m128i, _mm256_srli_epi64, _mm_add_epi64, _mm_and_si128,
-    _mm_cmpgt_epi8, _mm_lddqu_si128, _mm_madd_epi16, _mm_maddubs_epi16, _mm_movemask_epi8,
-    _mm_mul_epu32, _mm_or_si128, _mm_packus_epi32, _mm_set1_epi8, _mm_set_epi16, _mm_set_epi32,
-    _mm_set_epi64x, _mm_set_epi8, _mm_srli_epi64,
+    _mm256_set_epi8, _mm256_set_m128i, _mm256_setzero_si256, _mm256_srli_epi64, _mm_add_epi64,
+    _mm_and_si128, _mm_cmpgt_epi8, _mm_loadu_si128, _mm_madd_epi16, _mm_maddubs_epi16,
+    _mm_movemask_epi8, _mm_mul_epu32, _mm_or_si128, _mm_packus_epi32, _mm_set1_epi8, _mm_set_epi16,
+    _mm_set_epi32, _mm_set_epi64x, _mm_set_epi8, _mm_setzero_si128, _mm_srli_epi64,
 };
 use crate::safe_unchecked::SliceGetter;
-use crate::short::{parse_short_checked_neg, parse_short_neg, parse_short_pos};
+// use crate::short::{parse_short_checked_neg, parse_short_neg, parse_short_pos};
 use crate::AtoiSimdError;
 #[cfg(target_arch = "x86")]
 use core::arch::x86 as arch;
 #[cfg(target_arch = "x86_64")]
 use core::arch::x86_64 as arch;
+use core::convert::TryInto;
 
 const CHAR_MAX: i8 = b'9' as i8;
 const CHAR_MIN: i8 = b'0' as i8;
 
-/// s = "1234567890123456"
+/* #[cfg(all(
+    target_feature = "avx512f",
+    target_feature = "avx512bw",
+    target_feature = "avx512vl"
+))]
 #[inline(always)]
 unsafe fn read(s: &[u8]) -> __m128i {
-    _mm_lddqu_si128(core::mem::transmute_copy(&s))
+    _mm_maskz_loadu_epi8(0xFFFF, core::mem::transmute_copy(&s));
+} */
+
+/// s = "1234567890123456"
+/* #[inline(always)]
+unsafe fn read(s: &[u8]) -> __m128i {
+    let len = s.len();
+
+    match len >> 2 {
+        4.. => _mm_loadu_si128(core::mem::transmute_copy(&s)),
+        2 | 3 => {
+            let hi = u64::from_le_bytes(s.get_safe_unchecked(len - 8..len).try_into().unwrap())
+                .overflowing_shr(8 * (16 - len as u32))
+                .0;
+
+            _mm_set_epi64x(
+                hi as i64,
+                u64::from_le_bytes(s.get_safe_unchecked(0..8).try_into().unwrap()) as i64,
+            )
+        }
+        1 => {
+            let hi = u32::from_le_bytes(s.get_safe_unchecked(len - 4..len).try_into().unwrap())
+                .overflowing_shr(8 * (8 - len as u32))
+                .0;
+
+            _mm_set_epi32(
+                0,
+                0,
+                hi as i32,
+                u32::from_le_bytes(s.get_safe_unchecked(0..4).try_into().unwrap()) as i32,
+            )
+        }
+        0 => {
+            if len == 0 {
+                return _mm_setzero_si128();
+            }
+
+            let lo = *s.get_safe_unchecked(0) as u64;
+            let mid = (*s.get_safe_unchecked(len >> 1) as u64) << (8 * (len >> 1));
+            let hi = (*s.get_safe_unchecked(len - 1) as u64) << (8 * (len - 1));
+            let res = lo | mid | hi;
+
+            _mm_loadu_si64(&res as *const _ as *const u8)
+        }
+        // _ => _mm_setzero_si128(),
+        _ => unsafe { core::hint::unreachable_unchecked() },
+    }
+} */
+
+/// s = "1234567890123456"
+/// slower with #[inline(always)]
+unsafe fn read(s: &[u8]) -> __m128i {
+    match s.len() {
+        16.. => _mm_loadu_si128(core::mem::transmute_copy(&s)),
+        15 => _mm_set_epi32(
+            i32::from_le_bytes(s[11..15].try_into().unwrap()) >> 8,
+            i32::from_le_bytes(s[8..12].try_into().unwrap()),
+            i32::from_le_bytes(s[4..8].try_into().unwrap()),
+            i32::from_le_bytes(s[0..4].try_into().unwrap()),
+        ),
+        14 => _mm_set_epi32(
+            u16::from_le_bytes(s[12..14].try_into().unwrap()) as i32,
+            i32::from_le_bytes(s[8..12].try_into().unwrap()),
+            i32::from_le_bytes(s[4..8].try_into().unwrap()),
+            i32::from_le_bytes(s[0..4].try_into().unwrap()),
+        ),
+        13 => _mm_set_epi32(
+            s[12] as i32,
+            i32::from_le_bytes(s[8..12].try_into().unwrap()),
+            i32::from_le_bytes(s[4..8].try_into().unwrap()),
+            i32::from_le_bytes(s[0..4].try_into().unwrap()),
+        ),
+        12 => _mm_set_epi32(
+            0,
+            i32::from_le_bytes(s[8..12].try_into().unwrap()),
+            i32::from_le_bytes(s[4..8].try_into().unwrap()),
+            i32::from_le_bytes(s[0..4].try_into().unwrap()),
+        ),
+        11 => _mm_set_epi32(
+            0,
+            i32::from_le_bytes(s[7..11].try_into().unwrap()) >> 8,
+            i32::from_le_bytes(s[4..8].try_into().unwrap()),
+            i32::from_le_bytes(s[0..4].try_into().unwrap()),
+        ),
+        10 => _mm_set_epi32(
+            0,
+            u16::from_le_bytes(s[8..10].try_into().unwrap()) as i32,
+            i32::from_le_bytes(s[4..8].try_into().unwrap()),
+            i32::from_le_bytes(s[0..4].try_into().unwrap()),
+        ),
+        9 => _mm_set_epi32(
+            0,
+            s[8] as i32,
+            i32::from_le_bytes(s[4..8].try_into().unwrap()),
+            i32::from_le_bytes(s[0..4].try_into().unwrap()),
+        ),
+        8 => _mm_set_epi32(
+            0,
+            0,
+            i32::from_le_bytes(s[4..8].try_into().unwrap()),
+            i32::from_le_bytes(s[0..4].try_into().unwrap()),
+        ),
+        7 => _mm_set_epi32(
+            0,
+            0,
+            i32::from_le_bytes(s[3..7].try_into().unwrap()) >> 8,
+            i32::from_le_bytes(s[0..4].try_into().unwrap()),
+        ),
+        6 => _mm_set_epi32(
+            0,
+            0,
+            u16::from_le_bytes(s[4..6].try_into().unwrap()) as i32,
+            i32::from_le_bytes(s[0..4].try_into().unwrap()),
+        ),
+        5 => _mm_set_epi32(
+            0,
+            0,
+            s[4] as i32,
+            i32::from_le_bytes(s[0..4].try_into().unwrap()),
+        ),
+        4 => _mm_set_epi32(0, 0, 0, i32::from_le_bytes(s[0..4].try_into().unwrap())),
+        3 => _mm_set_epi32(
+            0,
+            0,
+            0,
+            (u16::from_le_bytes(s[1..3].try_into().unwrap()) as i32) << 8 | s[0] as i32,
+        ),
+        2 => _mm_set_epi32(
+            0,
+            0,
+            0,
+            u16::from_le_bytes(s[0..2].try_into().unwrap()) as i32,
+        ),
+        1 => _mm_set_epi32(0, 0, 0, s[0] as i32),
+        0 => _mm_setzero_si128(),
+        _ => unsafe { core::hint::unreachable_unchecked() },
+    }
 }
 
-#[inline(always)]
+/// slower with #[inline(always)]
 unsafe fn read_avx(s: &[u8]) -> __m256i {
-    _mm256_lddqu_si256(core::mem::transmute_copy(&s))
+    match s.len() {
+        32.. => _mm256_loadu_si256(core::mem::transmute_copy(&s)),
+        31 => _mm256_set_epi32(
+            i32::from_le_bytes(s[27..31].try_into().unwrap()) >> 8,
+            i32::from_le_bytes(s[24..28].try_into().unwrap()),
+            i32::from_le_bytes(s[20..24].try_into().unwrap()),
+            i32::from_le_bytes(s[16..20].try_into().unwrap()),
+            i32::from_le_bytes(s[12..16].try_into().unwrap()),
+            i32::from_le_bytes(s[8..12].try_into().unwrap()),
+            i32::from_le_bytes(s[4..8].try_into().unwrap()),
+            i32::from_le_bytes(s[0..4].try_into().unwrap()),
+        ),
+        30 => _mm256_set_epi32(
+            u16::from_le_bytes(s[28..30].try_into().unwrap()) as i32,
+            i32::from_le_bytes(s[24..28].try_into().unwrap()),
+            i32::from_le_bytes(s[20..24].try_into().unwrap()),
+            i32::from_le_bytes(s[16..20].try_into().unwrap()),
+            i32::from_le_bytes(s[12..16].try_into().unwrap()),
+            i32::from_le_bytes(s[8..12].try_into().unwrap()),
+            i32::from_le_bytes(s[4..8].try_into().unwrap()),
+            i32::from_le_bytes(s[0..4].try_into().unwrap()),
+        ),
+        29 => _mm256_set_epi32(
+            s[28] as i32,
+            i32::from_le_bytes(s[24..28].try_into().unwrap()),
+            i32::from_le_bytes(s[20..24].try_into().unwrap()),
+            i32::from_le_bytes(s[16..20].try_into().unwrap()),
+            i32::from_le_bytes(s[12..16].try_into().unwrap()),
+            i32::from_le_bytes(s[8..12].try_into().unwrap()),
+            i32::from_le_bytes(s[4..8].try_into().unwrap()),
+            i32::from_le_bytes(s[0..4].try_into().unwrap()),
+        ),
+        28 => _mm256_set_epi32(
+            0,
+            i32::from_le_bytes(s[24..28].try_into().unwrap()),
+            i32::from_le_bytes(s[20..24].try_into().unwrap()),
+            i32::from_le_bytes(s[16..20].try_into().unwrap()),
+            i32::from_le_bytes(s[12..16].try_into().unwrap()),
+            i32::from_le_bytes(s[8..12].try_into().unwrap()),
+            i32::from_le_bytes(s[4..8].try_into().unwrap()),
+            i32::from_le_bytes(s[0..4].try_into().unwrap()),
+        ),
+        27 => _mm256_set_epi32(
+            0,
+            i32::from_le_bytes(s[23..27].try_into().unwrap()) >> 8,
+            i32::from_le_bytes(s[20..24].try_into().unwrap()),
+            i32::from_le_bytes(s[16..20].try_into().unwrap()),
+            i32::from_le_bytes(s[12..16].try_into().unwrap()),
+            i32::from_le_bytes(s[8..12].try_into().unwrap()),
+            i32::from_le_bytes(s[4..8].try_into().unwrap()),
+            i32::from_le_bytes(s[0..4].try_into().unwrap()),
+        ),
+        26 => _mm256_set_epi32(
+            0,
+            u16::from_le_bytes(s[24..26].try_into().unwrap()) as i32,
+            i32::from_le_bytes(s[20..24].try_into().unwrap()),
+            i32::from_le_bytes(s[16..20].try_into().unwrap()),
+            i32::from_le_bytes(s[12..16].try_into().unwrap()),
+            i32::from_le_bytes(s[8..12].try_into().unwrap()),
+            i32::from_le_bytes(s[4..8].try_into().unwrap()),
+            i32::from_le_bytes(s[0..4].try_into().unwrap()),
+        ),
+        25 => _mm256_set_epi32(
+            0,
+            s[24] as i32,
+            i32::from_le_bytes(s[20..24].try_into().unwrap()),
+            i32::from_le_bytes(s[16..20].try_into().unwrap()),
+            i32::from_le_bytes(s[12..16].try_into().unwrap()),
+            i32::from_le_bytes(s[8..12].try_into().unwrap()),
+            i32::from_le_bytes(s[4..8].try_into().unwrap()),
+            i32::from_le_bytes(s[0..4].try_into().unwrap()),
+        ),
+        24 => _mm256_set_epi32(
+            0,
+            0,
+            i32::from_le_bytes(s[20..24].try_into().unwrap()),
+            i32::from_le_bytes(s[16..20].try_into().unwrap()),
+            i32::from_le_bytes(s[12..16].try_into().unwrap()),
+            i32::from_le_bytes(s[8..12].try_into().unwrap()),
+            i32::from_le_bytes(s[4..8].try_into().unwrap()),
+            i32::from_le_bytes(s[0..4].try_into().unwrap()),
+        ),
+        23 => _mm256_set_epi32(
+            0,
+            0,
+            i32::from_le_bytes(s[19..23].try_into().unwrap()) >> 8,
+            i32::from_le_bytes(s[16..20].try_into().unwrap()),
+            i32::from_le_bytes(s[12..16].try_into().unwrap()),
+            i32::from_le_bytes(s[8..12].try_into().unwrap()),
+            i32::from_le_bytes(s[4..8].try_into().unwrap()),
+            i32::from_le_bytes(s[0..4].try_into().unwrap()),
+        ),
+        22 => _mm256_set_epi32(
+            0,
+            0,
+            u16::from_le_bytes(s[20..22].try_into().unwrap()) as i32,
+            i32::from_le_bytes(s[16..20].try_into().unwrap()),
+            i32::from_le_bytes(s[12..16].try_into().unwrap()),
+            i32::from_le_bytes(s[8..12].try_into().unwrap()),
+            i32::from_le_bytes(s[4..8].try_into().unwrap()),
+            i32::from_le_bytes(s[0..4].try_into().unwrap()),
+        ),
+        21 => _mm256_set_epi32(
+            0,
+            0,
+            s[20] as i32,
+            i32::from_le_bytes(s[16..20].try_into().unwrap()),
+            i32::from_le_bytes(s[12..16].try_into().unwrap()),
+            i32::from_le_bytes(s[8..12].try_into().unwrap()),
+            i32::from_le_bytes(s[4..8].try_into().unwrap()),
+            i32::from_le_bytes(s[0..4].try_into().unwrap()),
+        ),
+        20 => _mm256_set_epi32(
+            0,
+            0,
+            0,
+            i32::from_le_bytes(s[16..20].try_into().unwrap()),
+            i32::from_le_bytes(s[12..16].try_into().unwrap()),
+            i32::from_le_bytes(s[8..12].try_into().unwrap()),
+            i32::from_le_bytes(s[4..8].try_into().unwrap()),
+            i32::from_le_bytes(s[0..4].try_into().unwrap()),
+        ),
+        19 => _mm256_set_epi32(
+            0,
+            0,
+            0,
+            (u16::from_le_bytes(s[17..19].try_into().unwrap()) as i32) << 8 | s[16] as i32,
+            i32::from_le_bytes(s[12..16].try_into().unwrap()),
+            i32::from_le_bytes(s[8..12].try_into().unwrap()),
+            i32::from_le_bytes(s[4..8].try_into().unwrap()),
+            i32::from_le_bytes(s[0..4].try_into().unwrap()),
+        ),
+        18 => _mm256_set_epi32(
+            0,
+            0,
+            0,
+            u16::from_le_bytes(s[16..18].try_into().unwrap()) as i32,
+            i32::from_le_bytes(s[12..16].try_into().unwrap()),
+            i32::from_le_bytes(s[8..12].try_into().unwrap()),
+            i32::from_le_bytes(s[4..8].try_into().unwrap()),
+            i32::from_le_bytes(s[0..4].try_into().unwrap()),
+        ),
+        17 => _mm256_set_epi32(
+            0,
+            0,
+            0,
+            s[16] as i32,
+            i32::from_le_bytes(s[12..16].try_into().unwrap()),
+            i32::from_le_bytes(s[8..12].try_into().unwrap()),
+            i32::from_le_bytes(s[4..8].try_into().unwrap()),
+            i32::from_le_bytes(s[0..4].try_into().unwrap()),
+        ),
+        16 => _mm256_set_epi32(
+            0,
+            0,
+            0,
+            0,
+            i32::from_le_bytes(s[12..16].try_into().unwrap()),
+            i32::from_le_bytes(s[8..12].try_into().unwrap()),
+            i32::from_le_bytes(s[4..8].try_into().unwrap()),
+            i32::from_le_bytes(s[0..4].try_into().unwrap()),
+        ),
+        15 => _mm256_set_epi32(
+            0,
+            0,
+            0,
+            0,
+            i32::from_le_bytes(s[11..15].try_into().unwrap()) >> 8,
+            i32::from_le_bytes(s[8..12].try_into().unwrap()),
+            i32::from_le_bytes(s[4..8].try_into().unwrap()),
+            i32::from_le_bytes(s[0..4].try_into().unwrap()),
+        ),
+        14 => _mm256_set_epi32(
+            0,
+            0,
+            0,
+            0,
+            u16::from_le_bytes(s[12..14].try_into().unwrap()) as i32,
+            i32::from_le_bytes(s[8..12].try_into().unwrap()),
+            i32::from_le_bytes(s[4..8].try_into().unwrap()),
+            i32::from_le_bytes(s[0..4].try_into().unwrap()),
+        ),
+        13 => _mm256_set_epi32(
+            0,
+            0,
+            0,
+            0,
+            s[12] as i32,
+            i32::from_le_bytes(s[8..12].try_into().unwrap()),
+            i32::from_le_bytes(s[4..8].try_into().unwrap()),
+            i32::from_le_bytes(s[0..4].try_into().unwrap()),
+        ),
+        12 => _mm256_set_epi32(
+            0,
+            0,
+            0,
+            0,
+            0,
+            i32::from_le_bytes(s[8..12].try_into().unwrap()),
+            i32::from_le_bytes(s[4..8].try_into().unwrap()),
+            i32::from_le_bytes(s[0..4].try_into().unwrap()),
+        ),
+        11 => _mm256_set_epi32(
+            0,
+            0,
+            0,
+            0,
+            0,
+            i32::from_le_bytes(s[7..11].try_into().unwrap()) >> 8,
+            i32::from_le_bytes(s[4..8].try_into().unwrap()),
+            i32::from_le_bytes(s[0..4].try_into().unwrap()),
+        ),
+        10 => _mm256_set_epi32(
+            0,
+            0,
+            0,
+            0,
+            0,
+            u16::from_le_bytes(s[8..10].try_into().unwrap()) as i32,
+            i32::from_le_bytes(s[4..8].try_into().unwrap()),
+            i32::from_le_bytes(s[0..4].try_into().unwrap()),
+        ),
+        9 => _mm256_set_epi32(
+            0,
+            0,
+            0,
+            0,
+            0,
+            s[8] as i32,
+            i32::from_le_bytes(s[4..8].try_into().unwrap()),
+            i32::from_le_bytes(s[0..4].try_into().unwrap()),
+        ),
+        8 => _mm256_set_epi32(
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            i32::from_le_bytes(s[4..8].try_into().unwrap()),
+            i32::from_le_bytes(s[0..4].try_into().unwrap()),
+        ),
+        7 => _mm256_set_epi32(
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            i32::from_le_bytes(s[3..7].try_into().unwrap()) >> 8,
+            i32::from_le_bytes(s[0..4].try_into().unwrap()),
+        ),
+        6 => _mm256_set_epi32(
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            u16::from_le_bytes(s[4..6].try_into().unwrap()) as i32,
+            i32::from_le_bytes(s[0..4].try_into().unwrap()),
+        ),
+        5 => _mm256_set_epi32(
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            s[4] as i32,
+            i32::from_le_bytes(s[0..4].try_into().unwrap()),
+        ),
+        4 => _mm256_set_epi32(
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            i32::from_le_bytes(s[0..4].try_into().unwrap()),
+        ),
+        3 => _mm256_set_epi32(
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            (u16::from_le_bytes(s[1..3].try_into().unwrap()) as i32) << 8 | s[0] as i32,
+        ),
+        2 => _mm256_set_epi32(
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            u16::from_le_bytes(s[0..2].try_into().unwrap()) as i32,
+        ),
+        1 => _mm256_set_epi32(0, 0, 0, 0, 0, 0, 0, s[0] as i32),
+        0 => _mm256_setzero_si256(),
+        _ => unsafe { core::hint::unreachable_unchecked() },
+    }
 }
 
 /// converts chars  [ 0x36353433323130393837363534333231 ]
@@ -429,9 +875,10 @@ fn parse_unchecked_128(s: &[u8], len: usize) -> Result<(u128, usize), AtoiSimdEr
 #[inline]
 pub(crate) unsafe fn parse_simd_u128(s: &[u8]) -> Result<(u128, usize), AtoiSimdError> {
     let mut len = s.len();
-    if len < 4 {
+    /* if len < 4 {
         return parse_short_pos::<{ u64::MAX }>(s).map(|(v, l)| (v as u128, l));
-    } else if len < 17 {
+    } else */
+    if len < 17 {
         return parse_simd_sse_checked(s).map(|(v, l)| (v as u128, l));
     }
 
@@ -744,11 +1191,12 @@ pub(crate) unsafe fn parse_simd_u128(s: &[u8]) -> Result<(u128, usize), AtoiSimd
 
 #[inline(always)]
 fn parse_simd_checked_pre_u64(s: &[u8]) -> Result<u64, AtoiSimdError> {
-    let (res, len) = if s.len() < 4 {
+    /* let (res, len) = if s.len() < 4 {
         parse_short_pos::<{ u64::MAX }>(s)
     } else {
         parse_simd_sse_checked(s)
-    }?;
+    }?; */
+    let (res, len) = parse_simd_sse_checked(s)?;
     if len < s.len() {
         return Err(AtoiSimdError::Invalid64(res, len, s));
     }
@@ -757,11 +1205,12 @@ fn parse_simd_checked_pre_u64(s: &[u8]) -> Result<u64, AtoiSimdError> {
 
 #[inline(always)]
 fn parse_simd_checked_pre_i64_neg(s: &[u8]) -> Result<i64, AtoiSimdError> {
-    let (res, len) = if s.len() < 4 {
+    /* let (res, len) = if s.len() < 4 {
         parse_short_neg::<{ i64::MIN }>(s)
     } else {
         parse_simd_sse_checked(s).map(|(v, l)| (-(v as i64), l))
-    }?;
+    }?; */
+    let (res, len) = parse_simd_sse_checked(s).map(|(v, l)| (-(v as i64), l))?;
     if len < s.len() {
         return Err(AtoiSimdError::Invalid64(-res as u64, len, s));
     }
@@ -797,9 +1246,9 @@ pub(crate) fn parse_simd_checked_i128(s: &[u8]) -> Result<i128, AtoiSimdError> {
 
 #[inline(always)]
 pub(crate) fn parse_simd<const MAX: u64>(s: &[u8]) -> Result<(u64, usize), AtoiSimdError> {
-    if s.len() < 4 {
+    /* if s.len() < 4 {
         return parse_short_pos::<MAX>(s);
-    }
+    } */
     let (res, len) = parse_simd_sse_checked(s)?;
     if res > MAX {
         Err(AtoiSimdError::Overflow(MAX as u128, s))
@@ -821,9 +1270,9 @@ pub(crate) fn parse_simd_checked<const MAX: u64>(s: &[u8]) -> Result<u64, AtoiSi
 #[inline(always)]
 pub(crate) fn parse_simd_neg<const MIN: i64>(s: &[u8]) -> Result<(i64, usize), AtoiSimdError> {
     debug_assert!(MIN < 0);
-    if s.len() < 4 {
+    /* if s.len() < 4 {
         return parse_short_neg::<MIN>(s);
-    }
+    } */
     let (res, len) = parse_simd_sse_checked(s)?;
     let min = -MIN as u64;
     if res > min {
@@ -838,9 +1287,9 @@ pub(crate) fn parse_simd_neg<const MIN: i64>(s: &[u8]) -> Result<(i64, usize), A
 #[inline(always)]
 pub(crate) fn parse_simd_checked_neg<const MIN: i64>(s: &[u8]) -> Result<i64, AtoiSimdError> {
     debug_assert!(MIN < 0);
-    if s.len() < 4 {
+    /* if s.len() < 4 {
         return parse_short_checked_neg::<MIN>(s);
-    }
+    } */
     let res = parse_simd_checked_pre_u64(s)?;
     let min = -MIN as u64;
     if res > min {
@@ -855,9 +1304,10 @@ pub(crate) fn parse_simd_checked_neg<const MIN: i64>(s: &[u8]) -> Result<i64, At
 #[inline(always)]
 pub(crate) fn parse_simd_u64(s: &[u8]) -> Result<(u64, usize), AtoiSimdError> {
     let len = s.len();
-    if len < 4 {
+    /* if len < 4 {
         return parse_short_pos::<{ u64::MAX }>(s);
-    } else if len < 17 {
+    } else */
+    if len < 17 {
         return parse_simd_sse_checked(s);
     }
     let (res, len) = unsafe { parse_simd_u128(s)? };
@@ -887,9 +1337,10 @@ pub(crate) fn parse_simd_checked_u64(s: &[u8]) -> Result<u64, AtoiSimdError> {
 #[inline(always)]
 pub(crate) fn parse_simd_i64(s: &[u8]) -> Result<(i64, usize), AtoiSimdError> {
     let len = s.len();
-    if len < 4 {
+    /* if len < 4 {
         return parse_short_pos::<{ i64::MAX as u64 }>(s).map(|(v, i)| (v as i64, i));
-    } else if len < 17 {
+    } else */
+    if len < 17 {
         return parse_simd_sse_checked(s).map(|(v, i)| (v as i64, i));
     }
     let (res, len) = unsafe { parse_simd_u128(s)? };
@@ -919,9 +1370,10 @@ pub(crate) fn parse_simd_checked_i64(s: &[u8]) -> Result<i64, AtoiSimdError> {
 #[inline(always)]
 pub(crate) fn parse_simd_i64_neg(s: &[u8]) -> Result<(i64, usize), AtoiSimdError> {
     let len = s.len();
-    if len < 4 {
+    /* if len < 4 {
         return parse_short_neg::<{ i64::MIN }>(s);
-    } else if len < 17 {
+    } else */
+    if len < 17 {
         return parse_simd_sse_checked(s).map(|(v, i)| (-(v as i64), i));
     }
     let (res, len) = unsafe { parse_simd_u128(s)? };

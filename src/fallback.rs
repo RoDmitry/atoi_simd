@@ -20,65 +20,25 @@ fn check_4(val: u32) -> usize {
 
 #[inline(always)]
 fn read_8(s: &[u8]) -> u64 {
-    let len = s.len();
-    if len >= 8 {
-        return u64::from_le_bytes(s[0..8].try_into().unwrap());
+    match s.len() {
+        8.. => u64::from_le_bytes(s[0..8].try_into().unwrap()),
+        7 => {
+            (u32::from_le_bytes(s[3..7].try_into().unwrap()) as u64) << 24
+                | u32::from_le_bytes(s[0..4].try_into().unwrap()) as u64
+        }
+        6 => {
+            (u32::from_le_bytes(s[2..6].try_into().unwrap()) as u64) << 16
+                | u32::from_le_bytes(s[0..4].try_into().unwrap()) as u64
+        }
+        5 => (u32::from_le_bytes(s[1..5].try_into().unwrap()) as u64) << 8 | s[0] as u64,
+        4 => u32::from_le_bytes(s[0..4].try_into().unwrap()) as u64,
+        3 => (u16::from_le_bytes(s[1..3].try_into().unwrap()) as u64) << 8 | s[0] as u64,
+        2 => u16::from_le_bytes(s[0..2].try_into().unwrap()) as u64,
+        1 => s[0] as u64,
+        0 => 0,
+        _ => unsafe { core::hint::unreachable_unchecked() },
     }
-
-    if len >= 4 {
-        let lo = u32::from_le_bytes(s[0..4].try_into().unwrap());
-        let hi = u32::from_le_bytes(s[len - 4..len].try_into().unwrap());
-
-        return (lo as u64) | ((hi as u64) << (8 * (len - 4)));
-    }
-
-    if len == 0 {
-        return 0;
-    }
-
-    let lo = s[0] as u64;
-    let mid = (s[len >> 1] as u64) << (8 * (len >> 1));
-    let hi = (s[len - 1] as u64) << (8 * (len - 1));
-    lo | mid | hi
 }
-
-/* #[inline(always)]
-fn read_16(s: &[u8]) -> u128 {
-    let len = s.len();
-    if len >= 16 {
-        return u128::from_le_bytes(s[0..16].try_into().unwrap());
-    }
-
-    if len > 8 {
-        let lo = u64::from_le_bytes(s[0..8].try_into().unwrap());
-        let hi = u64::from_le_bytes(s[len - 8..len].try_into().unwrap());
-
-        return ((hi as u128) << (8 * (len - 8))) | (lo as u128);
-    }
-
-    /* if len >= 8 {
-        let lo = u64::from_le_bytes(s[0..8].try_into().unwrap());
-        let hi = u32::from_le_bytes(s[len - 4..len].try_into().unwrap());
-
-        return ((hi as u128) << 8 * (len - 4)) | (lo as u128);
-    } */
-
-    if len >= 4 {
-        let lo = u32::from_le_bytes(s[0..4].try_into().unwrap());
-        let hi = u32::from_le_bytes(s[len - 4..len].try_into().unwrap());
-
-        return (((hi as u64) << (8 * (len - 4))) | (lo as u64)) as u128;
-    }
-
-    if len == 0 {
-        return 0;
-    }
-
-    let lo = s[0] as u64;
-    let mid = (s[len >> 1] as u64) << (8 * (len >> 1));
-    let hi = (s[len - 1] as u64) << (8 * (len - 1));
-    (lo | mid | hi) as u128
-} */
 
 #[inline(always)]
 fn check_8(val: u64) -> usize {
