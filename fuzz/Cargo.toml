@@ -115,3 +115,27 @@ name = "verify_i32"
 path = "fuzz_targets/verify_i32.rs"
 test = false
 doc = false
+
+[[bin]]
+name = "verify_u16"
+path = "fuzz_targets/verify_u16.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "verify_i16"
+path = "fuzz_targets/verify_i16.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "verify_u8"
+path = "fuzz_targets/verify_u8.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "verify_i8"
+path = "fuzz_targets/verify_i8.rs"
+test = false
+doc = false
