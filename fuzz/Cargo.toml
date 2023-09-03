@@ -55,3 +55,27 @@ name = "parse_i32"
 path = "fuzz_targets/parse_i32.rs"
 test = false
 doc = false
+
+[[bin]]
+name = "verify_u128"
+path = "fuzz_targets/verify_u128.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "verify_i128"
+path = "fuzz_targets/verify_i128.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "verify_u64"
+path = "fuzz_targets/verify_u64.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "verify_i64"
+path = "fuzz_targets/verify_i64.rs"
+test = false
+doc = false
