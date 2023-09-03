@@ -3,7 +3,7 @@
 use crate::safe_unchecked::SliceGetter;
 use crate::AtoiSimdError;
 
-/* macro_rules! overflow {
+macro_rules! overflow {
     ($curr:ident * 10 + $more:ident, $max:expr) => {
         $curr >= $max / 10 && ($curr > $max / 10 || $more > $max % 10)
     };
@@ -13,10 +13,10 @@ macro_rules! overflow_neg {
     ($curr:ident * 10 - $more:ident, $max:expr) => {
         $curr <= $max / 10 && ($curr < $max / 10 || $more > -($max % 10))
     };
-} */
+}
 
 #[inline]
-pub(crate) fn parse_short_pos(s: &[u8]) -> Result<(u64, usize), AtoiSimdError> {
+pub(crate) fn parse_short_pos<const MAX: u64>(s: &[u8]) -> Result<(u64, usize), AtoiSimdError> {
     let mut i = 0;
     if s.len() == i {
         return Err(AtoiSimdError::Empty);
@@ -30,9 +30,9 @@ pub(crate) fn parse_short_pos(s: &[u8]) -> Result<(u64, usize), AtoiSimdError> {
                     c @ b'0'..=b'9' => {
                         let digit = (c & 0xF) as u64;
 
-                        /* if MAX < 1024 && overflow!(res * 10 + digit, MAX) {
+                        if MAX <= u32::MAX as u64 && overflow!(res * 10 + digit, MAX) {
                             return Err(AtoiSimdError::Overflow(MAX as u128, s));
-                        } */
+                        }
 
                         res = res * 10 + digit;
                         i += 1;
@@ -47,7 +47,8 @@ pub(crate) fn parse_short_pos(s: &[u8]) -> Result<(u64, usize), AtoiSimdError> {
 }
 
 #[inline]
-pub(crate) fn parse_short_neg(s: &[u8]) -> Result<(i64, usize), AtoiSimdError> {
+pub(crate) fn parse_short_neg<const MIN: i64>(s: &[u8]) -> Result<(i64, usize), AtoiSimdError> {
+    debug_assert!(MIN < 0);
     let mut i = 0;
     if s.len() == i {
         return Err(AtoiSimdError::Empty);
@@ -61,10 +62,10 @@ pub(crate) fn parse_short_neg(s: &[u8]) -> Result<(i64, usize), AtoiSimdError> {
                     c @ b'0'..=b'9' => {
                         let digit = (c & 0xF) as i64;
 
-                        /* if MIN > -1024 && overflow_neg!(res * 10 - digit, MIN) {
+                        if MIN >= i32::MIN as i64 && overflow_neg!(res * 10 - digit, MIN) {
                             // can't overflow, because MIN is bigger than i64::MIN
                             return Err(AtoiSimdError::Overflow(-MIN as u128, s));
-                        } */
+                        }
 
                         res = res * 10 - digit;
                         i += 1;

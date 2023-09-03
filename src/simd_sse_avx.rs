@@ -879,7 +879,7 @@ fn parse_unchecked_128(s: &[u8], len: usize) -> Result<(u128, usize), AtoiSimdEr
 pub(crate) unsafe fn parse_simd_u128(s: &[u8]) -> Result<(u128, usize), AtoiSimdError> {
     let mut len = s.len();
     if len < SHORT {
-        return parse_short_pos(s).map(|(v, l)| (v as u128, l));
+        return parse_short_pos::<{ u64::MAX }>(s).map(|(v, l)| (v as u128, l));
     } else if len < 17 {
         return parse_simd_sse_checked(s).map(|(v, l)| (v as u128, l));
     }
@@ -1194,7 +1194,7 @@ pub(crate) unsafe fn parse_simd_u128(s: &[u8]) -> Result<(u128, usize), AtoiSimd
 #[inline(always)]
 fn parse_simd_checked_pre_u64(s: &[u8]) -> Result<u64, AtoiSimdError> {
     let (res, len) = if s.len() < SHORT {
-        parse_short_pos(s)
+        parse_short_pos::<{ u64::MAX }>(s)
     } else {
         parse_simd_sse_checked(s)
     }?;
@@ -1207,7 +1207,7 @@ fn parse_simd_checked_pre_u64(s: &[u8]) -> Result<u64, AtoiSimdError> {
 #[inline(always)]
 fn parse_simd_checked_pre_i64_neg(s: &[u8]) -> Result<i64, AtoiSimdError> {
     let (res, len) = if s.len() < SHORT {
-        parse_short_neg(s)
+        parse_short_neg::<{ i64::MIN }>(s)
     } else {
         parse_simd_sse_checked(s).map(|(v, l)| (-(v as i64), l))
     }?;
@@ -1247,7 +1247,7 @@ pub(crate) fn parse_simd_checked_i128(s: &[u8]) -> Result<i128, AtoiSimdError> {
 #[inline(always)]
 pub(crate) fn parse_simd<const MAX: u64>(s: &[u8]) -> Result<(u64, usize), AtoiSimdError> {
     if s.len() < SHORT {
-        return parse_short_pos(s);
+        return parse_short_pos::<MAX>(s);
     }
     let (res, len) = parse_simd_sse_checked(s)?;
     if res > MAX {
@@ -1271,7 +1271,7 @@ pub(crate) fn parse_simd_checked<const MAX: u64>(s: &[u8]) -> Result<u64, AtoiSi
 pub(crate) fn parse_simd_neg<const MIN: i64>(s: &[u8]) -> Result<(i64, usize), AtoiSimdError> {
     debug_assert!(MIN < 0);
     if s.len() < SHORT {
-        return parse_short_neg(s);
+        return parse_short_neg::<MIN>(s);
     }
     let (res, len) = parse_simd_sse_checked(s)?;
     let min = -MIN as u64;

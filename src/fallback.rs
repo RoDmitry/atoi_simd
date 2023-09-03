@@ -153,7 +153,7 @@ pub(crate) fn parse_fb_pos<const MAX: u64>(s: &[u8]) -> Result<(u64, usize), Ato
     } else {
         parse_16(s).map(|(v, l)| (v as u64, l))
     }?; */
-    let (val, len) = parse_short_pos(s)?;
+    let (val, len) = parse_short_pos::<MAX>(s)?;
     if val > MAX {
         return Err(AtoiSimdError::Overflow(MAX as u128, s));
     }
@@ -169,7 +169,7 @@ pub(crate) fn parse_fb_neg<const MIN: i64>(s: &[u8]) -> Result<(i64, usize), Ato
     } else {
         parse_16(s).map(|(v, l)| (-(v as i64), l))
     }?; */
-    let (val, len) = parse_short_neg(s)?;
+    let (val, len) = parse_short_neg::<MIN>(s)?;
     if val < MIN {
         return Err(AtoiSimdError::Overflow(-MIN as u128, s));
     }
@@ -182,7 +182,7 @@ pub(crate) fn parse_fb_64_pos<const MAX: u64, const LEN_MORE: usize>(
     s: &[u8],
 ) -> Result<(u64, usize), AtoiSimdError> {
     if s.len() < 14 {
-        return parse_short_pos(s);
+        return parse_short_pos::<MAX>(s);
     }
 
     let (val, len) = match parse_16_by_8(s) {
@@ -221,7 +221,7 @@ pub(crate) fn parse_fb_64_neg(s: &[u8]) -> Result<(i64, usize), AtoiSimdError> {
 #[inline(always)]
 pub(crate) fn parse_fb_128_pos<const MAX: u128>(s: &[u8]) -> Result<(u128, usize), AtoiSimdError> {
     if s.len() < 11 {
-        return parse_short_pos(s).map(|(v, l)| (v as u128, l));
+        return parse_short_pos::<{ u64::MAX }>(s).map(|(v, l)| (v as u128, l));
     }
 
     let (mut val, len) = match parse_16_by_8(s) {
