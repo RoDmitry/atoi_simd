@@ -31,3 +31,15 @@ name = "parse_i64"
 path = "fuzz_targets/parse_i64.rs"
 test = false
 doc = false
+
+[[bin]]
+name = "parse_u32"
+path = "fuzz_targets/parse_u32.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "parse_i32"
+path = "fuzz_targets/parse_i32.rs"
+test = false
+doc = false
