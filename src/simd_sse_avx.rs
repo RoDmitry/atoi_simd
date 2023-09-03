@@ -858,9 +858,10 @@ unsafe fn process_avx_big(
 
     let arr = core::mem::transmute::<__m256i, [u64; 4]>(chunk);
 
-    ((*arr.get_safe_unchecked(0) as u128 * 10_000_000_000_000_000
+    (*arr.get_safe_unchecked(0) as u128 * 10_000_000_000_000_000
         + *arr.get_safe_unchecked(1) as u128)
-        * mult16 as u128)
+        .checked_mul(mult16 as u128)
+        .ok_or(AtoiSimdError::Overflow(u128::MAX, s))?
         .checked_add(*arr.get_safe_unchecked(2) as u128)
         .ok_or(AtoiSimdError::Overflow(u128::MAX, s))
 }

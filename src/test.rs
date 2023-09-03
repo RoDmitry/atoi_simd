@@ -139,6 +139,10 @@ fn test_parse_u8() {
     if parse::<u8>("12345678".as_bytes()).is_ok() {
         panic!("error");
     }
+
+    if parse::<u8>("1234567890123456789012345".as_bytes()).is_ok() {
+        panic!("error");
+    }
 }
 
 #[test]
@@ -187,6 +191,10 @@ fn test_parse_i8() {
     if parse::<i8>("-12345678".as_bytes()).is_ok() {
         panic!("error");
     }
+
+    if parse::<i8>("-1234567890123456789012345".as_bytes()).is_ok() {
+        panic!("error");
+    }
 }
 
 #[test]
@@ -214,6 +222,10 @@ fn test_parse_u16() {
     }
 
     if parse::<u16>("12345678".as_bytes()).is_ok() {
+        panic!("error");
+    }
+
+    if parse::<u16>("1234567890123456789012345".as_bytes()).is_ok() {
         panic!("error");
     }
 }
@@ -267,6 +279,10 @@ fn test_parse_i16() {
     if parse::<i16>("-12345678".as_bytes()).is_ok() {
         panic!("error");
     }
+
+    if parse::<i16>("-1234567890123456789012345".as_bytes()).is_ok() {
+        panic!("error");
+    }
 }
 
 #[test]
@@ -300,6 +316,10 @@ fn test_parse_u32() {
     }
 
     if parse::<u32>("123456789012345".as_bytes()).is_ok() {
+        panic!("error");
+    }
+
+    if parse::<u32>("1234567890123456789012345".as_bytes()).is_ok() {
         panic!("error");
     }
 }
@@ -364,6 +384,10 @@ fn test_parse_i32() {
     if parse::<i32>("-123456789012345".as_bytes()).is_ok() {
         panic!("error");
     }
+
+    if parse::<i32>("-1234567890123456789012345".as_bytes()).is_ok() {
+        panic!("error");
+    }
 }
 
 #[test]
@@ -408,6 +432,10 @@ fn test_parse_u64() {
     }
 
     if parse::<u64>("99999999999999999999".as_bytes()).is_ok() {
+        panic!("error");
+    }
+
+    if parse::<u64>("1234567890123456789012345".as_bytes()).is_ok() {
         panic!("error");
     }
 }
@@ -618,6 +646,10 @@ fn test_parse_i64() {
     if parse::<i64>("-99999999999999999999".as_bytes()).is_ok() {
         panic!("error");
     }
+
+    if parse::<i64>("-1234567890123456789012345".as_bytes()).is_ok() {
+        panic!("error");
+    }
 }
 
 #[test]
@@ -687,6 +719,14 @@ fn test_parse_u128() {
     );
 
     if parse::<u128>("340282366920938463463374607431768211456".as_bytes()).is_ok() {
+        panic!("error");
+    }
+
+    if parse::<u128>(b"999999999999999999999999999999999999999").is_ok() {
+        panic!("error");
+    }
+
+    if parse::<u128>(b"9999999999999999999999999999999999999999999").is_ok() {
         panic!("error");
     }
 }
@@ -790,6 +830,14 @@ fn test_parse_i128() {
     }
 
     if parse::<i128>("-170141183460469231731687303715884105729".as_bytes()).is_ok() {
+        panic!("error");
+    }
+
+    if parse::<u128>(b"-999999999999999999999999999999999999999").is_ok() {
+        panic!("error");
+    }
+
+    if parse::<u128>(b"-9999999999999999999999999999999999999999999").is_ok() {
         panic!("error");
     }
 }
@@ -1112,3 +1160,6 @@ fn test_parse_until_invalid_neg() {
     let tmp = parse_until_invalid_neg::<i128>("12345678901234567890s".as_bytes()).unwrap();
     assert_eq!(tmp, (-12345678901234567890_i128, 20));
 }
+
+#[test]
+fn overflow_u32() {}
