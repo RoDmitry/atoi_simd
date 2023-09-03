@@ -57,6 +57,30 @@ test = false
 doc = false
 
 [[bin]]
+name = "parse_u16"
+path = "fuzz_targets/parse_u32.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "parse_i16"
+path = "fuzz_targets/parse_i32.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "parse_u8"
+path = "fuzz_targets/parse_u32.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "parse_i8"
+path = "fuzz_targets/parse_i32.rs"
+test = false
+doc = false
+
+[[bin]]
 name = "verify_u128"
 path = "fuzz_targets/verify_u128.rs"
 test = false
