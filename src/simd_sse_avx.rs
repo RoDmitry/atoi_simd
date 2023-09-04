@@ -298,7 +298,7 @@ unsafe fn read_avx(s: &[u8]) -> __m256i {
             0,
             0,
             0,
-            (u16::from_le_bytes(s[17..19].try_into().unwrap()) as i32) << 8 | s[16] as i32,
+            i32::from_le_bytes(s[15..19].try_into().unwrap()) >> 8,
             i32::from_le_bytes(s[12..16].try_into().unwrap()),
             i32::from_le_bytes(s[8..12].try_into().unwrap()),
             i32::from_le_bytes(s[4..8].try_into().unwrap()),
@@ -721,14 +721,8 @@ unsafe fn parse_simd_sse(
 #[inline]
 unsafe fn simd_sse_check(s: &[u8]) -> Result<(usize, __m128i), AtoiSimdError> {
     let mut chunk = read(s);
-    let cmp_high = _mm_set_epi8(
-        CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-        CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-    );
-    let cmp_low = _mm_set_epi8(
-        CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-        CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-    );
+    let cmp_high = _mm_set1_epi8(CHAR_MAX);
+    let cmp_low = _mm_set1_epi8(CHAR_MIN);
     let check_high = process_gt(chunk, cmp_high);
     let check_low = process_gt(cmp_low, chunk);
 
@@ -888,18 +882,8 @@ pub(crate) unsafe fn parse_simd_u128(s: &[u8]) -> Result<(u128, usize), AtoiSimd
     // to numbers
     let chunk_num = _mm256_and_si256(chunk, _mm256_set1_epi8(0xF));
 
-    let cmp_max = _mm256_set_epi8(
-        CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-        CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-        CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-        CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX, CHAR_MAX,
-    );
-    let cmp_min = _mm256_set_epi8(
-        CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-        CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-        CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-        CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN, CHAR_MIN,
-    );
+    let cmp_max = _mm256_set1_epi8(CHAR_MAX);
+    let cmp_min = _mm256_set1_epi8(CHAR_MIN);
     let check_high = process_avx_gt(chunk, cmp_max);
     let check_low = process_avx_gt(cmp_min, chunk);
     len = len.min(checker_avx(check_high, check_low) as usize);
