@@ -104,16 +104,18 @@ fn bench_until_invalid_64(bench_group: &mut BenchmarkGroup<WallTime>, str: &str)
         &str,
         |b, val| b.iter(|| parse_until_invalid::<u64>(val.as_bytes()).unwrap()),
     );
-    bench_group.bench_with_input(
-        BenchmarkId::new("parse_until_invalid i64", len),
-        &str,
-        |b, val| b.iter(|| parse_until_invalid::<i64>(val.as_bytes()).unwrap()),
-    );
-    bench_group.bench_with_input(
-        BenchmarkId::new("parse_until_invalid neg i64", len),
-        &str_neg,
-        |b, val| b.iter(|| parse_until_invalid::<i64>(val.as_bytes()).unwrap()),
-    );
+    if len < 20 {
+        bench_group.bench_with_input(
+            BenchmarkId::new("parse_until_invalid i64", len),
+            &str,
+            |b, val| b.iter(|| parse_until_invalid::<i64>(val.as_bytes()).unwrap()),
+        );
+        bench_group.bench_with_input(
+            BenchmarkId::new("parse_until_invalid neg i64", len),
+            &str_neg,
+            |b, val| b.iter(|| parse_until_invalid::<i64>(val.as_bytes()).unwrap()),
+        );
+    }
 }
 
 fn bench_until_invalid_128(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
