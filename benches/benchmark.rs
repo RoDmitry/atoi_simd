@@ -94,6 +94,28 @@ fn bench_128(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
     );
 }
 
+/* fn bench_until_invalid_32(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
+    let len = str.len();
+    let str = str.to_owned() + "s1111111111111111111";
+    let str_neg = "-".to_owned() + &str;
+
+    bench_group.bench_with_input(
+        BenchmarkId::new("parse_until_invalid u32", len),
+        &str,
+        |b, val| b.iter(|| parse_until_invalid::<u32>(val.as_bytes()).unwrap()),
+    );
+    bench_group.bench_with_input(
+        BenchmarkId::new("parse_until_invalid i32", len),
+        &str,
+        |b, val| b.iter(|| parse_until_invalid::<i32>(val.as_bytes()).unwrap()),
+    );
+    bench_group.bench_with_input(
+        BenchmarkId::new("parse_until_invalid neg i32", len),
+        &str_neg,
+        |b, val| b.iter(|| parse_until_invalid::<i32>(val.as_bytes()).unwrap()),
+    );
+} */
+
 fn bench_until_invalid_64(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
     let len = str.len();
     let str = str.to_owned() + "s1111111111111111111";
@@ -166,6 +188,7 @@ fn benchmark(c: &mut Criterion) {
     /* {
         let mut bench_group = c.benchmark_group("benchmark 32");
         benchmark_group_max_20(&mut bench_group, bench_32);
+        benchmark_group_max_20(&mut bench_group, bench_until_invalid_32);
         bench_group.finish();
     } */
     {
