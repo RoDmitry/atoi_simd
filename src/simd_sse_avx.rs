@@ -31,7 +31,27 @@ const CHAR_MIN: i8 = b'0' as i8;
 ))]
 #[inline(always)]
 unsafe fn read(s: &[u8]) -> __m128i {
-    _mm_maskz_loadu_epi8(0xFFFF, core::mem::transmute_copy(&s));
+    let len = s.len();
+    if len < 16 {
+        return _mm_maskz_loadu_epi8((1 << len) - 1, core::mem::transmute_copy(&s));
+    }
+
+    _mm_loadu_si128(core::mem::transmute_copy(&s))
+}
+
+#[cfg(all(
+    target_feature = "avx512f",
+    target_feature = "avx512bw",
+    target_feature = "avx512vl"
+))]
+#[inline(always)]
+unsafe fn read_avx(s: &[u8]) -> __m256i {
+    let len = s.len();
+    if len < 32 {
+        return _mm256_maskz_loadu_epi8((1 << len) - 1, core::mem::transmute_copy(&s));
+    }
+
+    _mm256_loadu_si256(core::mem::transmute_copy(&s))
 } */
 
 /// s = "1234567890123456"

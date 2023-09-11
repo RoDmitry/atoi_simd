@@ -29,6 +29,7 @@
 //! ```
 #![allow(clippy::comparison_chain)]
 #![cfg_attr(not(feature = "std"), no_std)]
+// #![feature(stdsimd)]
 
 mod error;
 #[cfg(not(all(
