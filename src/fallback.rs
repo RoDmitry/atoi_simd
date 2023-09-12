@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
 use crate::safe_unchecked::SliceGetter;
-use crate::short::{parse_short_neg, parse_short_pos};
+use crate::short::parse_short_pos;
 use crate::AtoiSimdError;
 use core::convert::TryInto;
 
@@ -148,12 +148,10 @@ fn parse_16_by_8(s: &[u8]) -> EarlyReturn<(u64, usize), AtoiSimdError> {
 
 #[inline(always)]
 pub(crate) fn parse_fb_pos<const MAX: u64>(s: &[u8]) -> Result<(u64, usize), AtoiSimdError> {
-    /* let (val, len) = if MAX < 1_000_000_000 {
-        parse_short_pos::<MAX>(s)
-    } else {
-        parse_16(s).map(|(v, l)| (v as u64, l))
-    }?; */
-    let (val, len) = parse_short_pos::<MAX>(s)?;
+    let (val, len) = match parse_16_by_8(s) {
+        EarlyReturn::Ok(v) | EarlyReturn::Ret(v) => v,
+        EarlyReturn::Err(e) => return Err(e),
+    };
     if val > MAX {
         return Err(AtoiSimdError::Overflow(MAX as u128, s));
     }
@@ -164,12 +162,10 @@ pub(crate) fn parse_fb_pos<const MAX: u64>(s: &[u8]) -> Result<(u64, usize), Ato
 #[inline(always)]
 pub(crate) fn parse_fb_neg<const MIN: i64>(s: &[u8]) -> Result<(i64, usize), AtoiSimdError> {
     debug_assert!(MIN < 0);
-    /* let (val, len) = if MIN > -1_000_000_000 {
-        parse_short_neg::<MIN>(s)
-    } else {
-        parse_16(s).map(|(v, l)| (-(v as i64), l))
-    }?; */
-    let (val, len) = parse_short_neg::<MIN>(s)?;
+    let (val, len) = match parse_16_by_8(s) {
+        EarlyReturn::Ok((v, l)) | EarlyReturn::Ret((v, l)) => (-(v as i64), l),
+        EarlyReturn::Err(e) => return Err(e),
+    };
     if val < MIN {
         return Err(AtoiSimdError::Overflow(-MIN as u128, s));
     }
