@@ -89,7 +89,7 @@ fn process_16(mut val: u128, len: usize) -> u64 {
 fn parse_4(s: &[u8]) -> Result<(u32, usize), AtoiSimdError> {
     let val: u32 = unsafe { read_unaligned(s.as_ptr().cast()) };
     // let val: u64 = unsafe { *core::mem::transmute_copy::<&[u8], *const u64>(&s) };
-    let len = check_4(val).min(s.len());
+    let len = check_4(val);
     if len == 0 {
         return Err(AtoiSimdError::Empty);
     }
@@ -100,7 +100,7 @@ fn parse_4(s: &[u8]) -> Result<(u32, usize), AtoiSimdError> {
 #[inline(always)]
 fn parse_8(s: &[u8]) -> Result<(u64, usize), AtoiSimdError> {
     let val = read_8(s);
-    let len = check_8(val).min(s.len());
+    let len = check_8(val);
     if len == 0 {
         return Err(AtoiSimdError::Empty);
     }
@@ -111,7 +111,7 @@ fn parse_8(s: &[u8]) -> Result<(u64, usize), AtoiSimdError> {
 /* #[inline(always)]
 fn parse_16(s: &[u8]) -> Result<(u64, usize), AtoiSimdError> {
     let val = read_16(s);
-    let len = check_16(val).min(s.len());
+    let len = check_16(val);
     if len == 0 {
         return Err(AtoiSimdError::Empty);
     }
@@ -128,14 +128,14 @@ enum EarlyReturn<T, E> {
 #[inline(always)]
 fn parse_16_by_8(s: &[u8]) -> EarlyReturn<(u64, usize), AtoiSimdError> {
     let mut val = read_8(s);
-    let mut len = check_8(val).min(s.len());
+    let mut len = check_8(val);
     match len {
         0 => EarlyReturn::Err(AtoiSimdError::Empty),
         1 => EarlyReturn::Ret((val & 0xF, len)),
         2..=7 => EarlyReturn::Ret((process_8(val, len), len)),
         8 => {
             let val_h = read_8(s.get_safe_unchecked(8..));
-            len = (check_8(val_h) + 8).min(s.len());
+            len = check_8(val_h) + 8;
             val = process_16(((val_h as u128) << 64) | val as u128, len);
             if len < 16 {
                 return EarlyReturn::Ret((val, len));
@@ -181,7 +181,7 @@ pub(crate) fn parse_fb_neg<const MIN: i64>(s: &[u8]) -> Result<(i64, usize), Ato
 pub(crate) fn parse_fb_64_pos<const MAX: u64, const LEN_MORE: usize>(
     s: &[u8],
 ) -> Result<(u64, usize), AtoiSimdError> {
-    if s.len() < 14 {
+    if s.len() < 10 {
         return parse_short_pos::<MAX>(s);
     }
 
@@ -220,7 +220,7 @@ pub(crate) fn parse_fb_64_neg(s: &[u8]) -> Result<(i64, usize), AtoiSimdError> {
 
 #[inline(always)]
 pub(crate) fn parse_fb_128_pos<const MAX: u128>(s: &[u8]) -> Result<(u128, usize), AtoiSimdError> {
-    if s.len() < 11 {
+    if s.len() < 5 {
         return parse_short_pos::<{ u64::MAX }>(s).map(|(v, l)| (v as u128, l));
     }
 

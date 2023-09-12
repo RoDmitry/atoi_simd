@@ -528,7 +528,7 @@ unsafe fn checker(mut chunk: __m128i) -> u32 {
     let check_low = process_gt(cmp_low, chunk);
 
     chunk = _mm_or_si128(check_high, check_low);
-    let res = _mm_movemask_epi8(chunk);
+    let res = _mm_movemask_epi8(chunk) as u16;
     res.trailing_zeros()
 }
 
@@ -752,7 +752,7 @@ unsafe fn parse_simd_sse(
 #[inline]
 unsafe fn simd_sse_check(s: &[u8]) -> Result<(usize, __m128i), AtoiSimdError> {
     let mut chunk = read(s);
-    let len = s.len().min(checker(chunk) as usize);
+    let len = checker(chunk) as usize;
 
     chunk = to_numbers(chunk);
 
@@ -898,7 +898,7 @@ fn parse_unchecked_128(s: &[u8], len: usize) -> Result<(u128, usize), AtoiSimdEr
 #[inline]
 pub(crate) unsafe fn parse_simd_u128(s: &[u8]) -> Result<(u128, usize), AtoiSimdError> {
     let mut chunk = read_avx(s);
-    let len = s.len().min(checker_avx(chunk) as usize);
+    let len = checker_avx(chunk) as usize;
 
     // to numbers
     chunk = _mm256_and_si256(chunk, _mm256_set1_epi8(0xF));
