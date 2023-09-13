@@ -798,6 +798,9 @@ unsafe fn process_avx(
     chunk = _mm_madd_epi16(chunk, mult);
 
     mult = _mm_set_epi32(0, mult8, 0, 100_000_000);
+    // requires avx512ifma,avx512vl and nightly only
+    // chunk = _mm_madd52lo_epu64(_mm_srli_epi64(chunk, 32), chunk, mult);
+
     // mult 8
     mult = _mm_mul_epu32(chunk, mult);
     // add higher 32 bits of old 64 to mult
