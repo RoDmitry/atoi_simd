@@ -3,10 +3,7 @@ use criterion::{
     criterion_group, criterion_main, measurement::WallTime, BenchmarkGroup, BenchmarkId, Criterion,
 };
 
-/* fn bench_32(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
-    if str.len() > 10 {
-        return;
-    }
+fn bench_32(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
     let str_neg = "-".to_owned() + str;
 
     bench_group.bench_with_input(BenchmarkId::new("parse u32", str.len()), str, |b, val| {
@@ -32,7 +29,7 @@ use criterion::{
         &str_neg,
         |b, val| b.iter(|| val.parse::<i32>().unwrap()),
     );
-} */
+}
 
 fn bench_64(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
     let str_neg = "-".to_owned() + str;
@@ -94,7 +91,7 @@ fn bench_128(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
     );
 }
 
-/* fn bench_until_invalid_32(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
+fn bench_until_invalid_32(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
     let len = str.len();
     let str = str.to_owned() + "s1111111111111111111";
     let str_neg = "-".to_owned() + &str;
@@ -114,7 +111,7 @@ fn bench_128(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
         &str_neg,
         |b, val| b.iter(|| parse_until_invalid::<i32>(val.as_bytes()).unwrap()),
     );
-} */
+}
 
 fn bench_until_invalid_64(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
     let len = str.len();
@@ -162,6 +159,20 @@ fn bench_until_invalid_128(bench_group: &mut BenchmarkGroup<WallTime>, str: &str
     );
 }
 
+fn benchmark_group_max_10(
+    bench_group: &mut BenchmarkGroup<WallTime>,
+    func: fn(bench_group: &mut BenchmarkGroup<WallTime>, str: &str),
+) {
+    let mut str = String::new();
+    for i in '1'..='9' {
+        str.push(i);
+        func(bench_group, &str);
+    }
+
+    str = "1234567890".to_owned();
+    func(bench_group, &str);
+}
+
 fn benchmark_group_max_20(
     bench_group: &mut BenchmarkGroup<WallTime>,
     func: fn(bench_group: &mut BenchmarkGroup<WallTime>, str: &str),
@@ -185,12 +196,12 @@ fn benchmark_group_max_20(
 }
 
 fn benchmark(c: &mut Criterion) {
-    /* {
+    {
         let mut bench_group = c.benchmark_group("benchmark 32");
-        benchmark_group_max_20(&mut bench_group, bench_32);
-        benchmark_group_max_20(&mut bench_group, bench_until_invalid_32);
+        benchmark_group_max_10(&mut bench_group, bench_32);
+        benchmark_group_max_10(&mut bench_group, bench_until_invalid_32);
         bench_group.finish();
-    } */
+    }
     {
         let mut bench_group = c.benchmark_group("benchmark 64");
         benchmark_group_max_20(&mut bench_group, bench_64);
