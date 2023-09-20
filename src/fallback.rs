@@ -143,7 +143,7 @@ fn parse_16_by_8(s: &[u8]) -> EarlyReturn<(u64, usize), AtoiSimdError> {
         2..=7 => EarlyReturn::Ret((process_8(val, len), len)),
         8 => {
             let val_h = read_8(s.get_safe_unchecked(8..));
-            len = check_8(val_h) + 8;
+            len += check_8(val_h);
             val = process_16(((val_h as u128) << 64) | val as u128, len);
             if len < 16 {
                 return EarlyReturn::Ret((val, len));
