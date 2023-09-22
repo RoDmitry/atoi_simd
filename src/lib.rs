@@ -1,6 +1,6 @@
 //! # Fast `&[u8]` to integer parser
 //!
-//! SIMD (fast parsing) is supported on x86_64 (SSE4.1, AVX2) and on Arm64 (aarch64, Neon), but this library works even if you don't have SIMD supported cpu (and it will be still faster than str::parse).
+//! SIMD (fast) parsing is supported on x86_64 (SSE4.1, AVX2) and on Arm64 (aarch64, Neon), but this library works even if you don't have SIMD supported cpu (and it will be still faster than str::parse).
 //!
 //! Supports negative values and validates the input.
 //!

@@ -5,7 +5,7 @@
 
 Got the idea from [here](https://rust-malaysia.github.io/code/2020/07/11/faster-integer-parsing.html) ([source](https://github.com/pickfire/parseint)).
 
-SIMD (fast parsing) is supported on x86_64 (SSE4.1, AVX2) and on Arm64 (aarch64, Neon), but this library works even if you don't have SIMD supported cpu (and it will be still faster than str::parse).
+SIMD (fast) parsing is supported on x86_64 (SSE4.1, AVX2) and on Arm64 (aarch64, Neon), but this library works even if you don't have SIMD supported cpu (and it will be still faster than str::parse).
 
 Supports negative values and validates the input.
 
