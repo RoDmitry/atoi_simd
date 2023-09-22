@@ -1,0 +1,15 @@
+[package]
+name = "atoi_simd_benchmark"
+version = "0.1.0"
+authors = ["Dmitry Rodionov <gh@rdmtr.com>"]
+description = "Fast `&[u8]` to integer parser benchmark"
+edition = "2018"
+publish = false
+
+[dependencies]
+atoi_simd = { path = ".." }
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[[bench]]
+name = "benchmark"
+harness = false

@@ -1,17 +1,17 @@
 #![allow(dead_code)] // used when you don't have avx
 
 use self::arch::{
-    __m128i, __m256i, _mm256_add_epi64, _mm256_and_si256, _mm256_cmpgt_epi8,
+    __m128i, __m256i, _mm256_add_epi64, _mm256_and_si256, _mm256_cmpgt_epi8, _mm256_cvtsi256_si32,
     _mm256_extracti128_si256, _mm256_loadu_si256, _mm256_madd_epi16, _mm256_maddubs_epi16,
     _mm256_movemask_epi8, _mm256_mul_epu32, _mm256_or_si256, _mm256_packus_epi32,
     _mm256_permute4x64_epi64, _mm256_set1_epi8, _mm256_set_epi16, _mm256_set_epi32,
     _mm256_set_epi8, _mm256_set_m128i, _mm256_setzero_si256, _mm256_srli_epi64, _mm_add_epi64,
-    _mm_and_si128, _mm_cmpgt_epi8, _mm_loadu_si128, _mm_madd_epi16, _mm_maddubs_epi16,
-    _mm_movemask_epi8, _mm_mul_epu32, _mm_or_si128, _mm_packus_epi32, _mm_set1_epi8, _mm_set_epi16,
-    _mm_set_epi32, _mm_set_epi64x, _mm_set_epi8, _mm_setzero_si128, _mm_srli_epi64,
+    _mm_and_si128, _mm_cmpgt_epi8, _mm_cvtsi128_si32, _mm_loadu_si128, _mm_madd_epi16,
+    _mm_maddubs_epi16, _mm_movemask_epi8, _mm_mul_epu32, _mm_or_si128, _mm_packus_epi32,
+    _mm_set1_epi8, _mm_set_epi16, _mm_set_epi32, _mm_set_epi64x, _mm_set_epi8, _mm_setzero_si128,
+    _mm_srli_epi64,
 };
 use crate::safe_unchecked::SliceGetter;
-use crate::short::{parse_short_neg, parse_short_pos};
 use crate::AtoiSimdError;
 #[cfg(target_arch = "x86")]
 use core::arch::x86 as arch;
@@ -19,7 +19,7 @@ use core::arch::x86 as arch;
 use core::arch::x86_64 as arch;
 use core::convert::TryInto;
 
-const SHORT: usize = 6;
+pub(crate) const SHORT: usize = 6;
 
 const CHAR_MAX: i8 = b'9' as i8;
 const CHAR_MIN: i8 = b'0' as i8;
@@ -102,7 +102,7 @@ unsafe fn read(s: &[u8]) -> __m128i {
 
 /// s = "1234567890123456"
 /// slower with #[inline(always)]
-unsafe fn read(s: &[u8]) -> __m128i {
+unsafe fn load(s: &[u8]) -> __m128i {
     match s.len() {
         16.. => _mm_loadu_si128(core::mem::transmute_copy(&s)),
         15 => _mm_set_epi32(
@@ -186,13 +186,13 @@ unsafe fn read(s: &[u8]) -> __m128i {
         ),
         1 => _mm_set_epi32(0, 0, 0, s[0] as i32),
         0 => _mm_setzero_si128(),
-        _ => unsafe { core::hint::unreachable_unchecked() },
+        _ => core::hint::unreachable_unchecked(),
     }
 }
 
 /// slower with #[inline(always)]
 #[inline]
-unsafe fn read_avx(s: &[u8]) -> __m256i {
+unsafe fn load_avx(s: &[u8]) -> __m256i {
     match s.len() {
         32.. => _mm256_loadu_si256(core::mem::transmute_copy(&s)),
         31 => _mm256_set_epi32(
@@ -497,7 +497,7 @@ unsafe fn read_avx(s: &[u8]) -> __m256i {
         ),
         1 => _mm256_set_epi32(0, 0, 0, 0, 0, 0, 0, s[0] as i32),
         0 => _mm256_setzero_si256(),
-        _ => unsafe { core::hint::unreachable_unchecked() },
+        _ => core::hint::unreachable_unchecked(),
     }
 }
 
@@ -521,7 +521,7 @@ unsafe fn process_avx_gt(cmp_left: __m256i, cmp_right: __m256i) -> __m256i {
 }
 
 #[inline(always)]
-unsafe fn checker(mut chunk: __m128i) -> u32 {
+unsafe fn check_len(mut chunk: __m128i) -> u32 {
     let cmp_high = _mm_set1_epi8(CHAR_MAX);
     let cmp_low = _mm_set1_epi8(CHAR_MIN);
     let check_high = process_gt(chunk, cmp_high);
@@ -533,7 +533,7 @@ unsafe fn checker(mut chunk: __m128i) -> u32 {
 }
 
 #[inline(always)]
-unsafe fn checker_avx(mut chunk: __m256i) -> u32 {
+unsafe fn check_len_avx(mut chunk: __m256i) -> u32 {
     let cmp_max = _mm256_set1_epi8(CHAR_MAX);
     let cmp_min = _mm256_set1_epi8(CHAR_MIN);
     let check_high = process_avx_gt(chunk, cmp_max);
@@ -610,22 +610,15 @@ unsafe fn process_big(
     // (arr[0] as u64 * mult8) + (arr[1] as u64)
 }
 
-#[inline(always)]
-fn parse_unchecked_64(s: &[u8], len: usize) -> Result<(u64, usize), AtoiSimdError> {
-    if len == 0 {
-        return Err(AtoiSimdError::Empty);
-    }
-    Ok(((*s.get_safe_unchecked(0) & 0xF) as u64, len))
-}
-
 /// Uses SSE intrinsics
 #[inline]
 unsafe fn parse_simd_sse(
-    s: &[u8],
     len: usize,
     mut chunk: __m128i,
-) -> Result<(u64, usize), AtoiSimdError> {
+) -> Result<(u64, usize), AtoiSimdError<'static>> {
     let res = match len {
+        0 => return Err(AtoiSimdError::Empty),
+        1 => (_mm_cvtsi128_si32(chunk) & 0xFF) as u64,
         2 => {
             let mult = _mm_set_epi8(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 10);
             chunk = process_mult1(chunk, mult);
@@ -739,20 +732,23 @@ unsafe fn parse_simd_sse(
             _mm_set_epi16(0, 0, 0, 0, 1, 10000, 1, 10000),
             100_000_000,
         ),
-        // somehow it's faster that way
-        0..=1 => return parse_unchecked_64(s, len),
-        s_len => return Err(AtoiSimdError::Size(s_len, s)),
-        // Do not try to separate this function to three,
-        // and chain them with `_ => parse_u32(s).map(|v| v as u64)`,
-        // I've tried it, and the performance is not good (even with #[inline]).
+        _ => {
+            if cfg!(debug_assertions) {
+                panic!("parse_simd_sse: wrong size {}", len);
+            } else {
+                core::hint::unreachable_unchecked()
+            }
+        } // Do not try to separate this function to three,
+          // and chain them with `_ => parse_u32(s).map(|v| v as u64)`,
+          // I've tried it, and the performance is not good (even with #[inline]).
     };
     Ok((res, len))
 }
 
 #[inline]
-unsafe fn simd_sse_check(s: &[u8]) -> Result<(usize, __m128i), AtoiSimdError> {
-    let mut chunk = read(s);
-    let len = checker(chunk) as usize;
+unsafe fn simd_sse_len(s: &[u8]) -> Result<(usize, __m128i), AtoiSimdError> {
+    let mut chunk = load(s);
+    let len = check_len(chunk) as usize;
 
     chunk = to_numbers(chunk);
 
@@ -760,10 +756,10 @@ unsafe fn simd_sse_check(s: &[u8]) -> Result<(usize, __m128i), AtoiSimdError> {
 }
 
 #[inline]
-fn parse_simd_sse_checked(s: &[u8]) -> Result<(u64, usize), AtoiSimdError> {
+pub(crate) fn parse_simd_16(s: &[u8]) -> Result<(u64, usize), AtoiSimdError> {
     unsafe {
-        let (len, chunk) = simd_sse_check(s)?;
-        parse_simd_sse(s, len, chunk)
+        let (len, chunk) = simd_sse_len(s)?;
+        parse_simd_sse(len, chunk)
     }
 }
 
@@ -810,7 +806,7 @@ unsafe fn process_avx(
     let arr = core::mem::transmute::<__m128i, [u64; 2]>(chunk);
 
     // mult 16
-    *arr.get_safe_unchecked(0) as u128 * mult16 + *arr.get_safe_unchecked(1) as u128
+    arr[0] as u128 * mult16 + arr[1] as u128
 
     // AVX intrinsics
     /* mult = _mm256_set_epi16(
@@ -881,236 +877,208 @@ unsafe fn process_avx_big(
 
     let arr = core::mem::transmute::<__m256i, [u64; 4]>(chunk);
 
-    (*arr.get_safe_unchecked(0) as u128 * 10_000_000_000_000_000
-        + *arr.get_safe_unchecked(1) as u128)
+    (arr[0] as u128 * 10_000_000_000_000_000 + arr[1] as u128)
         .checked_mul(mult16 as u128)
         .ok_or(AtoiSimdError::Overflow(u128::MAX, s))?
-        .checked_add(*arr.get_safe_unchecked(2) as u128)
+        .checked_add(arr[2] as u128)
         .ok_or(AtoiSimdError::Overflow(u128::MAX, s))
-}
-
-#[inline(always)]
-fn parse_unchecked_128(s: &[u8], len: usize) -> Result<(u128, usize), AtoiSimdError> {
-    if len == 0 {
-        return Err(AtoiSimdError::Empty);
-    }
-    Ok(((*s.get_safe_unchecked(0) & 0xF) as u128, len))
 }
 
 /// Uses AVX/AVX2 intrinsics
 #[inline]
-pub(crate) unsafe fn parse_simd_u128(s: &[u8]) -> Result<(u128, usize), AtoiSimdError> {
-    let mut chunk = read_avx(s);
-    let len = checker_avx(chunk) as usize;
+pub(crate) fn parse_simd_u128(s: &[u8]) -> Result<(u128, usize), AtoiSimdError> {
+    unsafe {
+        let mut chunk = load_avx(s);
+        let len = check_len_avx(chunk) as usize;
 
-    // to numbers
-    chunk = _mm256_and_si256(chunk, _mm256_set1_epi8(0xF));
+        // to numbers
+        chunk = _mm256_and_si256(chunk, _mm256_set1_epi8(0xF));
 
-    let (mult1, mult2, mult4, mult8, mult16) = match len {
-        17 => (
-            _mm256_set_epi8(
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, /*16*/ 1, 10, 1, 10, 1, 10, 1,
-                10, 1, 10, 1, 10, 1, 10, 1, 10,
+        let (mult1, mult2, mult4, mult8, mult16) = match len {
+            0 => return Err(AtoiSimdError::Empty),
+            1 => return Ok(((_mm256_cvtsi256_si32(chunk) & 0xFF) as u128, 1)),
+            17 => (
+                _mm256_set_epi8(
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, /*16*/ 1, 10, 1, 10, 1,
+                    10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10,
+                ),
+                _mm256_set_epi16(
+                    0, 0, 0, 0, 0, 0, 0, 1, /*8*/ 1, 100, 1, 100, 1, 100, 1, 100,
+                ),
+                1,
+                1,
+                10,
             ),
-            _mm256_set_epi16(
-                0, 0, 0, 0, 0, 0, 0, 1, /*8*/ 1, 100, 1, 100, 1, 100, 1, 100,
+            18 => (
+                _mm256_set_epi8(
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 10, /*16*/ 1, 10, 1, 10, 1,
+                    10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10,
+                ),
+                _mm256_set_epi16(
+                    0, 0, 0, 0, 0, 0, 0, 1, /*8*/ 1, 100, 1, 100, 1, 100, 1, 100,
+                ),
+                1,
+                1,
+                100,
             ),
-            1,
-            1,
-            10,
-        ),
-        18 => (
-            _mm256_set_epi8(
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 10, /*16*/ 1, 10, 1, 10, 1, 10,
-                1, 10, 1, 10, 1, 10, 1, 10, 1, 10,
+            19 => (
+                _mm256_set_epi8(
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 10, /*16*/ 1, 10, 1, 10, 1,
+                    10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10,
+                ),
+                _mm256_set_epi16(
+                    0, 0, 0, 0, 0, 0, 1, 10, /*8*/ 1, 100, 1, 100, 1, 100, 1, 100,
+                ),
+                1,
+                1,
+                1_000,
             ),
-            _mm256_set_epi16(
-                0, 0, 0, 0, 0, 0, 0, 1, /*8*/ 1, 100, 1, 100, 1, 100, 1, 100,
+            20 => (
+                _mm256_set_epi8(
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 10, 1, 10, /*16*/ 1, 10, 1, 10, 1,
+                    10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10,
+                ),
+                _mm256_set_epi16(
+                    0, 0, 0, 0, 0, 0, 1, 100, /*8*/ 1, 100, 1, 100, 1, 100, 1, 100,
+                ),
+                1,
+                1,
+                10_000,
             ),
-            1,
-            1,
-            100,
-        ),
-        19 => (
-            _mm256_set_epi8(
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 10, /*16*/ 1, 10, 1, 10, 1, 10,
-                1, 10, 1, 10, 1, 10, 1, 10, 1, 10,
+            21 => (
+                _mm256_set_epi8(
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 10, 1, 10, /*16*/ 1, 10, 1, 10, 1,
+                    10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10,
+                ),
+                _mm256_set_epi16(
+                    0, 0, 0, 0, 0, 1, 1, 100, /*8*/ 1, 100, 1, 100, 1, 100, 1, 100,
+                ),
+                0x1_000A, // 1, 10
+                1,
+                100_000,
             ),
-            _mm256_set_epi16(
-                0, 0, 0, 0, 0, 0, 1, 10, /*8*/ 1, 100, 1, 100, 1, 100, 1, 100,
+            22 => (
+                _mm256_set_epi8(
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 10, 1, 10, 1, 10, /*16*/ 1, 10, 1, 10, 1,
+                    10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10,
+                ),
+                _mm256_set_epi16(
+                    0, 0, 0, 0, 0, 1, 1, 100, /*8*/ 1, 100, 1, 100, 1, 100, 1, 100,
+                ),
+                0x1_0064, // 1, 100
+                1,
+                1_000_000,
             ),
-            1,
-            1,
-            1_000,
-        ),
-        20 => (
-            _mm256_set_epi8(
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 10, 1, 10, /*16*/ 1, 10, 1, 10, 1, 10,
-                1, 10, 1, 10, 1, 10, 1, 10, 1, 10,
+            23 => (
+                _mm256_set_epi8(
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 10, 1, 10, 1, 10, /*16*/ 1, 10, 1, 10, 1,
+                    10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10,
+                ),
+                _mm256_set_epi16(
+                    0, 0, 0, 0, 1, 10, 1, 100, /*8*/ 1, 100, 1, 100, 1, 100, 1, 100,
+                ),
+                0x1_03E8, // 1, 1000
+                1,
+                10_000_000,
             ),
-            _mm256_set_epi16(
-                0, 0, 0, 0, 0, 0, 1, 100, /*8*/ 1, 100, 1, 100, 1, 100, 1, 100,
+            24 => (
+                _mm256_set_epi8(
+                    0, 0, 0, 0, 0, 0, 0, 0, 1, 10, 1, 10, 1, 10, 1, 10, /*16*/ 1, 10, 1, 10,
+                    1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10,
+                ),
+                _mm256_set_epi16(
+                    0, 0, 0, 0, 1, 100, 1, 100, /*8*/ 1, 100, 1, 100, 1, 100, 1, 100,
+                ),
+                0x1_2710, // 1, 10000
+                1,
+                100_000_000,
             ),
-            1,
-            1,
-            10_000,
-        ),
-        21 => (
-            _mm256_set_epi8(
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 10, 1, 10, /*16*/ 1, 10, 1, 10, 1, 10,
-                1, 10, 1, 10, 1, 10, 1, 10, 1, 10,
+            25 => (
+                _mm256_set_epi8(
+                    0, 0, 0, 0, 0, 0, 0, 1, 1, 10, 1, 10, 1, 10, 1, 10, /*16*/ 1, 10, 1, 10,
+                    1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10,
+                ),
+                _mm256_set_epi16(
+                    0, 0, 0, 1, 1, 100, 1, 100, /*8*/ 1, 100, 1, 100, 1, 100, 1, 100,
+                ),
+                0x1_0001_2710, // 1, 1, 10000
+                10,
+                1_000_000_000,
             ),
-            _mm256_set_epi16(
-                0, 0, 0, 0, 0, 1, 1, 100, /*8*/ 1, 100, 1, 100, 1, 100, 1, 100,
+            26 => (
+                _mm256_set_epi8(
+                    0, 0, 0, 0, 0, 0, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, /*16*/ 1, 10, 1, 10,
+                    1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10,
+                ),
+                _mm256_set_epi16(
+                    0, 0, 0, 1, 1, 100, 1, 100, /*8*/ 1, 100, 1, 100, 1, 100, 1, 100,
+                ),
+                0x1_0001_2710, // 1, 1, 10000
+                100,
+                10_000_000_000,
             ),
-            0x1_000A, // 1, 10
-            1,
-            100_000,
-        ),
-        22 => (
-            _mm256_set_epi8(
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 10, 1, 10, 1, 10, /*16*/ 1, 10, 1, 10, 1, 10,
-                1, 10, 1, 10, 1, 10, 1, 10, 1, 10,
+            27 => (
+                _mm256_set_epi8(
+                    0, 0, 0, 0, 0, 1, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, /*16*/ 1, 10, 1, 10,
+                    1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10,
+                ),
+                _mm256_set_epi16(
+                    0, 0, 1, 10, 1, 100, 1, 100, /*8*/ 1, 100, 1, 100, 1, 100, 1, 100,
+                ),
+                0x1_0001_2710, // 1, 1, 10000
+                1000,
+                100_000_000_000,
             ),
-            _mm256_set_epi16(
-                0, 0, 0, 0, 0, 1, 1, 100, /*8*/ 1, 100, 1, 100, 1, 100, 1, 100,
+            28 => (
+                _mm256_set_epi8(
+                    0, 0, 0, 0, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, /*16*/ 1, 10, 1, 10,
+                    1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10,
+                ),
+                _mm256_set_epi16(
+                    0, 0, 1, 100, 1, 100, 1, 100, /*8*/ 1, 100, 1, 100, 1, 100, 1, 100,
+                ),
+                0x1_0001_2710, // 1, 1, 10000
+                10_000,
+                1_000_000_000_000,
             ),
-            0x1_0064, // 1, 100
-            1,
-            1_000_000,
-        ),
-        23 => (
-            _mm256_set_epi8(
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 10, 1, 10, 1, 10, /*16*/ 1, 10, 1, 10, 1, 10,
-                1, 10, 1, 10, 1, 10, 1, 10, 1, 10,
+            29 => (
+                _mm256_set_epi8(
+                    0, 0, 0, 1, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, /*16*/ 1, 10, 1, 10,
+                    1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10,
+                ),
+                _mm256_set_epi16(
+                    0, 1, 1, 100, 1, 100, 1, 100, /*8*/ 1, 100, 1, 100, 1, 100, 1, 100,
+                ),
+                0x1_000A_0001_2710, // 1, 10, 1, 10000
+                100_000,
+                10_000_000_000_000,
             ),
-            _mm256_set_epi16(
-                0, 0, 0, 0, 1, 10, 1, 100, /*8*/ 1, 100, 1, 100, 1, 100, 1, 100,
+            30 => (
+                _mm256_set_epi8(
+                    0, 0, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, /*16*/ 1, 10, 1,
+                    10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10,
+                ),
+                _mm256_set_epi16(
+                    0, 1, 1, 100, 1, 100, 1, 100, /*8*/ 1, 100, 1, 100, 1, 100, 1, 100,
+                ),
+                0x1_0064_0001_2710, // 1, 100, 1, 10000
+                1_000_000,
+                100_000_000_000_000,
             ),
-            0x1_03E8, // 1, 1000
-            1,
-            10_000_000,
-        ),
-        24 => (
-            _mm256_set_epi8(
-                0, 0, 0, 0, 0, 0, 0, 0, 1, 10, 1, 10, 1, 10, 1, 10, /*16*/ 1, 10, 1, 10, 1,
-                10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10,
+            31 => (
+                _mm256_set_epi8(
+                    0, 1, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, /*16*/ 1, 10, 1,
+                    10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10,
+                ),
+                _mm256_set_epi16(
+                    1, 10, 1, 100, 1, 100, 1, 100, /*8*/ 1, 100, 1, 100, 1, 100, 1, 100,
+                ),
+                0x1_03E8_0001_2710, // 1, 1000, 1, 10000
+                10_000_000,
+                1_000_000_000_000_000,
             ),
-            _mm256_set_epi16(
-                0, 0, 0, 0, 1, 100, 1, 100, /*8*/ 1, 100, 1, 100, 1, 100, 1, 100,
-            ),
-            0x1_2710, // 1, 10000
-            1,
-            100_000_000,
-        ),
-        25 => (
-            _mm256_set_epi8(
-                0, 0, 0, 0, 0, 0, 0, 1, 1, 10, 1, 10, 1, 10, 1, 10, /*16*/ 1, 10, 1, 10, 1,
-                10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10,
-            ),
-            _mm256_set_epi16(
-                0, 0, 0, 1, 1, 100, 1, 100, /*8*/ 1, 100, 1, 100, 1, 100, 1, 100,
-            ),
-            0x1_0001_2710, // 1, 1, 10000
-            10,
-            1_000_000_000,
-        ),
-        26 => (
-            _mm256_set_epi8(
-                0, 0, 0, 0, 0, 0, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, /*16*/ 1, 10, 1, 10, 1,
-                10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10,
-            ),
-            _mm256_set_epi16(
-                0, 0, 0, 1, 1, 100, 1, 100, /*8*/ 1, 100, 1, 100, 1, 100, 1, 100,
-            ),
-            0x1_0001_2710, // 1, 1, 10000
-            100,
-            10_000_000_000,
-        ),
-        27 => (
-            _mm256_set_epi8(
-                0, 0, 0, 0, 0, 1, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, /*16*/ 1, 10, 1, 10, 1,
-                10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10,
-            ),
-            _mm256_set_epi16(
-                0, 0, 1, 10, 1, 100, 1, 100, /*8*/ 1, 100, 1, 100, 1, 100, 1, 100,
-            ),
-            0x1_0001_2710, // 1, 1, 10000
-            1000,
-            100_000_000_000,
-        ),
-        28 => (
-            _mm256_set_epi8(
-                0, 0, 0, 0, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, /*16*/ 1, 10, 1, 10, 1,
-                10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10,
-            ),
-            _mm256_set_epi16(
-                0, 0, 1, 100, 1, 100, 1, 100, /*8*/ 1, 100, 1, 100, 1, 100, 1, 100,
-            ),
-            0x1_0001_2710, // 1, 1, 10000
-            10_000,
-            1_000_000_000_000,
-        ),
-        29 => (
-            _mm256_set_epi8(
-                0, 0, 0, 1, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, /*16*/ 1, 10, 1, 10, 1,
-                10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10,
-            ),
-            _mm256_set_epi16(
-                0, 1, 1, 100, 1, 100, 1, 100, /*8*/ 1, 100, 1, 100, 1, 100, 1, 100,
-            ),
-            0x1_000A_0001_2710, // 1, 10, 1, 10000
-            100_000,
-            10_000_000_000_000,
-        ),
-        30 => (
-            _mm256_set_epi8(
-                0, 0, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, /*16*/ 1, 10, 1, 10, 1,
-                10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10,
-            ),
-            _mm256_set_epi16(
-                0, 1, 1, 100, 1, 100, 1, 100, /*8*/ 1, 100, 1, 100, 1, 100, 1, 100,
-            ),
-            0x1_0064_0001_2710, // 1, 100, 1, 10000
-            1_000_000,
-            100_000_000_000_000,
-        ),
-        31 => (
-            _mm256_set_epi8(
-                0, 1, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, /*16*/ 1, 10, 1, 10, 1,
-                10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10,
-            ),
-            _mm256_set_epi16(
-                1, 10, 1, 100, 1, 100, 1, 100, /*8*/ 1, 100, 1, 100, 1, 100, 1, 100,
-            ),
-            0x1_03E8_0001_2710, // 1, 1000, 1, 10000
-            10_000_000,
-            1_000_000_000_000_000,
-        ),
-        32 => {
-            if s.len() == 32 {
-                return Ok((
-                    process_avx(
-                        chunk,
-                        _mm256_set_epi8(
-                            1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, /*16*/ 1,
-                            10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10,
-                        ),
-                        _mm256_set_epi16(
-                            1, 100, 1, 100, 1, 100, 1, 100, /*8*/ 1, 100, 1, 100, 1, 100, 1,
-                            100,
-                        ),
-                        0x1_2710_0001_2710, // 1, 10000, 1, 10000
-                        100_000_000,
-                        10_000_000_000_000_000,
-                    ),
-                    len,
-                ));
-            }
-
-            let (len_sse, chunk_sse) = simd_sse_check(s.get_safe_unchecked(32..))?;
-            let (mult1, mult2, mult4, mult16) = match len_sse {
-                0 => {
+            32 => {
+                if s.len() == 32 {
                     return Ok((
                         process_avx(
                             chunk,
@@ -1129,288 +1097,85 @@ pub(crate) unsafe fn parse_simd_u128(s: &[u8]) -> Result<(u128, usize), AtoiSimd
                         len,
                     ));
                 }
-                1 => (
-                    _mm_set_epi8(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1),
-                    _mm_set_epi16(0, 0, 0, 0, 0, 0, 0, 1),
-                    _mm_set_epi16(0, 0, 0, 0, 0, 0, 0, 1),
-                    10,
-                ),
-                2 => (
-                    _mm_set_epi8(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 10),
-                    _mm_set_epi16(0, 0, 0, 0, 0, 0, 0, 1),
-                    _mm_set_epi16(0, 0, 0, 0, 0, 0, 0, 1),
-                    100,
-                ),
-                3 => (
-                    _mm_set_epi8(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 10),
-                    _mm_set_epi16(0, 0, 0, 0, 0, 0, 1, 10),
-                    _mm_set_epi16(0, 0, 0, 0, 0, 0, 0, 1),
-                    1_000,
-                ),
-                4 => (
-                    _mm_set_epi8(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 10, 1, 10),
-                    _mm_set_epi16(0, 0, 0, 0, 0, 0, 1, 100),
-                    _mm_set_epi16(0, 0, 0, 0, 0, 0, 0, 1),
-                    10_000,
-                ),
-                5 => (
-                    _mm_set_epi8(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 10, 1, 10),
-                    _mm_set_epi16(0, 0, 0, 0, 0, 1, 1, 100),
-                    _mm_set_epi16(0, 0, 0, 0, 0, 0, 1, 10),
-                    100_000,
-                ),
-                6 => (
-                    _mm_set_epi8(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 10, 1, 10, 1, 10),
-                    _mm_set_epi16(0, 0, 0, 0, 0, 1, 1, 100),
-                    _mm_set_epi16(0, 0, 0, 0, 0, 0, 1, 100),
-                    1_000_000,
-                ),
-                7 => (
-                    _mm_set_epi8(0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 10, 1, 10, 1, 10),
-                    _mm_set_epi16(0, 0, 0, 0, 1, 10, 1, 100),
-                    _mm_set_epi16(0, 0, 0, 0, 0, 0, 1, 1_000),
-                    10_000_000,
-                ),
-                s_len => return Err(AtoiSimdError::Size(s_len, s)),
-            };
 
-            return Ok((
-                process_avx_big(s, chunk, chunk_sse, mult1, mult2, mult4, mult16)?,
-                len_sse + 32,
-            ));
-        }
-        // somehow it's faster that way
-        0..=1 => return parse_unchecked_128(s, len),
-        s_len => {
-            return parse_simd_sse(s, s_len, core::mem::transmute_copy(&chunk))
-                .map(|(v, l)| (v as u128, l))
-        }
-    };
+                let (len_sse, chunk_sse) = simd_sse_len(s.get_safe_unchecked(32..))?;
+                let (mult1, mult2, mult4, mult16) = match len_sse {
+                    0 => {
+                        return Ok((
+                            process_avx(
+                                chunk,
+                                _mm256_set_epi8(
+                                    1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10,
+                                    /*16*/ 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1,
+                                    10,
+                                ),
+                                _mm256_set_epi16(
+                                    1, 100, 1, 100, 1, 100, 1, 100, /*8*/ 1, 100, 1, 100, 1,
+                                    100, 1, 100,
+                                ),
+                                0x1_2710_0001_2710, // 1, 10000, 1, 10000
+                                100_000_000,
+                                10_000_000_000_000_000,
+                            ),
+                            len,
+                        ));
+                    }
+                    1 => (
+                        _mm_set_epi8(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1),
+                        _mm_set_epi16(0, 0, 0, 0, 0, 0, 0, 1),
+                        _mm_set_epi16(0, 0, 0, 0, 0, 0, 0, 1),
+                        10,
+                    ),
+                    2 => (
+                        _mm_set_epi8(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 10),
+                        _mm_set_epi16(0, 0, 0, 0, 0, 0, 0, 1),
+                        _mm_set_epi16(0, 0, 0, 0, 0, 0, 0, 1),
+                        100,
+                    ),
+                    3 => (
+                        _mm_set_epi8(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 10),
+                        _mm_set_epi16(0, 0, 0, 0, 0, 0, 1, 10),
+                        _mm_set_epi16(0, 0, 0, 0, 0, 0, 0, 1),
+                        1_000,
+                    ),
+                    4 => (
+                        _mm_set_epi8(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 10, 1, 10),
+                        _mm_set_epi16(0, 0, 0, 0, 0, 0, 1, 100),
+                        _mm_set_epi16(0, 0, 0, 0, 0, 0, 0, 1),
+                        10_000,
+                    ),
+                    5 => (
+                        _mm_set_epi8(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 10, 1, 10),
+                        _mm_set_epi16(0, 0, 0, 0, 0, 1, 1, 100),
+                        _mm_set_epi16(0, 0, 0, 0, 0, 0, 1, 10),
+                        100_000,
+                    ),
+                    6 => (
+                        _mm_set_epi8(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 10, 1, 10, 1, 10),
+                        _mm_set_epi16(0, 0, 0, 0, 0, 1, 1, 100),
+                        _mm_set_epi16(0, 0, 0, 0, 0, 0, 1, 100),
+                        1_000_000,
+                    ),
+                    7 => (
+                        _mm_set_epi8(0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 10, 1, 10, 1, 10),
+                        _mm_set_epi16(0, 0, 0, 0, 1, 10, 1, 100),
+                        _mm_set_epi16(0, 0, 0, 0, 0, 0, 1, 1_000),
+                        10_000_000,
+                    ),
+                    s_len => return Err(AtoiSimdError::Size(s_len, s)),
+                };
 
-    Ok((process_avx(chunk, mult1, mult2, mult4, mult8, mult16), len))
-}
+                return Ok((
+                    process_avx_big(s, chunk, chunk_sse, mult1, mult2, mult4, mult16)?,
+                    len_sse + 32,
+                ));
+            }
+            s_len => {
+                return parse_simd_sse(s_len, core::mem::transmute_copy(&chunk))
+                    .map(|(v, l)| (v as u128, l))
+            }
+        };
 
-#[inline(always)]
-fn parse_simd_checked_pre_u64(s: &[u8]) -> Result<u64, AtoiSimdError> {
-    let (res, len) = if s.len() < SHORT {
-        parse_short_pos::<{ u64::MAX }>(s)
-    } else {
-        parse_simd_sse_checked(s)
-    }?;
-    if len < s.len() {
-        return Err(AtoiSimdError::Invalid64(res, len, s));
+        Ok((process_avx(chunk, mult1, mult2, mult4, mult8, mult16), len))
     }
-    Ok(res)
-}
-
-#[inline(always)]
-fn parse_simd_checked_pre_i64_neg(s: &[u8]) -> Result<i64, AtoiSimdError> {
-    let (res, len) = if s.len() < SHORT {
-        parse_short_neg::<{ i64::MIN }>(s)
-    } else {
-        parse_simd_sse_checked(s).map(|(v, l)| (-(v as i64), l))
-    }?;
-    if len < s.len() {
-        return Err(AtoiSimdError::Invalid64(-res as u64, len, s));
-    }
-    Ok(res)
-}
-
-#[inline(always)]
-pub(crate) fn parse_simd_checked_u128(s: &[u8]) -> Result<u128, AtoiSimdError> {
-    let len = s.len();
-    let (res, len) = if len < SHORT {
-        parse_short_pos::<{ u64::MAX }>(s).map(|(v, l)| (v as u128, l))?
-    } else if len < 17 {
-        parse_simd_sse_checked(s).map(|(v, l)| (v as u128, l))?
-    } else {
-        unsafe { parse_simd_u128(s)? }
-    };
-    if len < s.len() {
-        return Err(AtoiSimdError::Invalid128(res, len, s));
-    }
-    Ok(res)
-}
-
-#[inline(always)]
-pub(crate) fn parse_simd_i128(s: &[u8]) -> Result<(i128, usize), AtoiSimdError> {
-    let (res, len) = unsafe { parse_simd_u128(s)? };
-    if res > i128::MAX as u128 {
-        return Err(AtoiSimdError::Overflow(i128::MAX as u128, s));
-    }
-    Ok((res as i128, len))
-}
-
-#[inline(always)]
-pub(crate) fn parse_simd_checked_i128(s: &[u8]) -> Result<i128, AtoiSimdError> {
-    let res = parse_simd_checked_u128(s)?;
-    if res > i128::MAX as u128 {
-        return Err(AtoiSimdError::Overflow(i128::MAX as u128, s));
-    }
-    Ok(res as i128)
-}
-
-#[inline(always)]
-pub(crate) fn parse_simd<const MAX: u64>(s: &[u8]) -> Result<(u64, usize), AtoiSimdError> {
-    let (res, len) = parse_simd_sse_checked(s)?;
-    if res > MAX {
-        Err(AtoiSimdError::Overflow(MAX as u128, s))
-    } else {
-        Ok((res, len))
-    }
-}
-
-#[inline(always)]
-pub(crate) fn parse_simd_checked<const MAX: u64>(s: &[u8]) -> Result<u64, AtoiSimdError> {
-    let res = parse_simd_checked_pre_u64(s)?;
-    if res > MAX {
-        Err(AtoiSimdError::Overflow(MAX as u128, s))
-    } else {
-        Ok(res)
-    }
-}
-
-#[inline(always)]
-pub(crate) fn parse_simd_neg<const MIN: i64>(s: &[u8]) -> Result<(i64, usize), AtoiSimdError> {
-    debug_assert!(MIN < 0);
-    let (res, len) = parse_simd_sse_checked(s)?;
-    let min = -MIN as u64;
-    if res > min {
-        Err(AtoiSimdError::Overflow(min as u128, s))
-    } else if res == min {
-        Ok((MIN, len))
-    } else {
-        Ok((-(res as i64), len))
-    }
-}
-
-#[inline(always)]
-pub(crate) fn parse_simd_checked_neg<const MIN: i64>(s: &[u8]) -> Result<i64, AtoiSimdError> {
-    debug_assert!(MIN < 0);
-    let res = parse_simd_checked_pre_i64_neg(s)?;
-    if res < MIN {
-        Err(AtoiSimdError::Overflow(-MIN as u128, s))
-    } else {
-        Ok(res)
-    }
-}
-
-#[inline(always)]
-pub(crate) fn parse_simd_u64(s: &[u8]) -> Result<(u64, usize), AtoiSimdError> {
-    let (res, len) = unsafe { parse_simd_u128(s)? };
-    if len > 20 {
-        return Err(AtoiSimdError::Size(len, s));
-    } else if len == 20 && res > u64::MAX as u128 {
-        return Err(AtoiSimdError::Overflow(u64::MAX as u128, s));
-    }
-    Ok((res as u64, len))
-}
-
-#[inline(always)]
-pub(crate) fn parse_simd_checked_u64(s: &[u8]) -> Result<u64, AtoiSimdError> {
-    let len = s.len();
-    if len < 17 {
-        return parse_simd_checked_pre_u64(s);
-    } else if len > 20 {
-        return Err(AtoiSimdError::Size(len, s));
-    }
-    let res = parse_simd_checked_u128(s)?;
-    if len == 20 && res > u64::MAX as u128 {
-        return Err(AtoiSimdError::Overflow(u64::MAX as u128, s));
-    }
-    Ok(res as u64)
-}
-
-#[inline(always)]
-pub(crate) fn parse_simd_i64(s: &[u8]) -> Result<(i64, usize), AtoiSimdError> {
-    let (res, len) = unsafe { parse_simd_u128(s)? };
-    if len > 19 {
-        return Err(AtoiSimdError::Size(len, s));
-    } else if len == 19 && res > i64::MAX as u128 {
-        return Err(AtoiSimdError::Overflow(i64::MAX as u128, s));
-    }
-    Ok((res as i64, len))
-}
-
-#[inline(always)]
-pub(crate) fn parse_simd_checked_i64(s: &[u8]) -> Result<i64, AtoiSimdError> {
-    let len = s.len();
-    if len < 17 {
-        return parse_simd_checked_pre_u64(s).map(|v| v as i64);
-    } else if len > 19 {
-        return Err(AtoiSimdError::Size(len, s));
-    }
-    let res = parse_simd_checked_u128(s)?;
-    if len == 19 && res > i64::MAX as u128 {
-        return Err(AtoiSimdError::Overflow(i64::MAX as u128, s));
-    }
-    Ok(res as i64)
-}
-
-#[inline(always)]
-pub(crate) fn parse_simd_i64_neg(s: &[u8]) -> Result<(i64, usize), AtoiSimdError> {
-    let (res, len) = unsafe { parse_simd_u128(s)? };
-    if len > 19 {
-        return Err(AtoiSimdError::Size(len, s));
-    } else if len == 19 {
-        const MAX: u128 = -(i64::MIN as i128) as u128;
-        if res > MAX {
-            return Err(AtoiSimdError::Overflow(MAX, s));
-        } else if res == MAX {
-            return Ok((i64::MIN, len));
-        }
-    }
-    Ok((-(res as i64), len))
-}
-
-#[inline(always)]
-pub(crate) fn parse_simd_checked_i64_neg(s: &[u8]) -> Result<i64, AtoiSimdError> {
-    let len = s.len();
-    if len < 17 {
-        return parse_simd_checked_pre_i64_neg(s);
-    } else if len > 19 {
-        return Err(AtoiSimdError::Size(len, s));
-    }
-    let res = parse_simd_checked_u128(s)?;
-    if len == 19 {
-        const MAX: u128 = -(i64::MIN as i128) as u128;
-        if res > MAX {
-            return Err(AtoiSimdError::Overflow(MAX, s));
-        } else if res == MAX {
-            return Ok(i64::MIN);
-        }
-    }
-    Ok(-(res as i64))
-}
-
-#[inline(always)]
-pub(crate) fn parse_simd_i128_neg(s: &[u8]) -> Result<(i128, usize), AtoiSimdError> {
-    let (res, len) = unsafe { parse_simd_u128(s)? };
-    if len == 39 {
-        const MAX: u128 = i128::MAX as u128 + 1;
-        if res > MAX {
-            return Err(AtoiSimdError::Overflow(MAX, s));
-        } else if res == MAX {
-            return Ok((i128::MIN, len));
-        }
-    }
-    Ok((-(res as i128), len))
-}
-
-#[inline(always)]
-pub(crate) fn parse_simd_checked_i128_neg(s: &[u8]) -> Result<i128, AtoiSimdError> {
-    let len = s.len();
-    if len > 39 {
-        return Err(AtoiSimdError::Size(len, s));
-    }
-    let res = parse_simd_checked_u128(s)?;
-    if len == 39 {
-        const MAX: u128 = i128::MAX as u128 + 1;
-        if res > MAX {
-            return Err(AtoiSimdError::Overflow(MAX, s));
-        } else if res == MAX {
-            return Ok(i128::MIN);
-        }
-    }
-    Ok(-(res as i128))
 }

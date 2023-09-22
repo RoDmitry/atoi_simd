@@ -5,7 +5,7 @@
 
 Got the idea from [here](https://rust-malaysia.github.io/code/2020/07/11/faster-integer-parsing.html) ([source](https://github.com/pickfire/parseint)).
 
-Faster on x86_64 (uses SIMD, SSE4.1, AVX2), but can be used even if you don't have x86_64 SIMD capable cpu (and it will be still faster than str::parse).
+SIMD (fast parsing) is supported on x86_64 (SSE4.1, AVX2) and on Arm64 (aarch64, Neon), but this library works even if you don't have SIMD supported cpu (and it will be still faster than str::parse).
 
 Supports negative values and validates the input.
 
@@ -14,11 +14,13 @@ Supported output types: u8, i8, u16, i16, u32, i32, u64, i64, u128, i128, usize,
 Has good test coverage, and can be considered safe.
 
 To enable SIMD it needs the `target-feature` or `target-cpu` flags set, or it will fallback to non-SIMD functions.
-To do it you can copy the `./.cargo/config.toml` in your project, or you can use one of the following environment variables:
+You can copy the `./.cargo/config.toml` to your project, or use one of the following environment variables:
 
--   `RUSTFLAGS="-C target-feature=+sse2,+sse3,+sse4.1,+ssse3,+avx,+avx2"`
+-   `RUSTFLAGS="-C target-feature=+sse2,+sse3,+sse4.1,+ssse3,+avx,+avx2"` for x86_64
 
--   `RUSTFLAGS="-C target-cpu=native"`
+-   `RUSTFLAGS="-C target-feature=+neon"` for Arm64
+
+-   `RUSTFLAGS="-C target-cpu=native"` will optimize for your current cpu
 
 For Windows PowerShell you can set it with `$Env:RUSTFLAGS='-C target-feature=+sse2,+sse3,+sse4.1,+ssse3,+avx,+avx2'`
 

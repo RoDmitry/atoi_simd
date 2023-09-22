@@ -13,7 +13,7 @@ fn roundtrip_all_u8() {
     let mut buf = [0; 64];
     for i in u8::MIN..=u8::MAX {
         let input = i.numtoa(10, &mut buf);
-        let parsed = crate::parse::<u8>(&input).expect("Failed to parse valid input!");
+        let parsed = crate::parse::<u8>(input).expect("Failed to parse valid input!");
         assert_eq!(i, parsed);
     }
 }
@@ -23,7 +23,7 @@ fn roundtrip_all_i8() {
     let mut buf = [0; 64];
     for i in i8::MIN..=i8::MAX {
         let input = i.numtoa(10, &mut buf);
-        let parsed = crate::parse::<i8>(&input).expect("Failed to parse valid input!");
+        let parsed = crate::parse::<i8>(input).expect("Failed to parse valid input!");
         assert_eq!(i, parsed);
     }
 }
@@ -34,7 +34,7 @@ fn roundtrip_all_u16() {
     let mut buf = [0; 64];
     for i in u16::MIN..=u16::MAX {
         let input = i.numtoa(10, &mut buf);
-        let parsed = crate::parse::<u16>(&input).expect("Failed to parse valid input!");
+        let parsed = crate::parse::<u16>(input).expect("Failed to parse valid input!");
         assert_eq!(i, parsed);
     }
 }
@@ -45,7 +45,7 @@ fn roundtrip_all_i16() {
     let mut buf = [0; 64];
     for i in i16::MIN..=i16::MAX {
         let input = i.numtoa(10, &mut buf);
-        let parsed = crate::parse::<i16>(&input).expect("Failed to parse valid input!");
+        let parsed = crate::parse::<i16>(input).expect("Failed to parse valid input!");
         assert_eq!(i, parsed);
     }
 }
@@ -88,19 +88,19 @@ fn test_each_position_until_invalid<T: Copy + Debug + PartialEq + FromStr>(
 }
 
 fn test_each_position_u8(s: &str) {
-    test_each_position(s, |s_new| parse::<u8>(s_new))
+    test_each_position(s, parse::<u8>)
 }
 
 fn test_each_position_u16(s: &str) {
-    test_each_position(s, |s_new| parse::<u16>(s_new))
+    test_each_position(s, parse::<u16>)
 }
 
 fn test_each_position_u32(s: &str) {
-    test_each_position(s, |s_new| parse::<u32>(s_new))
+    test_each_position(s, parse::<u32>)
 }
 
 fn test_each_position_u64(s: &str) {
-    test_each_position(s, |s_new| parse::<u64>(s_new))
+    test_each_position(s, parse::<u64>)
 }
 
 /* fn test_each_position_fb_64_pos<const MAX: u64, const LEN_MORE: usize>(s: &str) {
@@ -112,7 +112,7 @@ fn test_each_position_fb_64_neg<const MIN: i64>(s: &str) {
 } */
 
 fn test_each_position_until_invalid_u64(s: &str) {
-    test_each_position_until_invalid(s, |s_new| parse_until_invalid::<u64>(s_new))
+    test_each_position_until_invalid(s, parse_until_invalid::<u64>)
 }
 
 #[test]

@@ -12,14 +12,14 @@ macro_rules! overflow {
 }
 
 /* #[inline(always)]
-fn check_4(val: u32) -> usize {
+fn check_len_4(val: u32) -> usize {
     ((((val & 0xF0F0_F0F0) | (((val.wrapping_add(0x0606_0606)) & 0xF0F0_F0F0) >> 4)) ^ 0x3333_3333)
         .trailing_zeros()
         >> 3) as usize // same as divide by 8 (drops extra bits from right)
 } */
 
 #[inline(always)]
-fn read_8(s: &[u8]) -> u64 {
+fn load_8(s: &[u8]) -> u64 {
     match s.len() {
         8.. => u64::from_le_bytes(s[0..8].try_into().unwrap()),
         7 => {
@@ -49,7 +49,7 @@ fn read_8(s: &[u8]) -> u64 {
 /// 48 / 8
 /// 6
 #[inline(always)]
-fn check_8(val: u64) -> usize {
+fn check_len_8(val: u64) -> usize {
     ((((val & 0xF0F0_F0F0_F0F0_F0F0)
         | (((val.wrapping_add(0x0606_0606_0606_0606)) & 0xF0F0_F0F0_F0F0_F0F0) >> 4))
         ^ 0x3333_3333_3333_3333)
@@ -58,7 +58,7 @@ fn check_8(val: u64) -> usize {
 }
 
 /* #[inline(always)]
-fn check_16(val: u128) -> usize {
+fn check_len_16(val: u128) -> usize {
     ((((val & 0xF0F0_F0F0_F0F0_F0F0_F0F0_F0F0_F0F0_F0F0)
         | (((val.wrapping_add(0x0606_0606_0606_0606_0606_0606_0606_0606))
             & 0xF0F0_F0F0_F0F0_F0F0_F0F0_F0F0_F0F0_F0F0)
@@ -107,8 +107,8 @@ fn parse_4(s: &[u8]) -> Result<(u32, usize), AtoiSimdError> {
 
 #[inline(always)]
 fn parse_8(s: &[u8]) -> Result<(u64, usize), AtoiSimdError> {
-    let val = read_8(s);
-    let len = check_8(val);
+    let val = load_8(s);
+    let len = check_len_8(val);
     if len == 0 {
         return Err(AtoiSimdError::Empty);
     }
@@ -118,8 +118,8 @@ fn parse_8(s: &[u8]) -> Result<(u64, usize), AtoiSimdError> {
 
 /* #[inline(always)]
 fn parse_16(s: &[u8]) -> Result<(u64, usize), AtoiSimdError> {
-    let val = read_16(s);
-    let len = check_16(val);
+    let val = load_16(s);
+    let len = check_len_16(val);
     if len == 0 {
         return Err(AtoiSimdError::Empty);
     }
@@ -135,15 +135,15 @@ enum EarlyReturn<T, E> {
 
 #[inline(always)]
 fn parse_16_by_8(s: &[u8]) -> EarlyReturn<(u64, usize), AtoiSimdError> {
-    let mut val = read_8(s);
-    let mut len = check_8(val);
+    let mut val = load_8(s);
+    let mut len = check_len_8(val);
     match len {
         0 => EarlyReturn::Err(AtoiSimdError::Empty),
         1 => EarlyReturn::Ret((val & 0xF, len)),
         2..=7 => EarlyReturn::Ret((process_8(val, len), len)),
         8 => {
-            let val_h = read_8(s.get_safe_unchecked(8..));
-            len += check_8(val_h);
+            let val_h = load_8(s.get_safe_unchecked(8..));
+            len += check_len_8(val_h);
             val = process_16(((val_h as u128) << 64) | val as u128, len);
             if len < 16 {
                 return EarlyReturn::Ret((val, len));

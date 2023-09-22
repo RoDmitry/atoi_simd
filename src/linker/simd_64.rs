@@ -1,5 +1,5 @@
 use super::*;
-use crate::simd_sse_avx::*;
+use crate::simd::shared_64::*;
 
 #[cfg(target_pointer_width = "64")]
 impl ParserPos<usize> for usize {
@@ -84,7 +84,7 @@ impl ParserPos<u128> for u128 {
 
     #[inline(always)]
     fn atoi_simd_parse_until_invalid_pos(s: &[u8]) -> Result<(u128, usize), AtoiSimdError> {
-        unsafe { parse_simd_u128(s) }
+        parse_simd_u128(s)
     }
 }
 

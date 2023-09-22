@@ -2,10 +2,10 @@ name: Rust
 
 on:
   push:
-    branches: 
+    branches:
       - master
   pull_request:
-    branches: 
+    branches:
       - master
 
 env:
@@ -19,13 +19,14 @@ jobs:
 
       - name: Format
         run: cargo fmt -- --check
-  test:
+
+  x86:
     strategy:
       matrix:
         rustflags:
-          - ""
-          - "-C target-feature=+sse2,+sse3,+sse4.1,+ssse3"
-          - "-C target-feature=+sse2,+sse3,+sse4.1,+ssse3,+avx,+avx2"
+          - ''
+          - '-C target-feature=+sse2,+sse3,+sse4.1,+ssse3'
+          - '-C target-feature=+sse2,+sse3,+sse4.1,+ssse3,+avx,+avx2'
     runs-on: ubuntu-latest
     env:
       RUSTFLAGS: ${{ matrix.rustflags }}
@@ -63,3 +64,27 @@ jobs:
         run: rustup target add i686-unknown-linux-gnu
       - name: i686 (32 bits)
         run: cargo test --target=i686-unknown-linux-gnu --verbose
+
+  arm:
+    runs-on: ubuntu-latest
+    env:
+      RUSTFLAGS: '-C target-feature=+neon'
+    steps:
+      - uses: actions/checkout@v3
+      - name: Prepare
+        run: rm -f .cargo/config.toml
+
+      - uses: pguyot/arm-runner-action@v2
+        with:
+          cpu: cortex-a53
+          cpu_info: cpuinfo/raspberrypi_zero2_w_arm64
+          base_image: raspios_lite_arm64:latest
+          image_additional_mb: 1024
+          commands: |
+            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --profile=minimal -y
+            . "$HOME/.cargo/env"
+            rustc -V
+            rustc --print=cfg -C target-cpu=native | grep neon || exit 1
+            cargo check --verbose
+            cargo test --verbose
+            cargo test --no-default-features --verbose

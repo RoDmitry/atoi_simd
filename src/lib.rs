@@ -1,6 +1,6 @@
 //! # Fast `&[u8]` to integer parser
 //!
-//! Faster on x86_64 (uses SIMD, SSE4.1, AVX2), but can be used even if you don't have x86_64 SIMD capable cpu (and it will be still faster than str::parse).
+//! SIMD (fast parsing) is supported on x86_64 (SSE4.1, AVX2) and on Arm64 (aarch64, Neon), but this library works even if you don't have SIMD supported cpu (and it will be still faster than str::parse).
 //!
 //! Supports negative values and validates the input.
 //!
@@ -9,11 +9,13 @@
 //! Has good test coverage, and can be considered safe.
 //!
 //! To enable SIMD it needs the `target-feature` or `target-cpu` flags set, or it will fallback to non-SIMD functions.
-//! To do it you can copy the `./.cargo/config.toml` in your project, or you can use one of the following environment variables:
+//! You can copy the `./.cargo/config.toml` to your project, or use one of the following environment variables:
 //!
-//! -   `RUSTFLAGS="-C target-feature=+sse2,+sse3,+sse4.1,+ssse3,+avx,+avx2"`
+//! -   `RUSTFLAGS="-C target-feature=+sse2,+sse3,+sse4.1,+ssse3,+avx,+avx2"` for x86_64
 //!
-//! -   `RUSTFLAGS="-C target-cpu=native"`
+//! -   `RUSTFLAGS="-C target-feature=+neon"` for Arm64
+//!
+//! -   `RUSTFLAGS="-C target-cpu=native"` will optimize for your current cpu
 //!
 //! If you have `&str` then use `.as_bytes()`
 //!
@@ -32,30 +34,36 @@
 // #![feature(stdsimd)]
 
 mod error;
-#[cfg(not(all(
-    target_feature = "sse2",
-    target_feature = "sse3",
-    target_feature = "sse4.1",
-    target_feature = "ssse3",
-    target_feature = "avx",
-    target_feature = "avx2"
+#[cfg(not(any(
+    all(target_arch = "aarch64", target_feature = "neon"),
+    all(
+        target_feature = "sse2",
+        target_feature = "sse3",
+        target_feature = "sse4.1",
+        target_feature = "ssse3",
+        target_feature = "avx",
+        target_feature = "avx2"
+    ),
 )))]
 mod fallback;
-mod parser;
+mod linker;
 mod safe_unchecked;
 mod short;
-#[cfg(all(
-    target_feature = "sse2",
-    target_feature = "sse3",
-    target_feature = "sse4.1",
-    target_feature = "ssse3"
+#[cfg(any(
+    all(target_arch = "aarch64", target_feature = "neon"),
+    all(
+        target_feature = "sse2",
+        target_feature = "sse",
+        target_feature = "sse4.1",
+        target_feature = "ssse3"
+    ),
 ))]
-mod simd_sse_avx;
+mod simd;
 #[cfg(test)]
 mod test;
 
 pub use crate::error::AtoiSimdError;
-use crate::parser::{Parser, ParserNeg, ParserPos};
+use crate::linker::{Parser, ParserNeg, ParserPos};
 
 /// Parses slice of digits, and checks first '-' char for signed integers.
 #[inline]

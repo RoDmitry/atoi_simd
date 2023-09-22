@@ -1,34 +1,46 @@
-#[cfg(all(
-    target_feature = "sse2",
-    target_feature = "sse3",
-    target_feature = "sse4.1",
-    target_feature = "ssse3",
-    target_feature = "avx",
-    target_feature = "avx2"
+#[cfg(any(
+    all(target_arch = "aarch64", target_feature = "neon"),
+    all(
+        target_feature = "sse2",
+        target_feature = "sse3",
+        target_feature = "sse4.1",
+        target_feature = "ssse3"
+    ),
 ))]
-mod simd_avx;
-#[cfg(all(
-    target_feature = "sse2",
-    target_feature = "sse3",
-    target_feature = "sse4.1",
-    target_feature = "ssse3"
+mod simd_32;
+#[cfg(any(
+    all(target_arch = "aarch64", target_feature = "neon"),
+    all(
+        target_feature = "sse2",
+        target_feature = "sse3",
+        target_feature = "sse4.1",
+        target_feature = "ssse3",
+        target_feature = "avx",
+        target_feature = "avx2"
+    ),
 ))]
-mod simd_sse;
+mod simd_64;
 
-#[cfg(not(all(
-    target_feature = "sse2",
-    target_feature = "sse3",
-    target_feature = "sse4.1",
-    target_feature = "ssse3"
+#[cfg(not(any(
+    all(target_arch = "aarch64", target_feature = "neon"),
+    all(
+        target_feature = "sse2",
+        target_feature = "sse3",
+        target_feature = "sse4.1",
+        target_feature = "ssse3"
+    ),
 )))]
 mod fb_32;
-#[cfg(not(all(
-    target_feature = "sse2",
-    target_feature = "sse3",
-    target_feature = "sse4.1",
-    target_feature = "ssse3",
-    target_feature = "avx",
-    target_feature = "avx2"
+#[cfg(not(any(
+    all(target_arch = "aarch64", target_feature = "neon"),
+    all(
+        target_feature = "sse2",
+        target_feature = "sse3",
+        target_feature = "sse4.1",
+        target_feature = "ssse3",
+        target_feature = "avx",
+        target_feature = "avx2"
+    ),
 )))]
 mod fb_64;
 

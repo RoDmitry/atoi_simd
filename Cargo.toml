@@ -8,6 +8,7 @@ documentation = "https://docs.rs/atoi_simd/"
 readme = "README.md"
 keywords = ["atoi", "parseint", "parse", "u8", "simd"]
 categories = ["parsing", "no-std"]
+exclude = [".github/*"]
 license = "MIT OR Apache-2.0"
 edition = "2018"
 
@@ -17,12 +18,7 @@ path = "src/lib.rs"
 
 [dev-dependencies]
 arrayvec = "0.7"
-criterion = { version = "0.5", features = ["html_reports"] }
-numtoa = "0.2.4"
-
-[[bench]]
-name = "benchmark"
-harness = false
+numtoa = "0.2"
 
 [features]
 default = ["std"]
