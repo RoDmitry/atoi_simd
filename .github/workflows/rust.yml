@@ -83,7 +83,6 @@ jobs:
           commands: |
             curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --profile=minimal -y
             . "$HOME/.cargo/env"
-            rustc -V
             rustc --print=cfg -C target-cpu=native | grep neon || exit 1
             cargo check --verbose
             cargo test --verbose
