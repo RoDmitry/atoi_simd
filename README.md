@@ -44,7 +44,7 @@ assert_eq!(atoi_simd::parse::<i64>("-2345".as_bytes()).unwrap(), -2345_i64);
 
 ## Benchmarks
 
-You can run `cargo bench` on your machine (or individually with `cargo bench -- "parse u64"`)
+You can run `cargo bench` from `bench` folder on your machine (or individually with `cargo bench -- "parse u64"`)
 
 ### Results
 
