@@ -874,6 +874,45 @@ fn test_parse_types() {
 }
 
 #[test]
+fn test_zeroes() {
+    let tmp: u8 = parse(b"0000000000000001").unwrap();
+    assert_eq!(tmp, 1_u8);
+
+    let tmp: i8 = parse(b"-0000000000000001").unwrap();
+    assert_eq!(tmp, -1_i8);
+
+    let tmp: u16 = parse(b"0000000000000001").unwrap();
+    assert_eq!(tmp, 1_u16);
+
+    let tmp: i16 = parse(b"-0000000000000001").unwrap();
+    assert_eq!(tmp, -1_i16);
+
+    let tmp: u32 = parse(b"0000000000000001").unwrap();
+    assert_eq!(tmp, 1_u32);
+
+    let tmp: i32 = parse(b"-0000000000000001").unwrap();
+    assert_eq!(tmp, -1_i32);
+
+    let tmp: usize = parse(b"0000000000000001").unwrap();
+    assert_eq!(tmp, 1_usize);
+
+    let tmp: isize = parse(b"-0000000000000001").unwrap();
+    assert_eq!(tmp, -1_isize);
+
+    let tmp: u64 = parse(b"00000000000000000001").unwrap();
+    assert_eq!(tmp, 1_u64);
+
+    let tmp: i64 = parse(b"-0000000000000000001").unwrap();
+    assert_eq!(tmp, -1_i64);
+
+    let tmp: u128 = parse(b"000000000000000000000000000000000000001").unwrap();
+    assert_eq!(tmp, 1_u128);
+
+    let tmp: i128 = parse(b"-000000000000000000000000000000000000001").unwrap();
+    assert_eq!(tmp, -1_i128);
+}
+
+#[test]
 fn test_parse_pos() {
     let tmp: i8 = parse_pos(b"123").unwrap();
     assert_eq!(tmp, 123_i8);
@@ -1142,6 +1181,3 @@ fn test_parse_until_invalid_neg() {
     let tmp = parse_until_invalid_neg::<i128>(b"12345678901234567890s").unwrap();
     assert_eq!(tmp, (-12345678901234567890_i128, 20));
 }
-
-#[test]
-fn overflow_u32() {}
