@@ -23,6 +23,11 @@ const CHAR_MIN: u8 = b'0';
     };
 } */
 
+/* #[inline(always)]
+unsafe fn load(s: &[u8]) -> uint8x16_t {
+    vld1q_u8(s.as_ptr())
+} */
+
 #[inline(always)]
 unsafe fn load(s: &[u8]) -> uint8x16_t {
     let mut data = vdupq_n_u64(0);
@@ -144,7 +149,7 @@ unsafe fn check_len(mut chunk: uint8x16_t) -> u32 {
     res.trailing_zeros() >> 2
 }
 
-#[inline(always)]
+/* #[inline(always)]
 unsafe fn process_mult1(mut chunk: uint8x16_t, mult1: uint8x16_t) -> uint8x8_t {
     chunk = vmulq_u8(chunk, mult1);
     let (chunk1, chunk2): (uint8x8_t, uint8x8_t) = transmute(chunk);
@@ -184,11 +189,10 @@ unsafe fn process_big(
 ) -> u64 {
     let chunk = process_medium(chunk, mult1, mult2, mult4);
 
-    let (chunk1, chunk2): (u32, u32) = transmute(chunk);
-    chunk1 as u64 * mult8 + chunk2 as u64
-}
+    vget_lane_u32(chunk, 0) as u64 * mult8 + vget_lane_u32(chunk, 1) as u64
+} */
 
-#[inline(always)]
+/*#[inline(always)]
 unsafe fn parse_simd_neon(
     len: usize,
     chunk: uint8x16_t,
@@ -318,6 +322,71 @@ unsafe fn parse_simd_neon(
         }
     };
     Ok((res, len))
+}*/
+
+#[inline(always)]
+unsafe fn parse_simd_neon(
+    len: usize,
+    mut chunk: uint8x16_t,
+) -> Result<(u64, usize), AtoiSimdError<'static>> {
+    chunk = match len {
+        0 => return Err(AtoiSimdError::Empty),
+        1 => return Ok((vgetq_lane_u8(chunk, 0) as u64, 1)),
+        2 => vextq_u8(vdupq_n_u8(0), chunk, 2),
+        3 => vextq_u8(vdupq_n_u8(0), chunk, 3),
+        4 => vextq_u8(vdupq_n_u8(0), chunk, 4),
+        5 => vextq_u8(vdupq_n_u8(0), chunk, 5),
+        6 => vextq_u8(vdupq_n_u8(0), chunk, 6),
+        7 => vextq_u8(vdupq_n_u8(0), chunk, 7),
+        8 => vextq_u8(vdupq_n_u8(0), chunk, 8),
+        9 => vextq_u8(vdupq_n_u8(0), chunk, 9),
+        10 => vextq_u8(vdupq_n_u8(0), chunk, 10),
+        11 => vextq_u8(vdupq_n_u8(0), chunk, 11),
+        12 => vextq_u8(vdupq_n_u8(0), chunk, 12),
+        13 => vextq_u8(vdupq_n_u8(0), chunk, 13),
+        14 => vextq_u8(vdupq_n_u8(0), chunk, 14),
+        15 => vextq_u8(vdupq_n_u8(0), chunk, 15),
+        16 => chunk,
+        _ => {
+            if cfg!(debug_assertions) {
+                panic!("parse_simd_neon: wrong size {}", len);
+            } else {
+                core::hint::unreachable_unchecked()
+            }
+        }
+    };
+
+    /* slower
+    let (sum, chunk) = odd_even_8(chunk);
+    let mult = vdup_n_u8(10);
+    let chunk = vmla_u8(sum, chunk, mult);
+
+    let (sum, chunk) = odd_even_small_16(chunk);
+    let mult = vdup_n_u16(100);
+    let chunk = vmla_u16(sum, chunk, mult);
+
+    let (sum, chunk) = odd_even_small_32(chunk);
+    let mult = vdup_n_u32(10000);
+    let chunk = vmla_u32(sum, chunk, mult);*/
+
+    chunk = vmulq_u8(
+        chunk,
+        vld1q_u8([10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1].as_ptr()),
+    );
+    let (chunk1, chunk2): (uint8x8_t, uint8x8_t) = transmute(chunk);
+    let chunk = vpadd_u8(chunk1, chunk2);
+
+    let chunk = vmull_u8(chunk, vld1_u8([100, 1, 100, 1, 100, 1, 100, 1].as_ptr()));
+    let (chunk1, chunk2): (uint16x4_t, uint16x4_t) = transmute(chunk);
+    let chunk = vpadd_u16(chunk1, chunk2);
+
+    let chunk = vmull_u16(chunk, vld1_u16([10000, 1, 10000, 1].as_ptr()));
+    let (chunk1, chunk2): (uint32x2_t, uint32x2_t) = transmute(chunk);
+    let chunk = vpadd_u32(chunk1, chunk2);
+
+    let res = (vget_lane_u32(chunk, 0) as u64) * 100_000_000 + (vget_lane_u32(chunk, 1) as u64);
+
+    Ok((res, len))
 }
 
 #[inline(always)]
@@ -374,6 +443,25 @@ unsafe fn odd_even_64(chunk: int32x4_t) -> (uint64x2_t, uint32x2_t) {
     (sum, chunk)
 }
 
+/* #[inline(always)]
+unsafe fn odd_even_small_16(chunk: uint8x8_t) -> (uint16x4_t, uint16x4_t) {
+    let chunk = vreinterpret_u16_u8(chunk);
+    let sum = vshr_n_u16::<8>(chunk);
+    let chunk = vand_u16(chunk, vdup_n_u16(0xFF));
+
+    (sum, chunk)
+}
+
+#[inline(always)]
+unsafe fn odd_even_small_32(chunk: uint16x4_t) -> (uint32x2_t, uint32x2_t) {
+    let chunk = vreinterpret_u32_u16(chunk);
+    let sum = vshr_n_u32::<16>(chunk);
+    let chunk = vand_u32(chunk, vdup_n_u32(0xFFFF));
+
+    (sum, chunk)
+} */
+
+/* slower
 #[inline(always)]
 unsafe fn parse_simd_extra(s: &[u8], mult: uint8x16_t) -> Result<(u64, usize, u32), AtoiSimdError> {
     let mut chunk = load(s);
@@ -434,9 +522,64 @@ unsafe fn parse_simd_extra(s: &[u8], mult: uint8x16_t) -> Result<(u64, usize, u3
     };
 
     Ok((res, len, mult))
-}
+}*/
 
-/*#[inline(always)]
+/* slower
+#[inline(always)]
+unsafe fn parse_simd_extra(s: &[u8], mult: uint8x16_t) -> Result<(u64, usize, u32), AtoiSimdError> {
+    let mut chunk = load(s);
+    let len = check_len(chunk) as usize;
+    chunk = vandq_u8(chunk, mult);
+    let (mult1, mult2, mult4, extra_mult) = match len {
+        0 => return Ok((0, 0, 0)),
+        1 => return Ok((vgetq_lane_u8(chunk, 0) as u64, 1, 10)),
+        2 => (
+            vld1q_u8([10, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0].as_ptr()),
+            vld1_u8([1, 0, 0, 0, 0, 0, 0, 0].as_ptr()),
+            vld1_u16([1, 0, 0, 0].as_ptr()),
+            100,
+        ),
+        3 => (
+            vld1q_u8([10, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0].as_ptr()),
+            vld1_u8([10, 1, 0, 0, 0, 0, 0, 0].as_ptr()),
+            vld1_u16([1, 0, 0, 0].as_ptr()),
+            1000,
+        ),
+        4 => (
+            vld1q_u8([10, 1, 10, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0].as_ptr()),
+            vld1_u8([100, 1, 0, 0, 0, 0, 0, 0].as_ptr()),
+            vld1_u16([1, 1, 0, 0].as_ptr()),
+            10_000,
+        ),
+        5 => (
+            vld1q_u8([10, 1, 10, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0].as_ptr()),
+            vld1_u8([100, 1, 1, 0, 0, 0, 0, 0].as_ptr()),
+            vld1_u16([10, 1, 0, 0].as_ptr()),
+            100_000,
+        ),
+        6 => (
+            vld1q_u8([10, 1, 10, 1, 10, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0].as_ptr()),
+            vld1_u8([100, 1, 1, 0, 0, 0, 0, 0].as_ptr()),
+            vld1_u16([100, 1, 0, 0].as_ptr()),
+            1_000_000,
+        ),
+        7 => (
+            vld1q_u8([10, 1, 10, 1, 10, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0].as_ptr()),
+            vld1_u8([100, 1, 10, 1, 0, 0, 0, 0].as_ptr()),
+            vld1_u16([1000, 1, 0, 0].as_ptr()),
+            10_000_000,
+        ),
+        s_len => return Err(AtoiSimdError::Size(s_len, s)),
+    };
+
+    let chunk = process_medium(chunk, mult1, mult2, mult4);
+    let res = transmute(chunk);
+    // println!("{} {}", res, extra_mult);
+
+    Ok((res, len, extra_mult))
+} */
+
+#[inline(always)]
 unsafe fn parse_simd_extra<'a>(
     s: &'a [u8],
     mult: uint8x16_t,
@@ -514,7 +657,7 @@ unsafe fn parse_simd_extra<'a>(
         .ok_or(AtoiSimdError::Overflow(u128::MAX, s))?;
 
     Ok((res, len))
-}*/
+}
 
 #[inline(always)]
 pub(crate) fn parse_simd_u128(s: &[u8]) -> Result<(u128, usize), AtoiSimdError> {
@@ -534,7 +677,7 @@ pub(crate) fn parse_simd_u128(s: &[u8]) -> Result<(u128, usize), AtoiSimdError> 
         len = check_len(chunk2) as usize;
         chunk2 = vandq_u8(chunk2, mult);
         let mut extra = 0;
-        let mut extra_mult = 0;
+        // let mut extra_mult = 0;
         match len {
             0 => return parse_simd_neon(16, chunk1).map(|(v, l)| (v as u128, l)),
             1 => {
@@ -598,10 +741,10 @@ pub(crate) fn parse_simd_u128(s: &[u8]) -> Result<(u128, usize), AtoiSimdError> 
                 chunk1 = vextq_u8(vdupq_n_u8(0), chunk1, 15);
             }
             16 => {
-                (extra, len, extra_mult) = parse_simd_extra(s.get_safe_unchecked(32..), mult)?;
-                len += 16;
-                // (extra, len) =
-                //     parse_simd_extra(s.get_safe_unchecked(32..), mult, &mut chunk1, &mut chunk2)?;
+                // (extra, len, extra_mult) = parse_simd_extra(s.get_safe_unchecked(32..), mult)?;
+                // len += 16;
+                (extra, len) =
+                    parse_simd_extra(s.get_safe_unchecked(32..), mult, &mut chunk1, &mut chunk2)?;
             }
             _ => core::hint::unreachable_unchecked(),
         };
@@ -629,12 +772,12 @@ pub(crate) fn parse_simd_u128(s: &[u8]) -> Result<(u128, usize), AtoiSimdError> 
             50_000_000, // because it's doubling
         );
 
-        let (chunk1, chunk2): (u64, u64) = transmute(chunk);
-        let mut res = chunk1 as u128 * 10_000_000_000_000_000 + chunk2 as u128;
+        let mut res = vgetq_lane_s64(chunk, 0) as u128 * 10_000_000_000_000_000
+            + vgetq_lane_s64(chunk, 1) as u128;
         if extra > 0 {
             res = res
-                .checked_mul(extra_mult as u128)
-                .ok_or(AtoiSimdError::Overflow(u128::MAX, s))?
+                // .checked_mul(extra_mult as u128)
+                // .ok_or(AtoiSimdError::Overflow(u128::MAX, s))?
                 .checked_add(extra as u128)
                 .ok_or(AtoiSimdError::Overflow(u128::MAX, s))?;
         }
