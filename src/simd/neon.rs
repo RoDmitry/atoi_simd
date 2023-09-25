@@ -2,7 +2,7 @@ use crate::safe_unchecked::SliceGetter;
 use crate::AtoiSimdError;
 use core::arch::aarch64::*;
 use core::convert::TryInto;
-use core::mem::transmute;
+// use core::mem::transmute;
 
 pub(crate) const SHORT: usize = 4;
 
@@ -771,7 +771,7 @@ pub(crate) fn parse_simd_u128(s: &[u8]) -> Result<(u128, usize), AtoiSimdError> 
             res = res
                 // .checked_mul(extra_mult as u128)
                 // .ok_or(AtoiSimdError::Overflow(u128::MAX, s))?
-                .checked_add(extra as u128)
+                .checked_add(extra)
                 .ok_or(AtoiSimdError::Overflow(u128::MAX, s))?;
         }
 
