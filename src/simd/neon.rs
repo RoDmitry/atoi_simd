@@ -586,52 +586,52 @@ unsafe fn parse_simd_extra<'a>(
     let mut chunk3 = load(s.get_safe_unchecked(32..));
     let mut len = check_len(chunk3) as usize;
     chunk3 = vandq_u8(chunk3, mult);
-    match len {
-        0 => {} //return Ok((0, 16)), is slower
+    chunk3 = match len {
+        0 => vdupq_n_u8(0), //return Ok((0, 16)), is slower
         1 => {
-            let tmp = vextq_u8(*chunk1, *chunk2, 1);
+            let tmp = vextq_u8(vdupq_n_u8(0), *chunk1, 1);
+            *chunk1 = vextq_u8(*chunk1, *chunk2, 1);
             *chunk2 = vextq_u8(*chunk2, chunk3, 1);
-            chunk3 = vextq_u8(vdupq_n_u8(0), *chunk1, 1);
-            *chunk1 = tmp;
+            tmp
         }
         2 => {
-            let tmp = vextq_u8(*chunk1, *chunk2, 2);
+            let tmp = vextq_u8(vdupq_n_u8(0), *chunk1, 2);
+            *chunk1 = vextq_u8(*chunk1, *chunk2, 2);
             *chunk2 = vextq_u8(*chunk2, chunk3, 2);
-            chunk3 = vextq_u8(vdupq_n_u8(0), *chunk1, 2);
-            *chunk1 = tmp;
+            tmp
         }
         3 => {
-            let tmp = vextq_u8(*chunk1, *chunk2, 3);
+            let tmp = vextq_u8(vdupq_n_u8(0), *chunk1, 3);
+            *chunk1 = vextq_u8(*chunk1, *chunk2, 3);
             *chunk2 = vextq_u8(*chunk2, chunk3, 3);
-            chunk3 = vextq_u8(vdupq_n_u8(0), *chunk1, 3);
-            *chunk1 = tmp;
+            tmp
         }
         4 => {
-            let tmp = vextq_u8(*chunk1, *chunk2, 4);
+            let tmp = vextq_u8(vdupq_n_u8(0), *chunk1, 4);
+            *chunk1 = vextq_u8(*chunk1, *chunk2, 4);
             *chunk2 = vextq_u8(*chunk2, chunk3, 4);
-            chunk3 = vextq_u8(vdupq_n_u8(0), *chunk1, 4);
-            *chunk1 = tmp;
+            tmp
         }
         5 => {
-            let tmp = vextq_u8(*chunk1, *chunk2, 5);
+            let tmp = vextq_u8(vdupq_n_u8(0), *chunk1, 5);
+            *chunk1 = vextq_u8(*chunk1, *chunk2, 5);
             *chunk2 = vextq_u8(*chunk2, chunk3, 5);
-            chunk3 = vextq_u8(vdupq_n_u8(0), *chunk1, 5);
-            *chunk1 = tmp;
+            tmp
         }
         6 => {
-            let tmp = vextq_u8(*chunk1, *chunk2, 6);
+            let tmp = vextq_u8(vdupq_n_u8(0), *chunk1, 6);
+            *chunk1 = vextq_u8(*chunk1, *chunk2, 6);
             *chunk2 = vextq_u8(*chunk2, chunk3, 6);
-            chunk3 = vextq_u8(vdupq_n_u8(0), *chunk1, 6);
-            *chunk1 = tmp;
+            tmp
         }
         7 => {
-            let tmp = vextq_u8(*chunk1, *chunk2, 7);
+            let tmp = vextq_u8(vdupq_n_u8(0), *chunk1, 7);
+            *chunk1 = vextq_u8(*chunk1, *chunk2, 7);
             *chunk2 = vextq_u8(*chunk2, chunk3, 7);
-            chunk3 = vextq_u8(vdupq_n_u8(0), *chunk1, 7);
-            *chunk1 = tmp;
+            tmp
         }
         s_len => return Err(AtoiSimdError::Size(s_len, s)),
-    }
+    };
     len += 16;
 
     chunk3 = vmulq_u8(
