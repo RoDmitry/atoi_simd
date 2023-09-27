@@ -4,7 +4,7 @@ use core::fmt;
 pub enum AtoiSimdError<'a> {
     Empty,
     Size(usize, &'a [u8]),
-    Overflow(u128, &'a [u8]),
+    Overflow(&'a [u8]),
     Invalid64(u64, usize, &'a [u8]),
     Invalid128(u128, usize, &'a [u8]),
 }
@@ -14,27 +14,32 @@ impl fmt::Display for AtoiSimdError<'_> {
         match self {
             Self::Empty => write!(f, "atoi_simd string is empty"),
             Self::Size(len, input) => {
-                write!(f, "atoi_simd wrong size: {} input: {:X?}", len, input)
-            }
-            Self::Overflow(max, input) => {
                 write!(
                     f,
-                    "atoi_simd overflow, max value: {} input: {:X?}",
-                    max, input
+                    "atoi_simd wrong size: {} input: {:X?}",
+                    len,
+                    &input[..input.len().min(48)]
+                )
+            }
+            Self::Overflow(input) => {
+                write!(
+                    f,
+                    "atoi_simd overflow, input: {:X?}",
+                    &input[..input.len().min(48)]
                 )
             }
             Self::Invalid64(res, index, input) => {
                 write!(
                     f,
                     "atoi_simd invalid at index: {} it must contain only digits, starting with: {}  input: {:X?}",
-                    index, res, input
+                    index, res, &input[..input.len().min(48)]
                 )
             }
             Self::Invalid128(res, index, input) => {
                 write!(
                     f,
                     "atoi_simd invalid at index: {} it must contain only digits, starting with: {} input: {:X?}",
-                    index, res, input
+                    index, res, &input[..input.len().min(48)]
                 )
             }
         }

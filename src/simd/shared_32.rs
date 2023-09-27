@@ -8,7 +8,7 @@ pub(crate) fn parse_simd_checked_pre_u64(s: &[u8]) -> Result<u64, AtoiSimdError>
     } else {
         super::parse_simd_16(s)
     }?;
-    if len < s.len() {
+    if len != s.len() {
         return Err(AtoiSimdError::Invalid64(res, len, s));
     }
     Ok(res)
@@ -21,7 +21,7 @@ pub(crate) fn parse_simd_checked_pre_i64_neg(s: &[u8]) -> Result<i64, AtoiSimdEr
     } else {
         super::parse_simd_16(s).map(|(v, l)| (-(v as i64), l))
     }?;
-    if len < s.len() {
+    if len != s.len() {
         return Err(AtoiSimdError::Invalid64(-res as u64, len, s));
     }
     Ok(res)
@@ -31,7 +31,7 @@ pub(crate) fn parse_simd_checked_pre_i64_neg(s: &[u8]) -> Result<i64, AtoiSimdEr
 pub(crate) fn parse_simd<const MAX: u64>(s: &[u8]) -> Result<(u64, usize), AtoiSimdError> {
     let (res, len) = super::parse_simd_16(s)?;
     if res > MAX {
-        Err(AtoiSimdError::Overflow(MAX as u128, s))
+        Err(AtoiSimdError::Overflow(s))
     } else {
         Ok((res, len))
     }
@@ -41,7 +41,7 @@ pub(crate) fn parse_simd<const MAX: u64>(s: &[u8]) -> Result<(u64, usize), AtoiS
 pub(crate) fn parse_simd_checked<const MAX: u64>(s: &[u8]) -> Result<u64, AtoiSimdError> {
     let res = parse_simd_checked_pre_u64(s)?;
     if res > MAX {
-        Err(AtoiSimdError::Overflow(MAX as u128, s))
+        Err(AtoiSimdError::Overflow(s))
     } else {
         Ok(res)
     }
@@ -53,7 +53,7 @@ pub(crate) fn parse_simd_neg<const MIN: i64>(s: &[u8]) -> Result<(i64, usize), A
     let (res, len) = super::parse_simd_16(s)?;
     let min = -MIN as u64;
     if res > min {
-        Err(AtoiSimdError::Overflow(min as u128, s))
+        Err(AtoiSimdError::Overflow(s))
     } else if res == min {
         Ok((MIN, len))
     } else {
@@ -66,7 +66,7 @@ pub(crate) fn parse_simd_checked_neg<const MIN: i64>(s: &[u8]) -> Result<i64, At
     debug_assert!(MIN < 0);
     let res = parse_simd_checked_pre_i64_neg(s)?;
     if res < MIN {
-        Err(AtoiSimdError::Overflow(-MIN as u128, s))
+        Err(AtoiSimdError::Overflow(s))
     } else {
         Ok(res)
     }

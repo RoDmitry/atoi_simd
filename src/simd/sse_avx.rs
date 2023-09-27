@@ -712,9 +712,9 @@ unsafe fn process_avx(
         Ok((
             (arr[0] as u128 * 10_000_000_000_000_000 + arr[1] as u128)
                 .checked_mul(mult16 as u128)
-                .ok_or(AtoiSimdError::Overflow(u128::MAX, s))?
+                .ok_or(AtoiSimdError::Overflow(s))?
                 .checked_add(arr[2] as u128)
-                .ok_or(AtoiSimdError::Overflow(u128::MAX, s))?,
+                .ok_or(AtoiSimdError::Overflow(s))?,
             (len + len_extra) as usize,
         ))
     }

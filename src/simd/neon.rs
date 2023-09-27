@@ -355,7 +355,7 @@ unsafe fn parse_simd_extra<'a>(
 
     let res = (vgetq_lane_u64(chunk3, 1) as u128)
         .checked_mul(100_000_000_000_000_000_000_000_000_000_000)
-        .ok_or(AtoiSimdError::Overflow(u128::MAX, s))?;
+        .ok_or(AtoiSimdError::Overflow(s))?;
 
     Ok((res, len))
 }
@@ -473,9 +473,7 @@ pub(crate) fn parse_simd_u128(s: &[u8]) -> Result<(u128, usize), AtoiSimdError> 
         let mut res = vgetq_lane_s64(chunk, 0) as u128 * 10_000_000_000_000_000
             + vgetq_lane_s64(chunk, 1) as u128;
         if extra > 0 {
-            res = res
-                .checked_add(extra)
-                .ok_or(AtoiSimdError::Overflow(u128::MAX, s))?;
+            res = res.checked_add(extra).ok_or(AtoiSimdError::Overflow(s))?;
         }
 
         Ok((res, len + 16))
