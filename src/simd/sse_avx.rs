@@ -729,28 +729,28 @@ pub(crate) fn parse_simd_u128(s: &[u8]) -> Result<(u128, usize), AtoiSimdError> 
 
         // to numbers
         chunk = _mm256_and_si256(chunk, _mm256_set1_epi8(0xF));
-        let mult = _mm256_permute2x128_si256(chunk, chunk, 40);
+        let chunk_sh = _mm256_permute2x128_si256(chunk, chunk, 0x28);
         let mut chunk_extra = _mm_set1_epi8(0);
         let mut len_extra = 0;
         let mut mult16 = 1;
         chunk = match len {
             0 => return Err(AtoiSimdError::Empty),
             1 => return Ok(((_mm256_cvtsi256_si32(chunk) & 0xFF) as u128, len as usize)),
-            17 => _mm256_alignr_epi8(chunk, mult, 1),
-            18 => _mm256_alignr_epi8(chunk, mult, 2),
-            19 => _mm256_alignr_epi8(chunk, mult, 3),
-            20 => _mm256_alignr_epi8(chunk, mult, 4),
-            21 => _mm256_alignr_epi8(chunk, mult, 5),
-            22 => _mm256_alignr_epi8(chunk, mult, 6),
-            23 => _mm256_alignr_epi8(chunk, mult, 7),
-            24 => _mm256_alignr_epi8(chunk, mult, 8),
-            25 => _mm256_alignr_epi8(chunk, mult, 9),
-            26 => _mm256_alignr_epi8(chunk, mult, 10),
-            27 => _mm256_alignr_epi8(chunk, mult, 11),
-            28 => _mm256_alignr_epi8(chunk, mult, 12),
-            29 => _mm256_alignr_epi8(chunk, mult, 13),
-            30 => _mm256_alignr_epi8(chunk, mult, 14),
-            31 => _mm256_alignr_epi8(chunk, mult, 15),
+            17 => _mm256_alignr_epi8(chunk, chunk_sh, 1),
+            18 => _mm256_alignr_epi8(chunk, chunk_sh, 2),
+            19 => _mm256_alignr_epi8(chunk, chunk_sh, 3),
+            20 => _mm256_alignr_epi8(chunk, chunk_sh, 4),
+            21 => _mm256_alignr_epi8(chunk, chunk_sh, 5),
+            22 => _mm256_alignr_epi8(chunk, chunk_sh, 6),
+            23 => _mm256_alignr_epi8(chunk, chunk_sh, 7),
+            24 => _mm256_alignr_epi8(chunk, chunk_sh, 8),
+            25 => _mm256_alignr_epi8(chunk, chunk_sh, 9),
+            26 => _mm256_alignr_epi8(chunk, chunk_sh, 10),
+            27 => _mm256_alignr_epi8(chunk, chunk_sh, 11),
+            28 => _mm256_alignr_epi8(chunk, chunk_sh, 12),
+            29 => _mm256_alignr_epi8(chunk, chunk_sh, 13),
+            30 => _mm256_alignr_epi8(chunk, chunk_sh, 14),
+            31 => _mm256_alignr_epi8(chunk, chunk_sh, 15),
             32 => {
                 if s.len() > 32 {
                     (len_extra, chunk_extra) = simd_sse_len(s.get_safe_unchecked(32..));
