@@ -442,8 +442,6 @@ pub(crate) fn parse_simd_u128(s: &[u8]) -> Result<(u128, usize), AtoiSimdError> 
                 chunk1 = vextq_u8(vdupq_n_u8(0), chunk1, 15);
             }
             16 => {
-                // (extra, len, extra_mult) = parse_simd_extra(s, mult)?;
-                // len += 16;
                 (extra, len) = parse_simd_extra(s, mult, &mut chunk1, &mut chunk2)?;
             }
             _ => core::hint::unreachable_unchecked(),
@@ -476,8 +474,6 @@ pub(crate) fn parse_simd_u128(s: &[u8]) -> Result<(u128, usize), AtoiSimdError> 
             + vgetq_lane_s64(chunk, 1) as u128;
         if extra > 0 {
             res = res
-                // .checked_mul(extra_mult as u128)
-                // .ok_or(AtoiSimdError::Overflow(u128::MAX, s))?
                 .checked_add(extra)
                 .ok_or(AtoiSimdError::Overflow(u128::MAX, s))?;
         }
