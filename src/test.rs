@@ -115,6 +115,10 @@ fn test_each_position_until_invalid_u64(s: &str) {
     test_each_position_until_invalid(s, parse_until_invalid::<u64>)
 }
 
+fn test_each_position_until_invalid_u128(s: &str) {
+    test_each_position_until_invalid(s, parse_until_invalid::<u128>)
+}
+
 #[test]
 fn test_parse_u8() {
     if parse::<u8>(b"").is_ok() {
@@ -468,9 +472,15 @@ fn test_parse_until_invalid_u64() {
         parse_until_invalid::<u64>(s.as_bytes()).unwrap(),
         (s.parse::<u64>().unwrap(), s.len())
     );
+    test_each_position_until_invalid_u64(&s);
 
     assert_eq!(
         parse_until_invalid::<u64>(b"18446744073709551615").unwrap(),
+        (u64::MAX, 20)
+    );
+
+    assert_eq!(
+        parse_until_invalid::<u64>(b"18446744073709551615s").unwrap(),
         (u64::MAX, 20)
     );
 
@@ -478,11 +488,96 @@ fn test_parse_until_invalid_u64() {
         panic!("error");
     }
 
+    if parse_until_invalid::<u64>(b"18446744073709551616s").is_ok() {
+        panic!("error");
+    }
+
     if parse_until_invalid::<u64>(b"99999999999999999999").is_ok() {
         panic!("error");
     }
 
+    if parse_until_invalid::<u64>(b"99999999999999999999s").is_ok() {
+        panic!("error");
+    }
+
     if parse_until_invalid::<u64>(b"1234567890123456789012345").is_ok() {
+        panic!("error");
+    }
+}
+
+#[test]
+fn test_parse_until_invalid_u128() {
+    if parse_until_invalid::<u128>(b"").is_ok() {
+        panic!("error");
+    }
+
+    assert_eq!(
+        parse_until_invalid::<u128>(b"0").unwrap(),
+        (0_u128, 1_usize)
+    );
+
+    let mut s = ArrayString::<40>::new();
+    for i in '1'..='9' {
+        test_each_position_until_invalid_u128(&s);
+        s.push(i);
+        assert_eq!(
+            parse_until_invalid::<u128>(s.as_bytes()).unwrap(),
+            (s.parse::<u128>().unwrap(), s.len())
+        );
+    }
+    for i in '0'..='9' {
+        test_each_position_until_invalid_u128(&s);
+        s.push(i);
+        assert_eq!(
+            parse_until_invalid::<u128>(s.as_bytes()).unwrap(),
+            (s.parse::<u128>().unwrap(), s.len())
+        );
+    }
+    for i in '0'..='9' {
+        test_each_position_until_invalid_u128(&s);
+        s.push(i);
+        assert_eq!(
+            parse_until_invalid::<u128>(s.as_bytes()).unwrap(),
+            (s.parse::<u128>().unwrap(), s.len())
+        );
+    }
+    for i in '0'..='9' {
+        test_each_position_until_invalid_u128(&s);
+        s.push(i);
+        assert_eq!(
+            parse_until_invalid::<u128>(s.as_bytes()).unwrap(),
+            (s.parse::<u128>().unwrap(), s.len())
+        );
+    }
+    test_each_position_until_invalid_u128(&s);
+
+    assert_eq!(
+        parse_until_invalid::<u128>(b"340282366920938463463374607431768211455").unwrap(),
+        (u128::MAX, 39)
+    );
+
+    assert_eq!(
+        parse_until_invalid::<u128>(b"340282366920938463463374607431768211455s").unwrap(),
+        (u128::MAX, 39)
+    );
+
+    if parse_until_invalid::<u128>(b"340282366920938463463374607431768211456").is_ok() {
+        panic!("error");
+    }
+
+    if parse_until_invalid::<u128>(b"340282366920938463463374607431768211456s").is_ok() {
+        panic!("error");
+    }
+
+    if parse_until_invalid::<u128>(b"999999999999999999999999999999999999999").is_ok() {
+        panic!("error");
+    }
+
+    if parse_until_invalid::<u128>(b"999999999999999999999999999999999999999s").is_ok() {
+        panic!("error");
+    }
+
+    if parse_until_invalid::<u128>(b"9999999999999999999999999999999999999999999").is_ok() {
         panic!("error");
     }
 }
