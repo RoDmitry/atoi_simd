@@ -2,7 +2,7 @@ use crate::short::{parse_short_neg, parse_short_pos};
 use crate::AtoiSimdError;
 
 #[inline(always)]
-pub(crate) fn parse_simd_checked_pre_u64(s: &[u8]) -> Result<u64, AtoiSimdError> {
+fn parse_simd_checked_pre_pos(s: &[u8]) -> Result<u64, AtoiSimdError> {
     let (res, len) = if s.len() < super::SHORT {
         parse_short_pos::<{ u64::MAX }>(s)
     } else {
@@ -15,7 +15,7 @@ pub(crate) fn parse_simd_checked_pre_u64(s: &[u8]) -> Result<u64, AtoiSimdError>
 }
 
 #[inline(always)]
-pub(crate) fn parse_simd_checked_pre_i64_neg(s: &[u8]) -> Result<i64, AtoiSimdError> {
+fn parse_simd_checked_pre_neg(s: &[u8]) -> Result<i64, AtoiSimdError> {
     let (res, len) = if s.len() < super::SHORT {
         parse_short_neg::<{ i64::MIN }>(s)
     } else {
@@ -39,7 +39,7 @@ pub(crate) fn parse_simd<const MAX: u64>(s: &[u8]) -> Result<(u64, usize), AtoiS
 
 #[inline(always)]
 pub(crate) fn parse_simd_checked<const MAX: u64>(s: &[u8]) -> Result<u64, AtoiSimdError> {
-    let res = parse_simd_checked_pre_u64(s)?;
+    let res = parse_simd_checked_pre_pos(s)?;
     if res > MAX {
         Err(AtoiSimdError::Overflow(s))
     } else {
@@ -64,7 +64,7 @@ pub(crate) fn parse_simd_neg<const MIN: i64>(s: &[u8]) -> Result<(i64, usize), A
 #[inline(always)]
 pub(crate) fn parse_simd_checked_neg<const MIN: i64>(s: &[u8]) -> Result<i64, AtoiSimdError> {
     debug_assert!(MIN < 0);
-    let res = parse_simd_checked_pre_i64_neg(s)?;
+    let res = parse_simd_checked_pre_neg(s)?;
     if res < MIN {
         Err(AtoiSimdError::Overflow(s))
     } else {
