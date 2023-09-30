@@ -52,9 +52,9 @@ fn roundtrip_all_i16() {
 fn test_each_position<T: Copy>(s: &str, func: fn(&[u8]) -> Result<T, AtoiSimdError>) {
     let mut s_new = ArrayString::<40>::new();
     for j in 0..=s.len() {
-        for &ch_str in INVALID_CHARS.iter() {
+        for ch_invalid in INVALID_CHARS {
             s_new.push_str(&s[0..j]);
-            s_new.push(ch_str);
+            s_new.push(ch_invalid);
             s_new.push_str(&s[j..s.len()]);
             if func(s_new.as_bytes()).is_ok() {
                 panic!("error {}", s_new);
@@ -72,10 +72,10 @@ fn test_each_position_until_invalid<T: Copy + Debug + PartialEq + FromStr>(
 {
     let mut s_new = ArrayString::<40>::new();
     for j in 1..=s.len() {
-        for &ch_str in INVALID_CHARS.iter() {
+        for ch_invalid in INVALID_CHARS {
             let ts = &s[0..j];
             s_new.push_str(ts);
-            s_new.push(ch_str);
+            s_new.push(ch_invalid);
             s_new.push_str(&s[j..s.len()]);
             assert_eq!(
                 func(s_new.as_bytes()).unwrap(),
