@@ -5,10 +5,10 @@ authors = ["Dmitry Rodionov <gh@rdmtr.com>"]
 description = "Fast `&[u8]` to integer parser"
 repository = "https://github.com/RoDmitry/atoi_simd"
 documentation = "https://docs.rs/atoi_simd/"
-readme = "README.md"
 keywords = ["atoi", "parseint", "parse", "u8", "simd"]
 categories = ["parsing", "no-std"]
 exclude = [".github/*"]
+readme = "README.md"
 license = "MIT OR Apache-2.0"
 edition = "2018"
 
