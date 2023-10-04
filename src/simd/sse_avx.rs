@@ -14,10 +14,10 @@ use self::arch::{
 use crate::safe_unchecked::SliceGetter;
 use crate::AtoiSimdError;
 #[cfg(target_arch = "x86")]
-use core::arch::x86 as arch;
+use ::core::arch::x86 as arch;
 #[cfg(target_arch = "x86_64")]
-use core::arch::x86_64 as arch;
-use core::convert::TryInto;
+use ::core::arch::x86_64 as arch;
+use ::core::convert::TryInto;
 
 pub(crate) const SHORT: usize = 4;
 
@@ -33,7 +33,7 @@ const CHAR_MIN: i8 = b'0' as i8;
 unsafe fn read(s: &[u8]) -> __m128i {
     let len = s.len();
     if len < 16 {
-        return _mm_maskz_loadu_epi8((1 << len) - 1, core::mem::transmute_copy(&s));
+        return _mm_maskz_loadu_epi8((1 << len) - 1, ::core::mem::transmute_copy(&s));
     }
 
     _mm_loadu_si128(core::mem::transmute_copy(&s))
@@ -48,7 +48,7 @@ unsafe fn read(s: &[u8]) -> __m128i {
 unsafe fn read_avx(s: &[u8]) -> __m256i {
     let len = s.len();
     if len < 32 {
-        return _mm256_maskz_loadu_epi8((1 << len) - 1, core::mem::transmute_copy(&s));
+        return _mm256_maskz_loadu_epi8((1 << len) - 1, ::core::mem::transmute_copy(&s));
     }
 
     _mm256_loadu_si256(core::mem::transmute_copy(&s))
@@ -96,7 +96,7 @@ unsafe fn read(s: &[u8]) -> __m128i {
             _mm_loadu_si64(&res as *const _ as *const u8)
         }
         // _ => _mm_setzero_si128(),
-        _ => unsafe { core::hint::unreachable_unchecked() },
+        _ => unsafe { ::core::hint::unreachable_unchecked() },
     }
 } */
 
@@ -186,7 +186,7 @@ unsafe fn load(s: &[u8]) -> __m128i {
         ),
         1 => _mm_set_epi32(0, 0, 0, s[0] as i32),
         0 => _mm_setzero_si128(),
-        _ => core::hint::unreachable_unchecked(),
+        _ => ::core::hint::unreachable_unchecked(),
     }
 }
 
@@ -496,7 +496,7 @@ unsafe fn load_avx(s: &[u8]) -> __m256i {
         ),
         1 => _mm256_set_epi32(0, 0, 0, 0, 0, 0, 0, s[0] as i32),
         0 => _mm256_setzero_si256(),
-        _ => core::hint::unreachable_unchecked(),
+        _ => ::core::hint::unreachable_unchecked(),
     }
 }
 
@@ -546,7 +546,7 @@ unsafe fn check_len_avx(mut chunk: __m256i) -> u32 {
 /* #[cfg(target_arch = "x86")]
 #[inline(always)]
 unsafe fn to_u64(chunk: __m128i) -> u64 {
-    core::mem::transmute_copy(&chunk)
+    ::core::mem::transmute_copy(&chunk)
 }
 
 #[cfg(target_arch = "x86_64")]
@@ -557,7 +557,7 @@ unsafe fn to_u64(chunk: __m128i) -> u64 {
 
 #[inline(always)]
 unsafe fn to_u32x4(chunk: __m128i) -> [u32; 4] {
-    core::mem::transmute(chunk)
+    ::core::mem::transmute(chunk)
 }
 
 #[inline]
@@ -587,7 +587,7 @@ unsafe fn parse_simd_sse(
             if cfg!(debug_assertions) {
                 panic!("parse_simd_sse: wrong size {}", len);
             } else {
-                core::hint::unreachable_unchecked()
+                ::core::hint::unreachable_unchecked()
             }
         }
     };
@@ -676,7 +676,7 @@ unsafe fn process_avx(
         chunk_sse = _mm_srli_epi64(chunk_sse, 32);
         chunk_sse = _mm_add_epi64(chunk_sse, mult);
 
-        let arr = core::mem::transmute::<__m128i, [u64; 2]>(chunk_sse);
+        let arr = ::core::mem::transmute::<__m128i, [u64; 2]>(chunk_sse);
 
         // mult 16
         Ok((
@@ -707,7 +707,7 @@ unsafe fn process_avx(
         chunk = _mm256_srli_epi64(chunk, 32);
         chunk = _mm256_add_epi64(chunk, mult);
 
-        let arr = core::mem::transmute::<__m256i, [u64; 4]>(chunk);
+        let arr = ::core::mem::transmute::<__m256i, [u64; 4]>(chunk);
 
         Ok((
             (arr[0] as u128 * 10_000_000_000_000_000 + arr[1] as u128)
@@ -769,7 +769,7 @@ pub(crate) fn parse_simd_u128(s: &[u8]) -> Result<(u128, usize), AtoiSimdError> 
                 chunk
             }
             s_len => {
-                return parse_simd_sse(s_len, core::mem::transmute_copy(&chunk))
+                return parse_simd_sse(s_len, ::core::mem::transmute_copy(&chunk))
                     .map(|(v, l)| (v as u128, l))
             }
         };

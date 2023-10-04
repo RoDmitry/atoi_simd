@@ -8,7 +8,7 @@ fuzz_target!(|data: &[u8]| {
         // atoi_simd doesn't support leading zeroes or + sign
         if *first_digit != b'0' && *first_digit != b'+' {
             // std only supports converting from &str, not &[u8]
-            if let Ok(string) = std::str::from_utf8(data) {
+            if let Ok(string) = ::std::str::from_utf8(data) {
                 let std_result = string.parse::<u32>();
                 match (result, std_result) {
                     (Ok(ours), Ok(std)) => assert_eq!(ours, std),

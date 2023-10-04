@@ -1,4 +1,4 @@
-use core::fmt;
+use ::core::fmt;
 
 #[derive(Debug, Clone, Copy)]
 pub enum AtoiSimdError<'a> {
@@ -47,4 +47,4 @@ impl fmt::Display for AtoiSimdError<'_> {
 }
 
 #[cfg(feature = "std")]
-impl std::error::Error for AtoiSimdError<'_> {}
+impl ::std::error::Error for AtoiSimdError<'_> {}

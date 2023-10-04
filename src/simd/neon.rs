@@ -1,8 +1,8 @@
 use crate::safe_unchecked::SliceGetter;
 use crate::AtoiSimdError;
-use core::arch::aarch64::*;
-use core::convert::TryInto;
-// use core::mem::transmute;
+use ::core::arch::aarch64::*;
+use ::core::convert::TryInto;
+// use ::core::mem::transmute;
 
 pub(crate) const SHORT: usize = 4;
 
@@ -128,7 +128,7 @@ unsafe fn load(s: &[u8]) -> uint8x16_t {
             vsetq_lane_u8(s[0], data, 0)
         }
         0 => vreinterpretq_u8_u64(data),
-        _ => core::hint::unreachable_unchecked(),
+        _ => ::core::hint::unreachable_unchecked(),
     }
 }
 
@@ -176,7 +176,7 @@ unsafe fn parse_simd_neon(
             if cfg!(debug_assertions) {
                 panic!("parse_simd_neon: wrong size {}", len);
             } else {
-                core::hint::unreachable_unchecked()
+                ::core::hint::unreachable_unchecked()
             }
         }
     };
@@ -444,7 +444,7 @@ pub(crate) fn parse_simd_u128(s: &[u8]) -> Result<(u128, usize), AtoiSimdError> 
             16 => {
                 (extra, len) = parse_simd_extra(s, mult, &mut chunk1, &mut chunk2)?;
             }
-            _ => core::hint::unreachable_unchecked(),
+            _ => ::core::hint::unreachable_unchecked(),
         };
 
         let (sum1, chunk1) = odd_even_8(chunk1);

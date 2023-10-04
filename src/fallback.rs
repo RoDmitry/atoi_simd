@@ -3,7 +3,7 @@
 use crate::safe_unchecked::SliceGetter;
 use crate::short::parse_short_pos;
 use crate::AtoiSimdError;
-use core::convert::TryInto;
+use ::core::convert::TryInto;
 
 macro_rules! overflow {
     ($curr:ident, $shift:expr, $more:ident, $max:expr) => {
@@ -36,7 +36,7 @@ fn load_8(s: &[u8]) -> u64 {
         2 => u16::from_le_bytes(s[0..2].try_into().unwrap()) as u64,
         1 => s[0] as u64,
         0 => 0,
-        _ => unsafe { core::hint::unreachable_unchecked() },
+        _ => unsafe { ::core::hint::unreachable_unchecked() },
     }
 }
 
@@ -150,7 +150,7 @@ fn parse_16_by_8(s: &[u8]) -> EarlyReturn<(u64, usize), AtoiSimdError> {
             }
             EarlyReturn::Ok((val, len))
         }
-        _ => unsafe { core::hint::unreachable_unchecked() },
+        _ => unsafe { ::core::hint::unreachable_unchecked() },
     }
 }
 

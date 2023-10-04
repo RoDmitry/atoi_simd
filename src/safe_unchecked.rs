@@ -1,4 +1,4 @@
-use core::slice::SliceIndex;
+use ::core::slice::SliceIndex;
 
 pub(crate) trait SliceGetter<T> {
     fn get_safe_unchecked<I>(&self, index: I) -> &<I>::Output
