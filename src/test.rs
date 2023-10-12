@@ -1028,3 +1028,78 @@ fn test_parse_until_invalid_neg() {
     let tmp = parse_until_invalid_neg::<i128>(b"12345678901234567890s").unwrap();
     assert_eq!(tmp, (-12345678901234567890_i128, 20));
 }
+
+#[test]
+fn test_parse_skipped() {
+    let tmp = parse_skipped::<u8>(b"123").unwrap();
+    assert_eq!(tmp, 123_u8);
+
+    let tmp = parse_skipped::<u16>(b"1234").unwrap();
+    assert_eq!(tmp, 1234_u16);
+
+    let tmp = parse_skipped::<u32>(b"1234").unwrap();
+    assert_eq!(tmp, 1234_u32);
+
+    let tmp = parse_skipped::<u64>(b"1234").unwrap();
+    assert_eq!(tmp, 1234_u64);
+
+    let tmp = parse_skipped::<u128>(b"1234").unwrap();
+    assert_eq!(tmp, 1234_u128);
+
+    let tmp = parse_skipped::<u128>(b"12345678901234567890").unwrap();
+    assert_eq!(tmp, 12345678901234567890_u128);
+
+    let tmp = parse_skipped::<u8>(b"+0000000000000000000000000123").unwrap();
+    assert_eq!(tmp, 123_u8);
+
+    let tmp = parse_skipped::<u16>(b"+00000000000000000000000001234").unwrap();
+    assert_eq!(tmp, 1234_u16);
+
+    let tmp = parse_skipped::<u32>(b"+00000000000000000000000001234").unwrap();
+    assert_eq!(tmp, 1234_u32);
+
+    let tmp = parse_skipped::<u64>(b"+00000000000000000000000001234").unwrap();
+    assert_eq!(tmp, 1234_u64);
+
+    let tmp = parse_skipped::<u128>(b"+00000000000000000000000001234").unwrap();
+    assert_eq!(tmp, 1234_u128);
+
+    let tmp = parse_skipped::<u128>(b"+000000000000000000000000012345678901234567890").unwrap();
+    assert_eq!(tmp, 12345678901234567890_u128);
+
+    let tmp = parse_skipped::<i8>(b"-123").unwrap();
+    assert_eq!(tmp, -123_i8);
+
+    let tmp = parse_skipped::<i16>(b"-1234").unwrap();
+    assert_eq!(tmp, -1234_i16);
+
+    let tmp = parse_skipped::<i32>(b"-1234").unwrap();
+    assert_eq!(tmp, -1234_i32);
+
+    let tmp = parse_skipped::<i64>(b"-1234").unwrap();
+    assert_eq!(tmp, -1234_i64);
+
+    let tmp = parse_skipped::<i128>(b"-1234").unwrap();
+    assert_eq!(tmp, -1234_i128);
+
+    let tmp = parse_skipped::<i128>(b"-12345678901234567890").unwrap();
+    assert_eq!(tmp, -12345678901234567890_i128);
+
+    let tmp = parse_skipped::<i8>(b"-0000000000000000000000000123").unwrap();
+    assert_eq!(tmp, -123_i8);
+
+    let tmp = parse_skipped::<i16>(b"-00000000000000000000000001234").unwrap();
+    assert_eq!(tmp, -1234_i16);
+
+    let tmp = parse_skipped::<i32>(b"-00000000000000000000000001234").unwrap();
+    assert_eq!(tmp, -1234_i32);
+
+    let tmp = parse_skipped::<i64>(b"-00000000000000000000000001234").unwrap();
+    assert_eq!(tmp, -1234_i64);
+
+    let tmp = parse_skipped::<i128>(b"-00000000000000000000000001234").unwrap();
+    assert_eq!(tmp, -1234_i128);
+
+    let tmp = parse_skipped::<i128>(b"-000000000000000000000000012345678901234567890").unwrap();
+    assert_eq!(tmp, -12345678901234567890_i128);
+}

@@ -24,10 +24,14 @@
 //! # Examples
 //!
 //! ```
-//! let val: u64 = atoi_simd::parse("1234".as_bytes()).unwrap();
+//! let val: u64 = atoi_simd::parse(b"1234").unwrap();
 //! assert_eq!(val, 1234_u64);
 //!
-//! assert_eq!(atoi_simd::parse::<i64>("-2345".as_bytes()).unwrap(), -2345_i64);
+//! assert_eq!(atoi_simd::parse::<i64>(b"-2345").unwrap(), -2345_i64);
+//!
+//! assert_eq!(atoi_simd::parse_until_invalid::<u64>(b"1234something_else").unwrap(), (1234_u64, 4));
+//!
+//! assert_eq!(atoi_simd::parse_skipped::<u64>(b"+000000000000000000001234").unwrap(), 1234_u64);
 //! ```
 #![allow(clippy::comparison_chain)]
 #![cfg_attr(not(feature = "std"), no_std)]
@@ -104,4 +108,13 @@ pub fn parse_until_invalid_pos<T: ParserPos<T>>(s: &[u8]) -> Result<(T, usize), 
 #[inline]
 pub fn parse_until_invalid_neg<T: ParserNeg<T>>(s: &[u8]) -> Result<(T, usize), AtoiSimdError> {
     T::atoi_simd_parse_until_invalid_neg(s)
+}
+
+/// Parses slice of digits.
+/// checks first '-' char for signed integers.
+/// skips '+' char and extra zeroes at the beginning.
+/// it's slower than `parse()`.
+#[inline]
+pub fn parse_skipped<T: Parser<T> + ParserPos<T>>(s: &[u8]) -> Result<T, AtoiSimdError> {
+    T::atoi_simd_parse_skipped(s)
 }

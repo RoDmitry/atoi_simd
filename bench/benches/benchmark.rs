@@ -1,4 +1,4 @@
-use atoi_simd::{parse, parse_until_invalid};
+use atoi_simd::{parse, parse_skipped, parse_until_invalid};
 use criterion::{
     criterion_group, criterion_main, measurement::WallTime, BenchmarkGroup, BenchmarkId, Criterion,
 };
@@ -61,6 +61,23 @@ fn bench_64(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
             |b, val| b.iter(|| val.parse::<i64>().unwrap()),
         );
     }
+
+    bench_group.bench_with_input(
+        BenchmarkId::new("parse_skipped u64", str.len()),
+        str,
+        |b, val| b.iter(|| parse_skipped::<u64>(val.as_bytes()).unwrap()),
+    );
+    let plus_zeroes = "+0000000000000000000".to_owned() + str;
+    bench_group.bench_with_input(
+        BenchmarkId::new("parse_skipped +zeroes u64", plus_zeroes.len()),
+        &plus_zeroes,
+        |b, val| b.iter(|| parse_skipped::<u64>(val.as_bytes()).unwrap()),
+    );
+    bench_group.bench_with_input(
+        BenchmarkId::new("str +zeroes u64", plus_zeroes.len()),
+        &plus_zeroes,
+        |b, val| b.iter(|| val.parse::<u64>().unwrap()),
+    );
 }
 
 fn bench_128(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
