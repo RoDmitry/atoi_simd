@@ -41,8 +41,9 @@ assert_eq!(val, 1234_u64);
 
 assert_eq!(atoi_simd::parse::<i64>(b"-2345").unwrap(), -2345_i64);
 
-assert_eq!(atoi_simd::parse_until_invalid::<u64>(b"1234something_else").unwrap(), (1234_u64, 4));
+assert_eq!(atoi_simd::parse_until_invalid::<u64>(b"123something_else").unwrap(), (123_u64, 3));
 
+// a drop-in replacement for `str::parse`
 assert_eq!(atoi_simd::parse_skipped::<u64>(b"+000000000000000000001234").unwrap(), 1234_u64);
 ```
 
