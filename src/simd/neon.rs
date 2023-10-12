@@ -378,7 +378,6 @@ pub(crate) fn parse_simd_u128(s: &[u8]) -> Result<(u128, usize), AtoiSimdError> 
         len = check_len(chunk2) as usize;
         chunk2 = vandq_u8(chunk2, mult);
         let mut extra = 0;
-        // let mut extra_mult = 0;
         match len {
             0 => return parse_simd_neon(16, chunk1).map(|(v, l)| (v as u128, l)),
             1 => {
