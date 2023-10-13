@@ -700,7 +700,7 @@ unsafe fn process_avx(
         // mult 4
         chunk = _mm256_madd_epi16(chunk, mult);
 
-        mult = _mm256_set_epi32(0, 0, 0, 1, 0, 100_000_000, 0, 100_000_000);
+        mult = _mm256_set_epi32(0, 0, 0, 0, 0, 100_000_000, 0, 100_000_000);
         // mult 8
         mult = _mm256_mul_epu32(chunk, mult);
 
