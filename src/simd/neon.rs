@@ -2,7 +2,6 @@ use crate::safe_unchecked::SliceGetter;
 use crate::AtoiSimdError;
 use ::core::arch::aarch64::*;
 use ::core::convert::TryInto;
-// use ::core::mem::transmute;
 
 pub(crate) const SHORT: usize = 4;
 
@@ -21,11 +20,6 @@ const CHAR_MIN: u8 = b'0';
             res
         }
     };
-} */
-
-/* #[inline(always)]
-unsafe fn load(s: &[u8]) -> uint8x16_t {
-    vld1q_u8(s.as_ptr())
 } */
 
 #[inline(always)]
