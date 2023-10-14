@@ -637,9 +637,8 @@ unsafe fn process_avx(
     s: &[u8],
     mut chunk: __m256i,
     len: u32,
-    mut chunk_extra: __m128i,
+    chunk_extra: __m128i,
     len_extra: u32,
-    mult16: u32,
 ) -> Result<(u128, usize), AtoiSimdError> {
     let mut mult = _mm256_set_epi8(
         1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10,
@@ -684,6 +683,17 @@ unsafe fn process_avx(
             len as usize,
         ))
     } else {
+        let (mut chunk_extra, mult16) = match len_extra {
+            1 => (_mm_bslli_si128(chunk_extra, 15), 10),
+            2 => (_mm_bslli_si128(chunk_extra, 14), 100),
+            3 => (_mm_bslli_si128(chunk_extra, 13), 1_000),
+            4 => (_mm_bslli_si128(chunk_extra, 12), 10_000),
+            5 => (_mm_bslli_si128(chunk_extra, 11), 100_000),
+            6 => (_mm_bslli_si128(chunk_extra, 10), 1_000_000),
+            7 => (_mm_bslli_si128(chunk_extra, 9), 10_000_000),
+            s_len => return Err(AtoiSimdError::Size(s_len as usize, s)),
+        };
+
         chunk_extra = _mm_maddubs_epi16(
             chunk_extra,
             _mm_set_epi8(1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10),
@@ -732,7 +742,6 @@ pub(crate) fn parse_simd_u128(s: &[u8]) -> Result<(u128, usize), AtoiSimdError> 
         let chunk_sh = _mm256_permute2x128_si256(chunk, chunk, 0x28);
         let mut chunk_extra = _mm_set1_epi8(0);
         let mut len_extra = 0;
-        let mut mult16 = 1;
         chunk = match len {
             0 => return Err(AtoiSimdError::Empty),
             1 => return Ok(((_mm256_cvtsi256_si32(chunk) & 0xFF) as u128, len as usize)),
@@ -754,17 +763,6 @@ pub(crate) fn parse_simd_u128(s: &[u8]) -> Result<(u128, usize), AtoiSimdError> 
             32 => {
                 if s.len() > 32 {
                     (len_extra, chunk_extra) = simd_sse_len(s.get_safe_unchecked(32..));
-                    (chunk_extra, mult16) = match len_extra {
-                        0 => (chunk_extra, mult16),
-                        1 => (_mm_bslli_si128(chunk_extra, 15), 10),
-                        2 => (_mm_bslli_si128(chunk_extra, 14), 100),
-                        3 => (_mm_bslli_si128(chunk_extra, 13), 1_000),
-                        4 => (_mm_bslli_si128(chunk_extra, 12), 10_000),
-                        5 => (_mm_bslli_si128(chunk_extra, 11), 100_000),
-                        6 => (_mm_bslli_si128(chunk_extra, 10), 1_000_000),
-                        7 => (_mm_bslli_si128(chunk_extra, 9), 10_000_000),
-                        s_len => return Err(AtoiSimdError::Size(s_len as usize, s)),
-                    };
                 }
                 chunk
             }
@@ -774,6 +772,6 @@ pub(crate) fn parse_simd_u128(s: &[u8]) -> Result<(u128, usize), AtoiSimdError> 
             }
         };
 
-        return process_avx(s, chunk, len, chunk_extra, len_extra, mult16);
+        return process_avx(s, chunk, len, chunk_extra, len_extra);
     }
 }
