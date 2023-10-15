@@ -119,3 +119,17 @@ pub fn parse_until_invalid_neg<T: ParserNeg<T>>(s: &[u8]) -> Result<(T, usize), 
 pub fn parse_skipped<T: Parser<T> + ParserPos<T>>(s: &[u8]) -> Result<T, AtoiSimdError> {
     T::atoi_simd_parse_skipped(s)
 }
+
+// void example_for( int *restrict out, int *restrict a, int *restrict b, int N) {
+//     for (int i=0; i<N; i++) {
+//         out[i] = a[i] + b[i];
+//     }
+// }
+#[inline(never)]
+pub fn example_for(out: &mut [i32], a: &[i32], b: &[i32], n: usize) {
+    unsafe {
+        for i in 0..n {
+            *out.get_unchecked_mut(i) = *a.get_unchecked(i) + *b.get_unchecked(i);
+        }
+    }
+}
