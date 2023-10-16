@@ -30,9 +30,6 @@ If you have `&str` then use `.as_bytes()`
 
 Supports `no_std` with `--no-default-features`
 
-Maybe todo:
-There is a posibility to parse base 16 input, by first finding (a,b,c,d,e,f) and then increment them by 9
-
 ## Examples
 
 ```
