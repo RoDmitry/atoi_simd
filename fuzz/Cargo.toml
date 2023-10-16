@@ -21,6 +21,12 @@ members = ["."]
 debug = 1
 
 [[bin]]
+name = "parse_skipped_u128"
+path = "fuzz_targets/parse_skipped_u128.rs"
+test = false
+doc = false
+
+[[bin]]
 name = "parse_u128"
 path = "fuzz_targets/parse_u128.rs"
 test = false
