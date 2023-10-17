@@ -23,7 +23,55 @@ const CHAR_MIN: u8 = b'0';
 } */
 
 #[inline(always)]
-unsafe fn load(s: &[u8]) -> uint8x16_t {
+unsafe fn load_8(s: &[u8]) -> uint8x8_t {
+    let mut data = vdup_n_u32(0);
+
+    match s.len() {
+        8.. => vld1_u8(s.as_ptr()),
+        7 => {
+            data = vset_lane_u32(u32::from_le_bytes(s[0..4].try_into().unwrap()), data, 0);
+            let mut data = vreinterpret_u16_u32(data);
+            data = vset_lane_u16(u16::from_le_bytes(s[4..6].try_into().unwrap()), data, 2);
+            let data = vreinterpret_u8_u16(data);
+            vset_lane_u8(s[6], data, 6)
+        }
+        6 => {
+            data = vset_lane_u32(u32::from_le_bytes(s[0..4].try_into().unwrap()), data, 0);
+            let mut data = vreinterpret_u16_u32(data);
+            data = vset_lane_u16(u16::from_le_bytes(s[4..6].try_into().unwrap()), data, 2);
+            vreinterpret_u8_u16(data)
+        }
+        5 => {
+            data = vset_lane_u32(u32::from_le_bytes(s[0..4].try_into().unwrap()), data, 0);
+            let data = vreinterpret_u8_u32(data);
+            vset_lane_u8(s[4], data, 4)
+        }
+        4 => {
+            data = vset_lane_u32(u32::from_le_bytes(s[0..4].try_into().unwrap()), data, 0);
+            vreinterpret_u8_u32(data)
+        }
+        3 => {
+            let mut data = vreinterpret_u16_u32(data);
+            data = vset_lane_u16(u16::from_le_bytes(s[0..2].try_into().unwrap()), data, 0);
+            let data = vreinterpret_u8_u16(data);
+            vset_lane_u8(s[2], data, 2)
+        }
+        2 => {
+            let mut data = vreinterpret_u16_u32(data);
+            data = vset_lane_u16(u16::from_le_bytes(s[0..2].try_into().unwrap()), data, 0);
+            vreinterpret_u8_u16(data)
+        }
+        1 => {
+            let data = vreinterpret_u8_u32(data);
+            vset_lane_u8(s[0], data, 0)
+        }
+        0 => vreinterpret_u8_u32(data),
+        _ => ::core::hint::unreachable_unchecked(),
+    }
+}
+
+#[inline(always)]
+unsafe fn load_16(s: &[u8]) -> uint8x16_t {
     let mut data = vdupq_n_u64(0);
 
     match s.len() {
@@ -127,7 +175,21 @@ unsafe fn load(s: &[u8]) -> uint8x16_t {
 }
 
 #[inline(always)]
-unsafe fn check_len(mut chunk: uint8x16_t) -> u32 {
+unsafe fn check_len_8(mut chunk: uint8x8_t) -> u32 {
+    let cmp_high = vld1_dup_u8(&CHAR_MAX);
+    let cmp_low = vld1_dup_u8(&CHAR_MIN);
+    let check_high = vcgt_u8(chunk, cmp_high);
+    let check_low = vcgt_u8(cmp_low, chunk);
+
+    chunk = vorr_u8(check_high, check_low);
+
+    let chunk = vreinterpret_u64_u8(chunk);
+    let res = vget_lane_u64(chunk, 0);
+    res.trailing_zeros() >> 3
+}
+
+#[inline(always)]
+unsafe fn check_len_16(mut chunk: uint8x16_t) -> u32 {
     let cmp_high = vld1q_dup_u8(&CHAR_MAX);
     let cmp_low = vld1q_dup_u8(&CHAR_MIN);
     let check_high = vcgtq_u8(chunk, cmp_high);
@@ -207,8 +269,8 @@ unsafe fn parse_simd_neon(
 
 #[inline(always)]
 unsafe fn simd_neon_len(s: &[u8]) -> Result<(usize, uint8x16_t), AtoiSimdError> {
-    let mut chunk = load(s);
-    let len = check_len(chunk) as usize;
+    let mut chunk = load_16(s);
+    let len = check_len_16(chunk) as usize;
 
     chunk = vandq_u8(chunk, vdupq_n_u8(0xF));
 
@@ -280,13 +342,13 @@ unsafe fn odd_even_small_32(chunk: uint16x4_t) -> (uint32x2_t, uint32x2_t) {
 #[inline(always)]
 unsafe fn parse_simd_extra<'a>(
     s: &'a [u8],
-    mult: uint8x16_t,
     chunk1: &mut uint8x16_t,
     chunk2: &mut uint8x16_t,
 ) -> Result<(u128, usize), AtoiSimdError<'a>> {
-    let mut chunk3 = load(s.get_safe_unchecked(32..));
-    let mut len = check_len(chunk3) as usize;
-    chunk3 = vandq_u8(chunk3, mult);
+    let mut chunk3 = load_8(s.get_safe_unchecked(32..));
+    let mut len = check_len_8(chunk3) as usize;
+    chunk3 = vand_u8(chunk3, vdup_n_u8(0xF));
+    let mut chunk3 = vcombine_u8(chunk3, vdup_n_u8(0));
     chunk3 = match len {
         0 => vdupq_n_u8(0), //return Ok((0, 16)), is slower
         1 => {
@@ -357,8 +419,8 @@ unsafe fn parse_simd_extra<'a>(
 #[inline(always)]
 pub(crate) fn parse_simd_u128(s: &[u8]) -> Result<(u128, usize), AtoiSimdError> {
     unsafe {
-        let mut chunk1 = load(s);
-        let mut len = check_len(chunk1) as usize;
+        let mut chunk1 = load_16(s);
+        let mut len = check_len_16(chunk1) as usize;
 
         let mult = vdupq_n_u8(0xF);
         chunk1 = vandq_u8(chunk1, mult);
@@ -367,9 +429,9 @@ pub(crate) fn parse_simd_u128(s: &[u8]) -> Result<(u128, usize), AtoiSimdError> 
             return parse_simd_neon(len, chunk1).map(|(v, l)| (v as u128, l));
         };
 
-        let mut chunk2 = load(s.get_safe_unchecked(16..));
+        let mut chunk2 = load_16(s.get_safe_unchecked(16..));
 
-        len = check_len(chunk2) as usize;
+        len = check_len_16(chunk2) as usize;
         chunk2 = vandq_u8(chunk2, mult);
         let mut extra = 0;
         match len {
@@ -435,7 +497,7 @@ pub(crate) fn parse_simd_u128(s: &[u8]) -> Result<(u128, usize), AtoiSimdError> 
                 chunk1 = vextq_u8(vdupq_n_u8(0), chunk1, 15);
             }
             16 => {
-                (extra, len) = parse_simd_extra(s, mult, &mut chunk1, &mut chunk2)?;
+                (extra, len) = parse_simd_extra(s, &mut chunk1, &mut chunk2)?;
             }
             _ => ::core::hint::unreachable_unchecked(),
         };
@@ -470,5 +532,30 @@ pub(crate) fn parse_simd_u128(s: &[u8]) -> Result<(u128, usize), AtoiSimdError> 
         }
 
         Ok((res, len + 16))
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_check_len_8() {
+        unsafe {
+            let data = vec![
+                ([b'1', 0, 0, 0, 0, 0, 0, 0], 1),
+                ([b'1', b'2', 0, 0, 0, 0, 0, 0], 2),
+                ([b'1', b'2', b'3', b'4', b'5', b'6', b'7', b'8'], 8),
+            ];
+
+            for (input, len) in data {
+                assert_eq!(
+                    check_len_8(vld1_u8(input.as_ptr())),
+                    len,
+                    "input: {:?}",
+                    input
+                );
+            }
+        }
     }
 }
