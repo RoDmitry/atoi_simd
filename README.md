@@ -3,8 +3,6 @@
 [![Crate](https://img.shields.io/crates/v/atoi_simd.svg)](https://crates.io/crates/atoi_simd)
 [![API](https://docs.rs/atoi_simd/badge.svg)](https://docs.rs/atoi_simd)
 
-Got the idea from [here](https://rust-malaysia.github.io/code/2020/07/11/faster-integer-parsing.html) ([source](https://github.com/pickfire/parseint)).
-
 SIMD (fast) parsing is supported on x86_64 (SSE4.1, AVX2) and on Arm64 (aarch64, Neon), but this library works even if you don't have SIMD supported cpu (and it will be still faster than str::parse).
 
 Supports negative values and validates the input.
@@ -29,6 +27,8 @@ By default the `target-feature` is set in `./.cargo/config.toml`, but seems like
 If you have `&str` then use `.as_bytes()`
 
 Supports `no_std` with `--no-default-features`
+
+Got the idea from [here](https://rust-malaysia.github.io/code/2020/07/11/faster-integer-parsing.html) ([source](https://github.com/pickfire/parseint)).
 
 ## Examples
 
