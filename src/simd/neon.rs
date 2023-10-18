@@ -542,7 +542,7 @@ mod test {
     #[test]
     fn test_check_len_8() {
         unsafe {
-            let data = vec![
+            let data = [
                 ([b'1', 0, 0, 0, 0, 0, 0, 0], 1),
                 ([b'1', b'2', 0, 0, 0, 0, 0, 0], 2),
                 ([b'1', b'2', b'3', b'4', b'5', b'6', b'7', b'8'], 8),
