@@ -9,7 +9,7 @@ use self::arch::{
     _mm256_srli_epi64, _mm_add_epi64, _mm_and_si128, _mm_bslli_si128, _mm_cmpgt_epi8,
     _mm_cvtsi128_si32, _mm_loadu_si128, _mm_madd_epi16, _mm_maddubs_epi16, _mm_movemask_epi8,
     _mm_mul_epu32, _mm_or_si128, _mm_packus_epi32, _mm_set1_epi8, _mm_set_epi16, _mm_set_epi32,
-    _mm_set_epi64x, _mm_set_epi8, _mm_setzero_si128, _mm_srli_epi64,
+    _mm_set_epi8, _mm_setzero_si128, _mm_srli_epi64,
 };
 use crate::safe_unchecked::SliceGetter;
 use crate::AtoiSimdError;
@@ -661,7 +661,7 @@ unsafe fn process_avx(
     let mut chunk_sse = _mm256_extracti128_si256(chunk, 0);
 
     if len_extra == 0 {
-        let mut mult = _mm_set_epi64x(0x1_2710_0001_2710, 0x1_2710_0001_2710);
+        let mut mult = _mm_set_epi16(1, 10000, 1, 10000, 1, 10000, 1, 10000);
         // mult 4
         chunk_sse = _mm_madd_epi16(chunk_sse, mult);
 
