@@ -1,3 +1,5 @@
+#![allow(dead_code)] // used when you don't have avx
+
 use crate::short::parse_short_pos;
 use crate::AtoiSimdError;
 
