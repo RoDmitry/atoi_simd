@@ -47,7 +47,7 @@ jobs:
         run: cargo check --verbose
 
       - name: Clippy
-        run: cargo clippy --verbose
+        run: cargo clippy --verbose -- -Dwarnings
 
       - name: Std
         run: cargo test --verbose
