@@ -1102,7 +1102,7 @@ fn test_parse_skipped() {
 
     let tmp = parse_skipped::<i128>(b"-000000000000000000000000012345678901234567890").unwrap();
     assert_eq!(tmp, -12345678901234567890_i128);
-    
+
     // Zeroes.
     assert_eq!(parse_skipped::<i8>(b"0"), Ok(0));
     assert_eq!(parse_skipped::<i8>(b"-0"), Ok(0));
@@ -1114,34 +1114,70 @@ fn test_parse_skipped() {
     assert_eq!(parse_skipped::<u8>(b"+0000000000000000000000000000"), Ok(0));
     assert_eq!(parse_skipped::<i16>(b"0"), Ok(0));
     assert_eq!(parse_skipped::<i16>(b"-0"), Ok(0));
-    assert_eq!(parse_skipped::<i16>(b"-0000000000000000000000000000"), Ok(0));
+    assert_eq!(
+        parse_skipped::<i16>(b"-0000000000000000000000000000"),
+        Ok(0)
+    );
     assert_eq!(parse_skipped::<i16>(b"+0"), Ok(0));
-    assert_eq!(parse_skipped::<i16>(b"+0000000000000000000000000000"), Ok(0));
+    assert_eq!(
+        parse_skipped::<i16>(b"+0000000000000000000000000000"),
+        Ok(0)
+    );
     assert_eq!(parse_skipped::<u16>(b"0"), Ok(0));
     assert_eq!(parse_skipped::<u16>(b"+0"), Ok(0));
-    assert_eq!(parse_skipped::<u16>(b"+0000000000000000000000000000"), Ok(0));
+    assert_eq!(
+        parse_skipped::<u16>(b"+0000000000000000000000000000"),
+        Ok(0)
+    );
     assert_eq!(parse_skipped::<i32>(b"0"), Ok(0));
     assert_eq!(parse_skipped::<i32>(b"-0"), Ok(0));
-    assert_eq!(parse_skipped::<i32>(b"-0000000000000000000000000000"), Ok(0));
+    assert_eq!(
+        parse_skipped::<i32>(b"-0000000000000000000000000000"),
+        Ok(0)
+    );
     assert_eq!(parse_skipped::<i32>(b"+0"), Ok(0));
-    assert_eq!(parse_skipped::<i32>(b"+0000000000000000000000000000"), Ok(0));
+    assert_eq!(
+        parse_skipped::<i32>(b"+0000000000000000000000000000"),
+        Ok(0)
+    );
     assert_eq!(parse_skipped::<u32>(b"0"), Ok(0));
     assert_eq!(parse_skipped::<u32>(b"+0"), Ok(0));
-    assert_eq!(parse_skipped::<u32>(b"+0000000000000000000000000000"), Ok(0));
+    assert_eq!(
+        parse_skipped::<u32>(b"+0000000000000000000000000000"),
+        Ok(0)
+    );
     assert_eq!(parse_skipped::<i64>(b"0"), Ok(0));
     assert_eq!(parse_skipped::<i64>(b"-0"), Ok(0));
-    assert_eq!(parse_skipped::<i64>(b"-0000000000000000000000000000"), Ok(0));
+    assert_eq!(
+        parse_skipped::<i64>(b"-0000000000000000000000000000"),
+        Ok(0)
+    );
     assert_eq!(parse_skipped::<i64>(b"+0"), Ok(0));
-    assert_eq!(parse_skipped::<i64>(b"+0000000000000000000000000000"), Ok(0));
+    assert_eq!(
+        parse_skipped::<i64>(b"+0000000000000000000000000000"),
+        Ok(0)
+    );
     assert_eq!(parse_skipped::<u64>(b"0"), Ok(0));
     assert_eq!(parse_skipped::<u64>(b"+0"), Ok(0));
-    assert_eq!(parse_skipped::<u64>(b"+0000000000000000000000000000"), Ok(0));
+    assert_eq!(
+        parse_skipped::<u64>(b"+0000000000000000000000000000"),
+        Ok(0)
+    );
     assert_eq!(parse_skipped::<i128>(b"0"), Ok(0));
     assert_eq!(parse_skipped::<i128>(b"-0"), Ok(0));
-    assert_eq!(parse_skipped::<i128>(b"-0000000000000000000000000000"), Ok(0));
+    assert_eq!(
+        parse_skipped::<i128>(b"-0000000000000000000000000000"),
+        Ok(0)
+    );
     assert_eq!(parse_skipped::<i128>(b"+0"), Ok(0));
-    assert_eq!(parse_skipped::<i128>(b"+0000000000000000000000000000"), Ok(0));
+    assert_eq!(
+        parse_skipped::<i128>(b"+0000000000000000000000000000"),
+        Ok(0)
+    );
     assert_eq!(parse_skipped::<u128>(b"0"), Ok(0));
     assert_eq!(parse_skipped::<u128>(b"+0"), Ok(0));
-    assert_eq!(parse_skipped::<u128>(b"+0000000000000000000000000000"), Ok(0));
+    assert_eq!(
+        parse_skipped::<u128>(b"+0000000000000000000000000000"),
+        Ok(0)
+    );
 }
