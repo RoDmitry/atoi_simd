@@ -1,6 +1,6 @@
 use ::core::fmt;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialOrd, Ord, PartialEq, Eq)]
 pub enum AtoiSimdError<'a> {
     Empty,
     Size(usize, &'a [u8]),
