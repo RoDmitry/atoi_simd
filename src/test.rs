@@ -1103,6 +1103,8 @@ fn test_parse_skipped() {
     let tmp = parse_skipped::<i128>(b"-000000000000000000000000012345678901234567890").unwrap();
     assert_eq!(tmp, -12345678901234567890_i128);
 
+    assert!(parse_skipped::<u64>(b"").is_err());
+
     // Zeroes.
     assert_eq!(parse_skipped::<i8>(b"0"), Ok(0));
     assert_eq!(parse_skipped::<i8>(b"-0"), Ok(0));

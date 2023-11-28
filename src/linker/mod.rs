@@ -73,10 +73,8 @@ pub trait Parser<T: ParserPos<T>>: Sized {
         if *s.first().ok_or(AtoiSimdError::Empty)? == b'+' {
             i = 1;
         }
-        while i + 1 < s.len() {
-            if *s.get_safe_unchecked(i) != b'0' {
-                break;
-            }
+        let len_1 = s.len().saturating_sub(1);
+        while i < len_1 && *s.get_safe_unchecked(i) == b'0' {
             i += 1;
         }
 
@@ -120,10 +118,8 @@ fn atoi_simd_parse_skipped_signed<T: ParserPos<T> + ParserNeg<T>>(
         }
         _ => {}
     };
-    while i + 1 < s.len() {
-        if *s.get_safe_unchecked(i) != b'0' {
-            break;
-        }
+    let len_1 = s.len().saturating_sub(1);
+    while i < len_1 && *s.get_safe_unchecked(i) == b'0' {
         i += 1;
     }
 
