@@ -41,11 +41,21 @@ fn bench_64(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
         bench_group.bench_with_input(BenchmarkId::new("parse i64", str.len()), str, |b, val| {
             b.iter(|| parse::<i64>(val.as_bytes()).unwrap())
         });
+        /* bench_group.bench_with_input(
+            BenchmarkId::new("parse_skipped i64", str.len()),
+            str,
+            |b, val| b.iter(|| parse_skipped::<i64>(val.as_bytes()).unwrap()),
+        ); */
         bench_group.bench_with_input(
             BenchmarkId::new("parse neg i64", str.len()),
             &str_neg,
             |b, val| b.iter(|| parse::<i64>(val.as_bytes()).unwrap()),
         );
+        /* bench_group.bench_with_input(
+            BenchmarkId::new("parse_skipped neg i64", str.len()),
+            &str_neg,
+            |b, val| b.iter(|| parse_skipped::<i64>(val.as_bytes()).unwrap()),
+        ); */
     }
 
     bench_group.bench_with_input(BenchmarkId::new("str u64", str.len()), str, |b, val| {

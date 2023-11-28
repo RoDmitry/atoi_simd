@@ -106,17 +106,14 @@ fn atoi_simd_parse_until_invalid_signed<T: ParserPos<T> + ParserNeg<T>>(
 fn atoi_simd_parse_skipped_signed<T: ParserPos<T> + ParserNeg<T>>(
     s: &[u8],
 ) -> Result<T, AtoiSimdError> {
-    let mut i = 0;
     let mut neg = false;
-    match *s.first().ok_or(AtoiSimdError::Empty)? {
-        b'+' => {
-            i = 1;
-        }
+    let mut i = match *s.first().ok_or(AtoiSimdError::Empty)? {
+        b'+' => 1,
         b'-' => {
-            i = 1;
             neg = true;
+            1
         }
-        _ => {}
+        _ => 0,
     };
     let extra_len = s.len().saturating_sub(16);
     while i < extra_len && *s.get_safe_unchecked(i) == b'0' {
