@@ -135,40 +135,25 @@ impl Parse for usize {}
 impl Parse for u64 {}
 impl Parse for u128 {}
 
-macro_rules! impl_signed {
-    () => {
-        #[inline(always)]
-        fn atoi_simd_parse(s: &[u8]) -> Result<Self, AtoiSimdError> {
-            atoi_simd_parse_signed(s)
-        }
+macro_rules! parse_impl_signed {
+    ($($t:ty)*) => {$(
+        impl Parse for $t {
+            #[inline(always)]
+            fn atoi_simd_parse(s: &[u8]) -> Result<Self, AtoiSimdError> {
+                atoi_simd_parse_signed(s)
+            }
 
-        #[inline(always)]
-        fn atoi_simd_parse_until_invalid(s: &[u8]) -> Result<(Self, usize), AtoiSimdError> {
-            atoi_simd_parse_until_invalid_signed(s)
-        }
+            #[inline(always)]
+            fn atoi_simd_parse_until_invalid(s: &[u8]) -> Result<(Self, usize), AtoiSimdError> {
+                atoi_simd_parse_until_invalid_signed(s)
+            }
 
-        #[inline(always)]
-        fn atoi_simd_parse_skipped(s: &[u8]) -> Result<Self, AtoiSimdError> {
-            atoi_simd_parse_skipped_signed(s)
+            #[inline(always)]
+            fn atoi_simd_parse_skipped(s: &[u8]) -> Result<Self, AtoiSimdError> {
+                atoi_simd_parse_skipped_signed(s)
+            }
         }
-    };
+    )*};
 }
 
-impl Parse for i8 {
-    impl_signed!();
-}
-impl Parse for i16 {
-    impl_signed!();
-}
-impl Parse for i32 {
-    impl_signed!();
-}
-impl Parse for isize {
-    impl_signed!();
-}
-impl Parse for i64 {
-    impl_signed!();
-}
-impl Parse for i128 {
-    impl_signed!();
-}
+parse_impl_signed!(i8 i16 i32 isize i64 i128);
