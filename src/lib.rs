@@ -91,9 +91,7 @@ pub fn parse_neg<T: ParseNeg>(s: &[u8]) -> Result<T, AtoiSimdError> {
 /// Parses slice of digits until it reaches invalid character, and checks first '-' char for signed integers.
 /// Returns parsed value and parsed size of the slice.
 #[inline]
-pub fn parse_until_invalid<T: Parse>(
-    s: &[u8],
-) -> Result<(T, usize), AtoiSimdError> {
+pub fn parse_until_invalid<T: Parse>(s: &[u8]) -> Result<(T, usize), AtoiSimdError> {
     T::atoi_simd_parse_until_invalid(s)
 }
 

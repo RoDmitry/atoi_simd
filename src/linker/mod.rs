@@ -103,9 +103,7 @@ fn atoi_simd_parse_until_invalid_signed<T: ParsePos + ParseNeg>(
 }
 
 #[inline(always)]
-fn atoi_simd_parse_skipped_signed<T: ParsePos + ParseNeg>(
-    s: &[u8],
-) -> Result<T, AtoiSimdError> {
+fn atoi_simd_parse_skipped_signed<T: ParsePos + ParseNeg>(s: &[u8]) -> Result<T, AtoiSimdError> {
     let mut neg = false;
     let mut i = match *s.first().ok_or(AtoiSimdError::Empty)? {
         b'+' => 1,
