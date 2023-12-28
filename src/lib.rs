@@ -68,30 +68,30 @@ mod simd;
 mod test;
 
 pub use crate::error::AtoiSimdError;
-use crate::linker::{Parser, ParserNeg, ParserPos};
+use crate::linker::{Parse, ParseNeg, ParsePos};
 
 /// Parses slice of digits, and checks first '-' char for signed integers.
 #[inline]
-pub fn parse<T: Parser + ParserPos>(s: &[u8]) -> Result<T, AtoiSimdError> {
+pub fn parse<T: Parse + ParsePos>(s: &[u8]) -> Result<T, AtoiSimdError> {
     T::atoi_simd_parse(s)
 }
 
 /// Parses positive integer.
 #[inline]
-pub fn parse_pos<T: ParserPos>(s: &[u8]) -> Result<T, AtoiSimdError> {
+pub fn parse_pos<T: ParsePos>(s: &[u8]) -> Result<T, AtoiSimdError> {
     T::atoi_simd_parse_pos(s)
 }
 
 /// Parses negative integer. Slice must not contain '-' sign.
 #[inline]
-pub fn parse_neg<T: ParserNeg>(s: &[u8]) -> Result<T, AtoiSimdError> {
+pub fn parse_neg<T: ParseNeg>(s: &[u8]) -> Result<T, AtoiSimdError> {
     T::atoi_simd_parse_neg(s)
 }
 
 /// Parses slice of digits until it reaches invalid character, and checks first '-' char for signed integers.
 /// Returns parsed value and parsed size of the slice.
 #[inline]
-pub fn parse_until_invalid<T: Parser + ParserPos>(
+pub fn parse_until_invalid<T: Parse + ParsePos>(
     s: &[u8],
 ) -> Result<(T, usize), AtoiSimdError> {
     T::atoi_simd_parse_until_invalid(s)
@@ -100,14 +100,14 @@ pub fn parse_until_invalid<T: Parser + ParserPos>(
 /// Parses positive integer until it reaches invalid character.
 /// Returns parsed value and parsed size of the slice.
 #[inline]
-pub fn parse_until_invalid_pos<T: ParserPos>(s: &[u8]) -> Result<(T, usize), AtoiSimdError> {
+pub fn parse_until_invalid_pos<T: ParsePos>(s: &[u8]) -> Result<(T, usize), AtoiSimdError> {
     T::atoi_simd_parse_until_invalid_pos(s)
 }
 
 /// Parses negative integer until it reaches invalid character. Slice must not contain '-' sign.
 /// Returns parsed value and parsed size of the slice.
 #[inline]
-pub fn parse_until_invalid_neg<T: ParserNeg>(s: &[u8]) -> Result<(T, usize), AtoiSimdError> {
+pub fn parse_until_invalid_neg<T: ParseNeg>(s: &[u8]) -> Result<(T, usize), AtoiSimdError> {
     T::atoi_simd_parse_until_invalid_neg(s)
 }
 
@@ -116,6 +116,6 @@ pub fn parse_until_invalid_neg<T: ParserNeg>(s: &[u8]) -> Result<(T, usize), Ato
 /// Skips '+' char and extra zeroes at the beginning.
 /// It's slower than `parse()`.
 #[inline]
-pub fn parse_skipped<T: Parser + ParserPos>(s: &[u8]) -> Result<T, AtoiSimdError> {
+pub fn parse_skipped<T: Parse + ParsePos>(s: &[u8]) -> Result<T, AtoiSimdError> {
     T::atoi_simd_parse_skipped(s)
 }

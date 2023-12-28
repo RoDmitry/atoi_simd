@@ -46,17 +46,17 @@ mod fb_64;
 
 use crate::{safe_unchecked::SliceGetter, AtoiSimdError};
 
-pub trait ParserPos: Sized {
+pub trait ParsePos: Sized {
     fn atoi_simd_parse_pos(s: &[u8]) -> Result<Self, AtoiSimdError>;
     fn atoi_simd_parse_until_invalid_pos(s: &[u8]) -> Result<(Self, usize), AtoiSimdError>;
 }
 
-pub trait ParserNeg: Sized {
+pub trait ParseNeg: Sized {
     fn atoi_simd_parse_neg(s: &[u8]) -> Result<Self, AtoiSimdError>;
     fn atoi_simd_parse_until_invalid_neg(s: &[u8]) -> Result<(Self, usize), AtoiSimdError>;
 }
 
-pub trait Parser: ParserPos {
+pub trait Parse: ParsePos {
     #[inline(always)]
     fn atoi_simd_parse(s: &[u8]) -> Result<Self, AtoiSimdError> {
         Self::atoi_simd_parse_pos(s)
@@ -83,7 +83,7 @@ pub trait Parser: ParserPos {
 }
 
 #[inline(always)]
-fn atoi_simd_parse_signed<T: ParserPos + ParserNeg>(s: &[u8]) -> Result<T, AtoiSimdError> {
+fn atoi_simd_parse_signed<T: ParsePos + ParseNeg>(s: &[u8]) -> Result<T, AtoiSimdError> {
     if *s.first().ok_or(AtoiSimdError::Empty)? == b'-' {
         T::atoi_simd_parse_neg(s.get_safe_unchecked(1..))
     } else {
@@ -92,7 +92,7 @@ fn atoi_simd_parse_signed<T: ParserPos + ParserNeg>(s: &[u8]) -> Result<T, AtoiS
 }
 
 #[inline(always)]
-fn atoi_simd_parse_until_invalid_signed<T: ParserPos + ParserNeg>(
+fn atoi_simd_parse_until_invalid_signed<T: ParsePos + ParseNeg>(
     s: &[u8],
 ) -> Result<(T, usize), AtoiSimdError> {
     if *s.first().ok_or(AtoiSimdError::Empty)? == b'-' {
@@ -103,7 +103,7 @@ fn atoi_simd_parse_until_invalid_signed<T: ParserPos + ParserNeg>(
 }
 
 #[inline(always)]
-fn atoi_simd_parse_skipped_signed<T: ParserPos + ParserNeg>(
+fn atoi_simd_parse_skipped_signed<T: ParsePos + ParseNeg>(
     s: &[u8],
 ) -> Result<T, AtoiSimdError> {
     let mut neg = false;
@@ -128,12 +128,12 @@ fn atoi_simd_parse_skipped_signed<T: ParserPos + ParserNeg>(
     }
 }
 
-impl Parser for u8 {}
-impl Parser for u16 {}
-impl Parser for u32 {}
-impl Parser for usize {}
-impl Parser for u64 {}
-impl Parser for u128 {}
+impl Parse for u8 {}
+impl Parse for u16 {}
+impl Parse for u32 {}
+impl Parse for usize {}
+impl Parse for u64 {}
+impl Parse for u128 {}
 
 macro_rules! impl_signed {
     () => {
@@ -154,21 +154,21 @@ macro_rules! impl_signed {
     };
 }
 
-impl Parser for i8 {
+impl Parse for i8 {
     impl_signed!();
 }
-impl Parser for i16 {
+impl Parse for i16 {
     impl_signed!();
 }
-impl Parser for i32 {
+impl Parse for i32 {
     impl_signed!();
 }
-impl Parser for isize {
+impl Parse for isize {
     impl_signed!();
 }
-impl Parser for i64 {
+impl Parse for i64 {
     impl_signed!();
 }
-impl Parser for i128 {
+impl Parse for i128 {
     impl_signed!();
 }

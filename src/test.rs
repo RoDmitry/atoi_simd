@@ -87,7 +87,7 @@ fn test_each_position_until_invalid<T: Copy + Debug + PartialEq + FromStr>(
 }
 
 fn parse_tester<
-    T: Copy + Debug + PartialEq + FromStr + Parser + ParserPos,
+    T: Copy + Debug + PartialEq + FromStr + Parse + ParsePos,
     const LEN: usize,
     const LEN_NEG: usize,
     I,
@@ -118,7 +118,7 @@ fn parse_tester<
 }
 
 fn parse_until_invalid_tester<
-    T: Copy + Debug + PartialEq + FromStr + Parser + ParserPos,
+    T: Copy + Debug + PartialEq + FromStr + Parse + ParsePos,
     const LEN: usize,
     const LEN_NEG: usize,
     I,

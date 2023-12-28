@@ -2,7 +2,7 @@ use super::*;
 use crate::simd::shared_64::*;
 
 #[cfg(target_pointer_width = "64")]
-impl ParserPos for usize {
+impl ParsePos for usize {
     #[inline(always)]
     fn atoi_simd_parse_pos(s: &[u8]) -> Result<usize, AtoiSimdError> {
         parse_simd_checked_u64(s).map(|v| v as usize)
@@ -15,7 +15,7 @@ impl ParserPos for usize {
 }
 
 #[cfg(target_pointer_width = "64")]
-impl ParserPos for isize {
+impl ParsePos for isize {
     #[inline(always)]
     fn atoi_simd_parse_pos(s: &[u8]) -> Result<isize, AtoiSimdError> {
         parse_simd_checked_i64(s).map(|v| v as isize)
@@ -28,7 +28,7 @@ impl ParserPos for isize {
 }
 
 #[cfg(target_pointer_width = "64")]
-impl ParserNeg for isize {
+impl ParseNeg for isize {
     #[inline(always)]
     fn atoi_simd_parse_neg(s: &[u8]) -> Result<isize, AtoiSimdError> {
         parse_simd_checked_i64_neg(s).map(|v| v as isize)
@@ -40,7 +40,7 @@ impl ParserNeg for isize {
     }
 }
 
-impl ParserPos for u64 {
+impl ParsePos for u64 {
     #[inline(always)]
     fn atoi_simd_parse_pos(s: &[u8]) -> Result<u64, AtoiSimdError> {
         parse_simd_checked_u64(s)
@@ -52,7 +52,7 @@ impl ParserPos for u64 {
     }
 }
 
-impl ParserPos for i64 {
+impl ParsePos for i64 {
     #[inline(always)]
     fn atoi_simd_parse_pos(s: &[u8]) -> Result<i64, AtoiSimdError> {
         parse_simd_checked_i64(s)
@@ -64,7 +64,7 @@ impl ParserPos for i64 {
     }
 }
 
-impl ParserNeg for i64 {
+impl ParseNeg for i64 {
     #[inline(always)]
     fn atoi_simd_parse_neg(s: &[u8]) -> Result<i64, AtoiSimdError> {
         parse_simd_checked_i64_neg(s)
@@ -76,7 +76,7 @@ impl ParserNeg for i64 {
     }
 }
 
-impl ParserPos for u128 {
+impl ParsePos for u128 {
     #[inline(always)]
     fn atoi_simd_parse_pos(s: &[u8]) -> Result<u128, AtoiSimdError> {
         parse_simd_checked_u128(s)
@@ -88,7 +88,7 @@ impl ParserPos for u128 {
     }
 }
 
-impl ParserPos for i128 {
+impl ParsePos for i128 {
     #[inline(always)]
     fn atoi_simd_parse_pos(s: &[u8]) -> Result<i128, AtoiSimdError> {
         parse_simd_checked_i128(s)
@@ -100,7 +100,7 @@ impl ParserPos for i128 {
     }
 }
 
-impl ParserNeg for i128 {
+impl ParseNeg for i128 {
     #[inline(always)]
     fn atoi_simd_parse_neg(s: &[u8]) -> Result<i128, AtoiSimdError> {
         parse_simd_checked_i128_neg(s)
