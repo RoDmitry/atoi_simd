@@ -66,7 +66,7 @@ unsafe fn load_8(s: &[u8]) -> uint8x8_t {
             vset_lane_u8(s[0], data, 0)
         }
         0 => vreinterpret_u8_u32(data),
-        _ => ::core::hint::unreachable_unchecked(),
+        _ => ::core::hint::unreachable_unchecked(), // unreachable since 1.75
     }
 }
 
@@ -170,7 +170,7 @@ unsafe fn load_16(s: &[u8]) -> uint8x16_t {
             vsetq_lane_u8(s[0], data, 0)
         }
         0 => vreinterpretq_u8_u64(data),
-        _ => ::core::hint::unreachable_unchecked(),
+        _ => ::core::hint::unreachable_unchecked(), // unreachable since 1.75
     }
 }
 
