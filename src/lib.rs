@@ -72,7 +72,7 @@ use crate::linker::{Parse, ParseNeg, ParsePos};
 
 /// Parses slice of digits, and checks first '-' char for signed integers.
 #[inline]
-pub fn parse<T: Parse + ParsePos>(s: &[u8]) -> Result<T, AtoiSimdError> {
+pub fn parse<T: Parse>(s: &[u8]) -> Result<T, AtoiSimdError> {
     T::atoi_simd_parse(s)
 }
 
@@ -91,7 +91,7 @@ pub fn parse_neg<T: ParseNeg>(s: &[u8]) -> Result<T, AtoiSimdError> {
 /// Parses slice of digits until it reaches invalid character, and checks first '-' char for signed integers.
 /// Returns parsed value and parsed size of the slice.
 #[inline]
-pub fn parse_until_invalid<T: Parse + ParsePos>(
+pub fn parse_until_invalid<T: Parse>(
     s: &[u8],
 ) -> Result<(T, usize), AtoiSimdError> {
     T::atoi_simd_parse_until_invalid(s)
@@ -116,6 +116,6 @@ pub fn parse_until_invalid_neg<T: ParseNeg>(s: &[u8]) -> Result<(T, usize), Atoi
 /// Skips '+' char and extra zeroes at the beginning.
 /// It's slower than `parse()`.
 #[inline]
-pub fn parse_skipped<T: Parse + ParsePos>(s: &[u8]) -> Result<T, AtoiSimdError> {
+pub fn parse_skipped<T: Parse>(s: &[u8]) -> Result<T, AtoiSimdError> {
     T::atoi_simd_parse_skipped(s)
 }
