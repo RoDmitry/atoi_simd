@@ -1,7 +1,7 @@
 use super::*;
 use crate::fallback::*;
 
-impl ParserPos<u8> for u8 {
+impl ParsePos for u8 {
     #[inline(always)]
     fn atoi_simd_parse_pos(s: &[u8]) -> Result<u8, AtoiSimdError> {
         parse_fb_checked_pos::<{ u8::MAX as u64 }>(s).map(|v| v as u8)
@@ -13,7 +13,7 @@ impl ParserPos<u8> for u8 {
     }
 }
 
-impl ParserPos<i8> for i8 {
+impl ParsePos for i8 {
     #[inline(always)]
     fn atoi_simd_parse_pos(s: &[u8]) -> Result<i8, AtoiSimdError> {
         parse_fb_checked_pos::<{ i8::MAX as u64 }>(s).map(|v| v as i8)
@@ -25,7 +25,7 @@ impl ParserPos<i8> for i8 {
     }
 }
 
-impl ParserNeg<i8> for i8 {
+impl ParseNeg for i8 {
     #[inline(always)]
     fn atoi_simd_parse_neg(s: &[u8]) -> Result<i8, AtoiSimdError> {
         parse_fb_checked_neg::<{ i8::MIN as i64 }>(s).map(|v| v as i8)
@@ -37,7 +37,7 @@ impl ParserNeg<i8> for i8 {
     }
 }
 
-impl ParserPos<u16> for u16 {
+impl ParsePos for u16 {
     #[inline(always)]
     fn atoi_simd_parse_pos(s: &[u8]) -> Result<u16, AtoiSimdError> {
         parse_fb_checked_pos::<{ u16::MAX as u64 }>(s).map(|v| v as u16)
@@ -49,7 +49,7 @@ impl ParserPos<u16> for u16 {
     }
 }
 
-impl ParserPos<i16> for i16 {
+impl ParsePos for i16 {
     #[inline(always)]
     fn atoi_simd_parse_pos(s: &[u8]) -> Result<i16, AtoiSimdError> {
         parse_fb_checked_pos::<{ i16::MAX as u64 }>(s).map(|v| v as i16)
@@ -61,7 +61,7 @@ impl ParserPos<i16> for i16 {
     }
 }
 
-impl ParserNeg<i16> for i16 {
+impl ParseNeg for i16 {
     #[inline(always)]
     fn atoi_simd_parse_neg(s: &[u8]) -> Result<i16, AtoiSimdError> {
         parse_fb_checked_neg::<{ i16::MIN as i64 }>(s).map(|v| v as i16)
@@ -73,7 +73,7 @@ impl ParserNeg<i16> for i16 {
     }
 }
 
-impl ParserPos<u32> for u32 {
+impl ParsePos for u32 {
     #[inline(always)]
     fn atoi_simd_parse_pos(s: &[u8]) -> Result<u32, AtoiSimdError> {
         parse_fb_checked_pos::<{ u32::MAX as u64 }>(s).map(|v| v as u32)
@@ -85,7 +85,7 @@ impl ParserPos<u32> for u32 {
     }
 }
 
-impl ParserPos<i32> for i32 {
+impl ParsePos for i32 {
     #[inline(always)]
     fn atoi_simd_parse_pos(s: &[u8]) -> Result<i32, AtoiSimdError> {
         parse_fb_checked_pos::<{ i32::MAX as u64 }>(s).map(|v| v as i32)
@@ -97,7 +97,7 @@ impl ParserPos<i32> for i32 {
     }
 }
 
-impl ParserNeg<i32> for i32 {
+impl ParseNeg for i32 {
     #[inline(always)]
     fn atoi_simd_parse_neg(s: &[u8]) -> Result<i32, AtoiSimdError> {
         parse_fb_checked_neg::<{ i32::MIN as i64 }>(s).map(|v| v as i32)
@@ -110,7 +110,7 @@ impl ParserNeg<i32> for i32 {
 }
 
 #[cfg(target_pointer_width = "32")]
-impl ParserPos<usize> for usize {
+impl ParsePos for usize {
     #[inline(always)]
     fn atoi_simd_parse_pos(s: &[u8]) -> Result<usize, AtoiSimdError> {
         parse_fb_checked_pos::<{ u32::MAX as u64 }>(s).map(|v| v as usize)
@@ -123,7 +123,7 @@ impl ParserPos<usize> for usize {
 }
 
 #[cfg(target_pointer_width = "32")]
-impl ParserPos<isize> for isize {
+impl ParsePos for isize {
     #[inline(always)]
     fn atoi_simd_parse_pos(s: &[u8]) -> Result<isize, AtoiSimdError> {
         parse_fb_checked_pos::<{ i32::MAX as u64 }>(s).map(|v| v as isize)
@@ -136,7 +136,7 @@ impl ParserPos<isize> for isize {
 }
 
 #[cfg(target_pointer_width = "32")]
-impl ParserNeg<isize> for isize {
+impl ParseNeg for isize {
     #[inline(always)]
     fn atoi_simd_parse_neg(s: &[u8]) -> Result<isize, AtoiSimdError> {
         parse_fb_checked_neg::<{ i32::MIN as i64 }>(s).map(|v| v as isize)
