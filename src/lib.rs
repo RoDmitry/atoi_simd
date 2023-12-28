@@ -68,7 +68,7 @@ mod simd;
 mod test;
 
 pub use crate::error::AtoiSimdError;
-use crate::linker::{Parse, ParseNeg, ParsePos};
+use crate::linker::{Parse, ParseNeg};
 
 /// Parses slice of digits, and checks first '-' char for signed integers.
 #[inline]
@@ -78,7 +78,7 @@ pub fn parse<T: Parse>(s: &[u8]) -> Result<T, AtoiSimdError> {
 
 /// Parses positive integer.
 #[inline]
-pub fn parse_pos<T: ParsePos>(s: &[u8]) -> Result<T, AtoiSimdError> {
+pub fn parse_pos<T: Parse>(s: &[u8]) -> Result<T, AtoiSimdError> {
     T::atoi_simd_parse_pos(s)
 }
 
@@ -100,7 +100,7 @@ pub fn parse_until_invalid<T: Parse>(
 /// Parses positive integer until it reaches invalid character.
 /// Returns parsed value and parsed size of the slice.
 #[inline]
-pub fn parse_until_invalid_pos<T: ParsePos>(s: &[u8]) -> Result<(T, usize), AtoiSimdError> {
+pub fn parse_until_invalid_pos<T: Parse>(s: &[u8]) -> Result<(T, usize), AtoiSimdError> {
     T::atoi_simd_parse_until_invalid_pos(s)
 }
 
