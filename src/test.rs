@@ -56,9 +56,7 @@ fn test_each_position<T: Copy>(s: &str, func: fn(&[u8]) -> Result<T, AtoiSimdErr
             s_new.push_str(&s[0..j]);
             s_new.push(ch_invalid);
             s_new.push_str(&s[j..s.len()]);
-            if func(s_new.as_bytes()).is_ok() {
-                panic!("error {}", s_new);
-            }
+            assert!(func(s_new.as_bytes()).is_err(), "input: {}", s_new);
             s_new.clear();
         }
     }
@@ -153,9 +151,7 @@ fn parse_until_invalid_tester<
 
 #[test]
 fn test_parse_u8() {
-    if parse::<u8>(b"").is_ok() {
-        panic!("error");
-    }
+    assert!(parse::<u8>(b"").is_err());
 
     assert_eq!(parse::<u8>(b"0").unwrap(), 0_u8);
 
@@ -163,24 +159,14 @@ fn test_parse_u8() {
 
     assert_eq!(parse::<u8>(b"255").unwrap(), u8::MAX);
 
-    if parse::<u8>(b"256").is_ok() {
-        panic!("error");
-    }
-
-    if parse::<u8>(b"12345678").is_ok() {
-        panic!("error");
-    }
-
-    if parse::<u8>(b"1234567890123456789012345").is_ok() {
-        panic!("error");
-    }
+    assert!(parse::<u8>(b"256").is_err());
+    assert!(parse::<u8>(b"12345678").is_err());
+    assert!(parse::<u8>(b"1234567890123456789012345").is_err());
 }
 
 #[test]
 fn test_parse_until_invalid_u8() {
-    if parse_until_invalid::<u8>(b"").is_ok() {
-        panic!("error");
-    }
+    assert!(parse_until_invalid::<u8>(b"").is_err());
 
     assert_eq!(parse_until_invalid::<u8>(b"0").unwrap(), (0_u8, 1_usize));
 
@@ -189,49 +175,27 @@ fn test_parse_until_invalid_u8() {
 
 #[test]
 fn test_parse_i8() {
-    if parse::<i8>(b"").is_ok() {
-        panic!("error");
-    }
-
+    assert!(parse::<i8>(b"").is_err());
+    assert!(parse::<i8>(b"-").is_err());
     assert_eq!(parse::<i8>(b"0").unwrap(), 0_i8);
     assert_eq!(parse::<i8>(b"-0").unwrap(), 0_i8);
 
     parse_tester::<i8, 3, 4, _>('1'..='3');
 
     assert_eq!(parse::<i8>(b"127").unwrap(), i8::MAX);
-
-    if parse::<i8>(b"128").is_ok() {
-        panic!("error");
-    }
-
     assert_eq!(parse::<i8>(b"-128").unwrap(), i8::MIN);
 
-    if parse::<i8>(b"-129").is_ok() {
-        panic!("error");
-    }
-
-    if parse::<i8>(b"255").is_ok() {
-        panic!("error");
-    }
-
-    if parse::<i8>(b"12345678").is_ok() {
-        panic!("error");
-    }
-
-    if parse::<i8>(b"-12345678").is_ok() {
-        panic!("error");
-    }
-
-    if parse::<i8>(b"-1234567890123456789012345").is_ok() {
-        panic!("error");
-    }
+    assert!(parse::<i8>(b"128").is_err());
+    assert!(parse::<i8>(b"-129").is_err());
+    assert!(parse::<i8>(b"255").is_err());
+    assert!(parse::<i8>(b"12345678").is_err());
+    assert!(parse::<i8>(b"-12345678").is_err());
+    assert!(parse::<i8>(b"-1234567890123456789012345").is_err());
 }
 
 #[test]
 fn test_parse_u16() {
-    if parse::<u16>(b"").is_ok() {
-        panic!("error");
-    }
+    assert!(parse::<u16>(b"").is_err());
 
     assert_eq!(parse::<u16>(b"0").unwrap(), 0_u16);
 
@@ -239,24 +203,14 @@ fn test_parse_u16() {
 
     assert_eq!(parse::<u16>(b"65535").unwrap(), u16::MAX);
 
-    if parse::<u16>(b"65536").is_ok() {
-        panic!("error");
-    }
-
-    if parse::<u16>(b"12345678").is_ok() {
-        panic!("error");
-    }
-
-    if parse::<u16>(b"1234567890123456789012345").is_ok() {
-        panic!("error");
-    }
+    assert!(parse::<u16>(b"65536").is_err());
+    assert!(parse::<u16>(b"12345678").is_err());
+    assert!(parse::<u16>(b"1234567890123456789012345").is_err());
 }
 
 #[test]
 fn test_parse_until_invalid_u16() {
-    if parse_until_invalid::<u16>(b"").is_ok() {
-        panic!("error");
-    }
+    assert!(parse_until_invalid::<u16>(b"").is_err());
 
     assert_eq!(parse_until_invalid::<u16>(b"0").unwrap(), (0_u16, 1_usize));
 
@@ -265,9 +219,8 @@ fn test_parse_until_invalid_u16() {
 
 #[test]
 fn test_parse_i16() {
-    if parse::<i16>(b"").is_ok() {
-        panic!("error");
-    }
+    assert!(parse::<i16>(b"").is_err());
+    assert!(parse::<i16>(b"-").is_err());
 
     assert_eq!(parse::<i16>(b"0").unwrap(), 0_i16);
     assert_eq!(parse::<i16>(b"-0").unwrap(), 0_i16);
@@ -275,39 +228,19 @@ fn test_parse_i16() {
     parse_tester::<i16, 5, 6, _>('1'..='5');
 
     assert_eq!(parse::<i16>(b"32767").unwrap(), i16::MAX);
-
-    if parse::<i16>(b"32768").is_ok() {
-        panic!("error");
-    }
-
     assert_eq!(parse::<i16>(b"-32768").unwrap(), i16::MIN);
 
-    if parse::<i16>(b"-32769").is_ok() {
-        panic!("error");
-    }
-
-    if parse::<i16>(b"65535").is_ok() {
-        panic!("error");
-    }
-
-    if parse::<i16>(b"12345678").is_ok() {
-        panic!("error");
-    }
-
-    if parse::<i16>(b"-12345678").is_ok() {
-        panic!("error");
-    }
-
-    if parse::<i16>(b"-1234567890123456789012345").is_ok() {
-        panic!("error");
-    }
+    assert!(parse::<i16>(b"32768").is_err());
+    assert!(parse::<i16>(b"-32769").is_err());
+    assert!(parse::<i16>(b"65535").is_err());
+    assert!(parse::<i16>(b"12345678").is_err());
+    assert!(parse::<i16>(b"-12345678").is_err());
+    assert!(parse::<i16>(b"-1234567890123456789012345").is_err());
 }
 
 #[test]
 fn test_parse_u32() {
-    if parse::<u32>(b"").is_ok() {
-        panic!("error");
-    }
+    assert!(parse::<u32>(b"").is_err());
 
     assert_eq!(parse::<u32>(b"0").unwrap(), 0_u32);
 
@@ -315,24 +248,14 @@ fn test_parse_u32() {
 
     assert_eq!(parse::<u32>(b"4294967295").unwrap(), u32::MAX);
 
-    if parse::<u32>(b"4294967296").is_ok() {
-        panic!("error");
-    }
-
-    if parse::<u32>(b"123456789012345").is_ok() {
-        panic!("error");
-    }
-
-    if parse::<u32>(b"1234567890123456789012345").is_ok() {
-        panic!("error");
-    }
+    assert!(parse::<u32>(b"4294967296").is_err());
+    assert!(parse::<u32>(b"123456789012345").is_err());
+    assert!(parse::<u32>(b"1234567890123456789012345").is_err());
 }
 
 #[test]
 fn test_parse_until_invalid_u32() {
-    if parse_until_invalid::<u32>(b"").is_ok() {
-        panic!("error");
-    }
+    assert!(parse_until_invalid::<u32>(b"").is_err());
 
     assert_eq!(parse_until_invalid::<u32>(b"0").unwrap(), (0_u32, 1_usize));
 
@@ -341,9 +264,8 @@ fn test_parse_until_invalid_u32() {
 
 #[test]
 fn test_parse_i32() {
-    if parse::<i32>(b"").is_ok() {
-        panic!("error");
-    }
+    assert!(parse::<i32>(b"").is_err());
+    assert!(parse::<i32>(b"-").is_err());
 
     assert_eq!(parse::<i32>(b"0").unwrap(), 0_i32);
     assert_eq!(parse::<i32>(b"-0").unwrap(), 0_i32);
@@ -351,39 +273,19 @@ fn test_parse_i32() {
     parse_tester::<i32, 10, 11, _>(('1'..='9').chain('0'..='0'));
 
     assert_eq!(parse::<i32>(b"2147483647").unwrap(), i32::MAX);
-
-    if parse::<i32>(b"2147483648").is_ok() {
-        panic!("error");
-    }
-
     assert_eq!(parse::<i32>(b"-2147483648").unwrap(), i32::MIN);
 
-    if parse::<i32>(b"-2147483649").is_ok() {
-        panic!("error");
-    }
-
-    if parse::<i32>(b"4294967295").is_ok() {
-        panic!("error");
-    }
-
-    if parse::<i32>(b"123456789012345").is_ok() {
-        panic!("error");
-    }
-
-    if parse::<i32>(b"-123456789012345").is_ok() {
-        panic!("error");
-    }
-
-    if parse::<i32>(b"-1234567890123456789012345").is_ok() {
-        panic!("error");
-    }
+    assert!(parse::<i32>(b"2147483648").is_err());
+    assert!(parse::<i32>(b"-2147483649").is_err());
+    assert!(parse::<i32>(b"4294967295").is_err());
+    assert!(parse::<i32>(b"123456789012345").is_err());
+    assert!(parse::<i32>(b"-123456789012345").is_err());
+    assert!(parse::<i32>(b"-1234567890123456789012345").is_err());
 }
 
 #[test]
 fn test_parse_u64() {
-    if parse::<u64>(b"").is_ok() {
-        panic!("error");
-    }
+    assert!(parse::<u64>(b"").is_err());
 
     assert_eq!(parse::<u64>(b"0").unwrap(), 0_u64);
 
@@ -391,24 +293,14 @@ fn test_parse_u64() {
 
     assert_eq!(parse::<u64>(b"18446744073709551615").unwrap(), u64::MAX);
 
-    if parse::<u64>(b"18446744073709551616").is_ok() {
-        panic!("error");
-    }
-
-    if parse::<u64>(b"99999999999999999999").is_ok() {
-        panic!("error");
-    }
-
-    if parse::<u64>(b"1234567890123456789012345").is_ok() {
-        panic!("error");
-    }
+    assert!(parse::<u64>(b"18446744073709551616").is_err());
+    assert!(parse::<u64>(b"99999999999999999999").is_err());
+    assert!(parse::<u64>(b"1234567890123456789012345").is_err());
 }
 
 #[test]
 fn test_parse_until_invalid_u64() {
-    if parse_until_invalid::<u64>(b"").is_ok() {
-        panic!("error");
-    }
+    assert!(parse_until_invalid::<u64>(b"").is_err());
 
     assert_eq!(parse_until_invalid::<u64>(b"0").unwrap(), (0_u64, 1_usize));
 
@@ -424,32 +316,17 @@ fn test_parse_until_invalid_u64() {
         (u64::MAX, 20)
     );
 
-    if parse_until_invalid::<u64>(b"18446744073709551616").is_ok() {
-        panic!("error");
-    }
-
-    if parse_until_invalid::<u64>(b"18446744073709551616s").is_ok() {
-        panic!("error");
-    }
-
-    if parse_until_invalid::<u64>(b"99999999999999999999").is_ok() {
-        panic!("error");
-    }
-
-    if parse_until_invalid::<u64>(b"99999999999999999999s").is_ok() {
-        panic!("error");
-    }
-
-    if parse_until_invalid::<u64>(b"1234567890123456789012345").is_ok() {
-        panic!("error");
-    }
+    assert!(parse_until_invalid::<u64>(b"18446744073709551616").is_err());
+    assert!(parse_until_invalid::<u64>(b"18446744073709551616s").is_err());
+    assert!(parse_until_invalid::<u64>(b"99999999999999999999").is_err());
+    assert!(parse_until_invalid::<u64>(b"99999999999999999999s").is_err());
+    assert!(parse_until_invalid::<u64>(b"1234567890123456789012345").is_err());
 }
 
 #[test]
 fn test_parse_i64() {
-    if parse::<i64>(b"").is_ok() {
-        panic!("error");
-    }
+    assert!(parse::<i64>(b"").is_err());
+    assert!(parse::<i64>(b"-").is_err());
 
     assert_eq!(parse::<i64>(b"0").unwrap(), 0_i64);
     assert_eq!(parse::<i64>(b"-0").unwrap(), 0_i64);
@@ -457,39 +334,19 @@ fn test_parse_i64() {
     parse_tester::<i64, 19, 20, _>(('1'..='9').chain('0'..='9'));
 
     assert_eq!(parse::<i64>(b"9223372036854775807").unwrap(), i64::MAX);
-
-    if parse::<i64>(b"9223372036854775808").is_ok() {
-        panic!("error");
-    }
-
     assert_eq!(parse::<i64>(b"-9223372036854775808").unwrap(), i64::MIN);
 
-    if parse::<i64>(b"-9223372036854775809").is_ok() {
-        panic!("error");
-    }
-
-    if parse::<i64>(b"18446744073709551615").is_ok() {
-        panic!("error");
-    }
-
-    if parse::<i64>(b"99999999999999999999").is_ok() {
-        panic!("error");
-    }
-
-    if parse::<i64>(b"-99999999999999999999").is_ok() {
-        panic!("error");
-    }
-
-    if parse::<i64>(b"-1234567890123456789012345").is_ok() {
-        panic!("error");
-    }
+    assert!(parse::<i64>(b"9223372036854775808").is_err());
+    assert!(parse::<i64>(b"-9223372036854775809").is_err());
+    assert!(parse::<i64>(b"18446744073709551615").is_err());
+    assert!(parse::<i64>(b"99999999999999999999").is_err());
+    assert!(parse::<i64>(b"-99999999999999999999").is_err());
+    assert!(parse::<i64>(b"-1234567890123456789012345").is_err());
 }
 
 #[test]
 fn test_parse_u128() {
-    if parse::<u128>(b"").is_ok() {
-        panic!("error");
-    }
+    assert!(parse::<u128>(b"").is_err());
 
     assert_eq!(parse::<u128>(b"0").unwrap(), 0_u128);
 
@@ -530,24 +387,14 @@ fn test_parse_u128() {
         u128::MAX
     );
 
-    if parse::<u128>(b"340282366920938463463374607431768211456").is_ok() {
-        panic!("error");
-    }
-
-    if parse::<u128>(b"999999999999999999999999999999999999999").is_ok() {
-        panic!("error");
-    }
-
-    if parse::<u128>(b"9999999999999999999999999999999999999999999").is_ok() {
-        panic!("error");
-    }
+    assert!(parse::<u128>(b"340282366920938463463374607431768211456").is_err());
+    assert!(parse::<u128>(b"999999999999999999999999999999999999999").is_err());
+    assert!(parse::<u128>(b"9999999999999999999999999999999999999999999").is_err());
 }
 
 #[test]
 fn test_parse_until_invalid_u128() {
-    if parse_until_invalid::<u128>(b"").is_ok() {
-        panic!("error");
-    }
+    assert!(parse_until_invalid::<u128>(b"").is_err());
 
     assert_eq!(
         parse_until_invalid::<u128>(b"0").unwrap(),
@@ -571,32 +418,17 @@ fn test_parse_until_invalid_u128() {
         (u128::MAX, 39)
     );
 
-    if parse_until_invalid::<u128>(b"340282366920938463463374607431768211456").is_ok() {
-        panic!("error");
-    }
-
-    if parse_until_invalid::<u128>(b"340282366920938463463374607431768211456s").is_ok() {
-        panic!("error");
-    }
-
-    if parse_until_invalid::<u128>(b"999999999999999999999999999999999999999").is_ok() {
-        panic!("error");
-    }
-
-    if parse_until_invalid::<u128>(b"999999999999999999999999999999999999999s").is_ok() {
-        panic!("error");
-    }
-
-    if parse_until_invalid::<u128>(b"9999999999999999999999999999999999999999999").is_ok() {
-        panic!("error");
-    }
+    assert!(parse_until_invalid::<u128>(b"340282366920938463463374607431768211456").is_err());
+    assert!(parse_until_invalid::<u128>(b"340282366920938463463374607431768211456s").is_err());
+    assert!(parse_until_invalid::<u128>(b"999999999999999999999999999999999999999").is_err());
+    assert!(parse_until_invalid::<u128>(b"999999999999999999999999999999999999999s").is_err());
+    assert!(parse_until_invalid::<u128>(b"9999999999999999999999999999999999999999999").is_err());
 }
 
 #[test]
 fn test_parse_i128() {
-    if parse::<i128>(b"").is_ok() {
-        panic!("error");
-    }
+    assert!(parse::<i128>(b"").is_err());
+    assert!(parse::<i128>(b"-").is_err());
 
     assert_eq!(parse::<i128>(b"0").unwrap(), 0_i128);
     assert_eq!(parse::<i128>(b"-0").unwrap(), 0_i128);
@@ -648,21 +480,10 @@ fn test_parse_i128() {
         i128::MIN
     );
 
-    if parse::<i128>(b"170141183460469231731687303715884105728").is_ok() {
-        panic!("error");
-    }
-
-    if parse::<i128>(b"-170141183460469231731687303715884105729").is_ok() {
-        panic!("error");
-    }
-
-    if parse::<i128>(b"-999999999999999999999999999999999999999").is_ok() {
-        panic!("error");
-    }
-
-    if parse::<i128>(b"-9999999999999999999999999999999999999999999").is_ok() {
-        panic!("error");
-    }
+    assert!(parse::<i128>(b"170141183460469231731687303715884105728").is_err());
+    assert!(parse::<i128>(b"-170141183460469231731687303715884105729").is_err());
+    assert!(parse::<i128>(b"-999999999999999999999999999999999999999").is_err());
+    assert!(parse::<i128>(b"-9999999999999999999999999999999999999999999").is_err());
 }
 
 #[test]
@@ -876,43 +697,25 @@ fn test_parse_until_invalid() {
         (u64::MAX, 20)
     );
 
-    if parse_until_invalid::<u64>(b"18446744073709551616").is_ok() {
-        panic!("error");
-    }
-
-    if parse_until_invalid::<u64>(b"99999999999999999999").is_ok() {
-        panic!("error");
-    }
+    assert!(parse_until_invalid::<u64>(b"18446744073709551616").is_err());
+    assert!(parse_until_invalid::<u64>(b"99999999999999999999").is_err());
 
     assert_eq!(
         parse_until_invalid::<i64>(b"9223372036854775807").unwrap(),
         (i64::MAX, 19)
     );
 
-    if parse_until_invalid::<i64>(b"9223372036854775808").is_ok() {
-        panic!("error");
-    }
-
     assert_eq!(
         parse_until_invalid::<i64>(b"-9223372036854775808").unwrap(),
         (i64::MIN, 20)
     );
 
-    if parse_until_invalid::<i64>(b"-9223372036854775809").is_ok() {
-        panic!("error");
-    }
-
-    if parse_until_invalid::<i64>(b"18446744073709551615").is_ok() {
-        panic!("error");
-    }
-
-    if parse_until_invalid::<i64>(b"99999999999999999999").is_ok() {
-        panic!("error");
-    }
-
-    if parse_until_invalid::<i64>(b"-99999999999999999999").is_ok() {
-        panic!("error");
-    }
+    assert!(parse_until_invalid::<i64>(b"-").is_err());
+    assert!(parse_until_invalid::<i64>(b"9223372036854775808").is_err());
+    assert!(parse_until_invalid::<i64>(b"-9223372036854775809").is_err());
+    assert!(parse_until_invalid::<i64>(b"18446744073709551615").is_err());
+    assert!(parse_until_invalid::<i64>(b"99999999999999999999").is_err());
+    assert!(parse_until_invalid::<i64>(b"-99999999999999999999").is_err());
 
     assert_eq!(
         parse_until_invalid::<u128>(b"9999999999999999").unwrap(),
