@@ -65,11 +65,9 @@ mod short;
     ),
 ))]
 mod simd;
-#[cfg(test)]
-mod test;
 
 pub use crate::error::AtoiSimdError;
-use crate::linker::{Parse, ParseNeg};
+pub use crate::linker::{Parse, ParseNeg};
 
 /// Parses slice of digits, and checks first '-' char for signed integers.
 #[inline]

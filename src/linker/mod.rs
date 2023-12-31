@@ -51,11 +51,13 @@ pub trait ParsePos: Sized {
     fn atoi_simd_parse_until_invalid_pos(s: &[u8]) -> Result<(Self, usize), AtoiSimdError>;
 }
 
+/// Note: all functions are `#[inline(always)]`
 pub trait ParseNeg: Sized {
     fn atoi_simd_parse_neg(s: &[u8]) -> Result<Self, AtoiSimdError>;
     fn atoi_simd_parse_until_invalid_neg(s: &[u8]) -> Result<(Self, usize), AtoiSimdError>;
 }
 
+/// Note: all functions are `#[inline(always)]`
 pub trait Parse: ParsePos {
     #[inline(always)]
     fn atoi_simd_parse(s: &[u8]) -> Result<Self, AtoiSimdError> {
