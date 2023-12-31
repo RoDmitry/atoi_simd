@@ -28,12 +28,12 @@
 //! let val: u64 = atoi_simd::parse(b"1234").unwrap();
 //! assert_eq!(val, 1234_u64);
 //!
-//! assert_eq!(atoi_simd::parse::<i64>(b"-2345").unwrap(), -2345_i64);
+//! assert_eq!(atoi_simd::parse::<i64>(b"-2345"), Ok(-2345_i64));
 //!
-//! assert_eq!(atoi_simd::parse_until_invalid::<u64>(b"123something_else").unwrap(), (123_u64, 3));
+//! assert_eq!(atoi_simd::parse_until_invalid::<u64>(b"123something_else"), Ok((123_u64, 3)));
 //!
 //! // a drop-in replacement for `str::parse`
-//! assert_eq!(atoi_simd::parse_skipped::<u64>(b"+000000000000000000001234").unwrap(), 1234_u64);
+//! assert_eq!(atoi_simd::parse_skipped::<u64>(b"+000000000000000000001234"), Ok(1234_u64));
 //! ```
 #![allow(clippy::comparison_chain)]
 #![cfg_attr(not(feature = "std"), no_std)]
