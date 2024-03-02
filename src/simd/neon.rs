@@ -66,6 +66,7 @@ unsafe fn load_8(s: &[u8]) -> uint8x8_t {
             vset_lane_u8(s[0], data, 0)
         }
         0 => vreinterpret_u8_u32(data),
+        #[allow(unreachable_patterns)]
         _ => ::core::hint::unreachable_unchecked(), // unreachable since 1.75
     }
 }
@@ -170,6 +171,7 @@ unsafe fn load_16(s: &[u8]) -> uint8x16_t {
             vsetq_lane_u8(s[0], data, 0)
         }
         0 => vreinterpretq_u8_u64(data),
+        #[allow(unreachable_patterns)]
         _ => ::core::hint::unreachable_unchecked(), // unreachable since 1.75
     }
 }
@@ -493,7 +495,8 @@ pub(crate) fn parse_simd_u128(s: &[u8]) -> Result<(u128, usize), AtoiSimdError> 
             16 => {
                 (extra, len) = parse_simd_extra(s, &mut chunk1, &mut chunk2)?;
             }
-            _ => ::core::hint::unreachable_unchecked(),
+            #[allow(unreachable_patterns)]
+            _ => ::core::hint::unreachable_unchecked(), // unreachable since 1.75
         };
 
         let (sum1, chunk1) = odd_even_8(chunk1);

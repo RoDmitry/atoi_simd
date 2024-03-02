@@ -186,6 +186,7 @@ unsafe fn load(s: &[u8]) -> __m128i {
         ),
         1 => _mm_set_epi32(0, 0, 0, s[0] as i32),
         0 => _mm_setzero_si128(),
+        #[allow(unreachable_patterns)]
         _ => ::core::hint::unreachable_unchecked(), // unreachable since 1.75
     }
 }
@@ -496,6 +497,7 @@ unsafe fn load_avx(s: &[u8]) -> __m256i {
         ),
         1 => _mm256_set_epi32(0, 0, 0, 0, 0, 0, 0, s[0] as i32),
         0 => _mm256_setzero_si256(),
+        #[allow(unreachable_patterns)]
         _ => ::core::hint::unreachable_unchecked(), // unreachable since 1.75
     }
 }

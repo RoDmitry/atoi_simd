@@ -1,3 +1,4 @@
+#[allow(unused_imports)]
 use ::core::cmp::PartialEq;
 use ::core::fmt::Debug;
 use ::core::str::FromStr;
@@ -526,20 +527,32 @@ fn test_parse_pos() {
     let tmp: i8 = parse_pos(b"123").unwrap();
     assert_eq!(tmp, 123_i8);
 
+    assert!(parse_pos::<i8>((i8::MAX as u32 + 1).to_string().as_bytes()).is_err());
+
     let tmp: i16 = parse_pos(b"1234").unwrap();
     assert_eq!(tmp, 1234_i16);
+
+    assert!(parse_pos::<i16>((i16::MAX as u32 + 1).to_string().as_bytes()).is_err());
 
     let tmp: i32 = parse_pos(b"1234").unwrap();
     assert_eq!(tmp, 1234_i32);
 
+    assert!(parse_pos::<i32>((i32::MAX as u32 + 1).to_string().as_bytes()).is_err());
+
     let tmp: isize = parse_pos(b"1234").unwrap();
     assert_eq!(tmp, 1234_isize);
+
+    assert!(parse_pos::<isize>((isize::MAX as u64 + 1).to_string().as_bytes()).is_err());
 
     let tmp: i64 = parse_pos(b"1234").unwrap();
     assert_eq!(tmp, 1234_i64);
 
+    assert!(parse_pos::<i64>((i64::MAX as u64 + 1).to_string().as_bytes()).is_err());
+
     let tmp: i128 = parse_pos(b"999999").unwrap();
     assert_eq!(tmp, 999999_i128);
+
+    assert!(parse_pos::<i128>((i128::MAX as u128 + 1).to_string().as_bytes()).is_err());
 }
 
 #[test]
@@ -547,20 +560,32 @@ fn test_parse_neg() {
     let tmp: i8 = parse_neg(b"123").unwrap();
     assert_eq!(tmp, -123_i8);
 
+    assert!(parse_neg::<i8>((i8::MAX as u32 + 2).to_string().as_bytes()).is_err());
+
     let tmp: i16 = parse_neg(b"1234").unwrap();
     assert_eq!(tmp, -1234_i16);
+
+    assert!(parse_neg::<i16>((i16::MAX as u32 + 2).to_string().as_bytes()).is_err());
 
     let tmp: i32 = parse_neg(b"1234").unwrap();
     assert_eq!(tmp, -1234_i32);
 
+    assert!(parse_neg::<i32>((i32::MAX as u32 + 2).to_string().as_bytes()).is_err());
+
     let tmp: isize = parse_neg(b"1234").unwrap();
     assert_eq!(tmp, -1234_isize);
+
+    assert!(parse_neg::<isize>((isize::MAX as u64 + 2).to_string().as_bytes()).is_err());
 
     let tmp: i64 = parse_neg(b"1234").unwrap();
     assert_eq!(tmp, -1234_i64);
 
+    assert!(parse_neg::<i64>((i64::MAX as u64 + 2).to_string().as_bytes()).is_err());
+
     let tmp: i128 = parse_neg(b"999999").unwrap();
     assert_eq!(tmp, -999999_i128);
+
+    assert!(parse_neg::<i128>((i128::MAX as u128 + 2).to_string().as_bytes()).is_err());
 }
 
 #[test]

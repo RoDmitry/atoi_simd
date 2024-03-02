@@ -36,7 +36,8 @@ fn load_8(s: &[u8]) -> u64 {
         2 => u16::from_le_bytes(s[0..2].try_into().unwrap()) as u64,
         1 => s[0] as u64,
         0 => 0,
-        _ => unsafe { ::core::hint::unreachable_unchecked() },
+        #[allow(unreachable_patterns)]
+        _ => unsafe { ::core::hint::unreachable_unchecked() }, // unreachable since 1.75
     }
 }
 
