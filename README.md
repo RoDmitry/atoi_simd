@@ -32,7 +32,7 @@ Got the idea from [here](https://rust-malaysia.github.io/code/2020/07/11/faster-
 
 ## Examples
 
-```
+```rust
 let val: u64 = atoi_simd::parse(b"1234").unwrap();
 assert_eq!(val, 1234_u64);
 
