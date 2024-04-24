@@ -3,7 +3,7 @@
 [![Crate](https://img.shields.io/crates/v/atoi_simd.svg)](https://crates.io/crates/atoi_simd)
 [![API](https://docs.rs/atoi_simd/badge.svg)](https://docs.rs/atoi_simd)
 
-SIMD (fast) parsing is supported on x86_64 (SSE4.1, AVX2) and on Arm64 (aarch64, Neon), but this library works even if you don't have SIMD supported cpu (and it will be still faster than str::parse).
+SIMD (fast) parsing is supported on x86_64 (SSE4.1, AVX2) and on Arm64 (aarch64, Neon), but this library works even if you don't have a SIMD supported cpu (and it will be still faster than str::parse).
 
 Supports negative values and validates the input.
 
