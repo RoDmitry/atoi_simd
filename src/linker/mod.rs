@@ -46,15 +46,16 @@ mod fb_64;
 
 use crate::{safe_unchecked::SliceGetter, AtoiSimdError};
 
+/// Note: all of the provided methods are `#[inline(always)]`
 pub trait ParsePos: Sized {
     fn atoi_simd_parse_pos(s: &[u8]) -> Result<Self, AtoiSimdError>;
-    fn atoi_simd_parse_until_invalid_pos(s: &[u8]) -> Result<(Self, usize), AtoiSimdError>;
+    fn atoi_simd_parse_any_pos(s: &[u8]) -> Result<(Self, usize), AtoiSimdError>;
 }
 
 /// Note: all of the provided methods are `#[inline(always)]`
 pub trait ParseNeg: Sized {
     fn atoi_simd_parse_neg(s: &[u8]) -> Result<Self, AtoiSimdError>;
-    fn atoi_simd_parse_until_invalid_neg(s: &[u8]) -> Result<(Self, usize), AtoiSimdError>;
+    fn atoi_simd_parse_any_neg(s: &[u8]) -> Result<(Self, usize), AtoiSimdError>;
 }
 
 /// Note: all of the provided methods are `#[inline(always)]`
@@ -65,8 +66,8 @@ pub trait Parse: ParsePos {
     }
 
     #[inline(always)]
-    fn atoi_simd_parse_until_invalid(s: &[u8]) -> Result<(Self, usize), AtoiSimdError> {
-        Self::atoi_simd_parse_until_invalid_pos(s)
+    fn atoi_simd_parse_any(s: &[u8]) -> Result<(Self, usize), AtoiSimdError> {
+        Self::atoi_simd_parse_any_pos(s)
     }
 
     #[inline(always)]
@@ -94,13 +95,13 @@ fn atoi_simd_parse_signed<T: ParsePos + ParseNeg>(s: &[u8]) -> Result<T, AtoiSim
 }
 
 #[inline(always)]
-fn atoi_simd_parse_until_invalid_signed<T: ParsePos + ParseNeg>(
+fn atoi_simd_parse_any_signed<T: ParsePos + ParseNeg>(
     s: &[u8],
 ) -> Result<(T, usize), AtoiSimdError> {
     if *s.first().ok_or(AtoiSimdError::Empty)? == b'-' {
-        T::atoi_simd_parse_until_invalid_neg(s.get_safe_unchecked(1..)).map(|(v, i)| (v, i + 1))
+        T::atoi_simd_parse_any_neg(s.get_safe_unchecked(1..)).map(|(v, i)| (v, i + 1))
     } else {
-        T::atoi_simd_parse_until_invalid_pos(s)
+        T::atoi_simd_parse_any_pos(s)
     }
 }
 
@@ -144,8 +145,8 @@ macro_rules! parse_impl_signed {
             }
 
             #[inline(always)]
-            fn atoi_simd_parse_until_invalid(s: &[u8]) -> Result<(Self, usize), AtoiSimdError> {
-                atoi_simd_parse_until_invalid_signed(s)
+            fn atoi_simd_parse_any(s: &[u8]) -> Result<(Self, usize), AtoiSimdError> {
+                atoi_simd_parse_any_signed(s)
             }
 
             #[inline(always)]

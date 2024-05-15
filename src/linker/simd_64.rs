@@ -9,7 +9,7 @@ impl ParsePos for usize {
     }
 
     #[inline(always)]
-    fn atoi_simd_parse_until_invalid_pos(s: &[u8]) -> Result<(usize, usize), AtoiSimdError> {
+    fn atoi_simd_parse_any_pos(s: &[u8]) -> Result<(usize, usize), AtoiSimdError> {
         parse_simd_u64(s).map(|(v, i)| (v as usize, i))
     }
 }
@@ -22,7 +22,7 @@ impl ParsePos for isize {
     }
 
     #[inline(always)]
-    fn atoi_simd_parse_until_invalid_pos(s: &[u8]) -> Result<(isize, usize), AtoiSimdError> {
+    fn atoi_simd_parse_any_pos(s: &[u8]) -> Result<(isize, usize), AtoiSimdError> {
         parse_simd_i64(s).map(|(v, i)| (v as isize, i))
     }
 }
@@ -35,7 +35,7 @@ impl ParseNeg for isize {
     }
 
     #[inline(always)]
-    fn atoi_simd_parse_until_invalid_neg(s: &[u8]) -> Result<(isize, usize), AtoiSimdError> {
+    fn atoi_simd_parse_any_neg(s: &[u8]) -> Result<(isize, usize), AtoiSimdError> {
         parse_simd_i64_neg(s).map(|(v, i)| (v as isize, i))
     }
 }
@@ -47,7 +47,7 @@ impl ParsePos for u64 {
     }
 
     #[inline(always)]
-    fn atoi_simd_parse_until_invalid_pos(s: &[u8]) -> Result<(u64, usize), AtoiSimdError> {
+    fn atoi_simd_parse_any_pos(s: &[u8]) -> Result<(u64, usize), AtoiSimdError> {
         parse_simd_u64(s)
     }
 }
@@ -59,7 +59,7 @@ impl ParsePos for i64 {
     }
 
     #[inline(always)]
-    fn atoi_simd_parse_until_invalid_pos(s: &[u8]) -> Result<(i64, usize), AtoiSimdError> {
+    fn atoi_simd_parse_any_pos(s: &[u8]) -> Result<(i64, usize), AtoiSimdError> {
         parse_simd_i64(s)
     }
 }
@@ -71,7 +71,7 @@ impl ParseNeg for i64 {
     }
 
     #[inline(always)]
-    fn atoi_simd_parse_until_invalid_neg(s: &[u8]) -> Result<(i64, usize), AtoiSimdError> {
+    fn atoi_simd_parse_any_neg(s: &[u8]) -> Result<(i64, usize), AtoiSimdError> {
         parse_simd_i64_neg(s)
     }
 }
@@ -83,7 +83,7 @@ impl ParsePos for u128 {
     }
 
     #[inline(always)]
-    fn atoi_simd_parse_until_invalid_pos(s: &[u8]) -> Result<(u128, usize), AtoiSimdError> {
+    fn atoi_simd_parse_any_pos(s: &[u8]) -> Result<(u128, usize), AtoiSimdError> {
         parse_simd_u128(s)
     }
 }
@@ -95,7 +95,7 @@ impl ParsePos for i128 {
     }
 
     #[inline(always)]
-    fn atoi_simd_parse_until_invalid_pos(s: &[u8]) -> Result<(i128, usize), AtoiSimdError> {
+    fn atoi_simd_parse_any_pos(s: &[u8]) -> Result<(i128, usize), AtoiSimdError> {
         parse_simd_i128(s)
     }
 }
@@ -107,7 +107,7 @@ impl ParseNeg for i128 {
     }
 
     #[inline(always)]
-    fn atoi_simd_parse_until_invalid_neg(s: &[u8]) -> Result<(i128, usize), AtoiSimdError> {
+    fn atoi_simd_parse_any_neg(s: &[u8]) -> Result<(i128, usize), AtoiSimdError> {
         parse_simd_i128_neg(s)
     }
 }
