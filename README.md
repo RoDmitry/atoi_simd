@@ -52,7 +52,49 @@ You can run `cargo bench` from `bench` folder on your machine (or individually w
 
 More information you can find [here](https://rodmitry.github.io/atoi_simd_benchmark).
 
-<details open><summary>v0.15.2</summary>
+<details open><summary>v0.16.0</summary>
+
+<b>Rust 1.78</b>, Windows 10, Intel i7 9700K, "target-feature" set
+
+![benchmark 64](https://github.com/RoDmitry/atoi_simd_benchmark/raw/v0.16.0/benchmark%2064/report/lines.svg)
+
+![benchmark 128](https://github.com/RoDmitry/atoi_simd_benchmark/raw/v0.16.0/benchmark%20128/report/lines.svg)
+
+#### `parse::<u64>()`
+
+![parse::\<u64>()](https://github.com/RoDmitry/atoi_simd_benchmark/raw/v0.16.0/benchmark%2064/parse%20u64/report/lines.svg)
+
+#### `str::parse::<u64>()`
+
+![str::parse::\<u64>()](https://github.com/RoDmitry/atoi_simd_benchmark/raw/v0.16.0/benchmark%2064/str%20u64/report/lines.svg)
+
+#### `parse::<i64>()`
+
+![parse::\<i64>()](https://github.com/RoDmitry/atoi_simd_benchmark/raw/v0.16.0/benchmark%2064/parse%20i64/report/lines.svg)
+
+#### `str::parse::<i64>()`
+
+![str::parse::\<i64>()](https://github.com/RoDmitry/atoi_simd_benchmark/raw/v0.16.0/benchmark%2064/str%20i64/report/lines.svg)
+
+#### `parse::<u128>()`
+
+![parse::\<u128>()](https://github.com/RoDmitry/atoi_simd_benchmark/raw/v0.16.0/benchmark%20128/parse%20u128/report/lines.svg)
+
+#### `str::parse::<u128>()`
+
+![str::parse::\<u128>()](https://github.com/RoDmitry/atoi_simd_benchmark/raw/v0.16.0/benchmark%20128/str%20u128/report/lines.svg)
+
+#### `parse::<i128>()`
+
+![parse::\<i128>()](https://github.com/RoDmitry/atoi_simd_benchmark/raw/v0.16.0/benchmark%20128/parse%20i128/report/lines.svg)
+
+#### `str::parse::<i128>()`
+
+![str::parse::\<i128>()](https://github.com/RoDmitry/atoi_simd_benchmark/raw/v0.16.0/benchmark%20128/str%20i128/report/lines.svg)
+
+</details>
+
+<details><summary>v0.15.2</summary>
 
 <b>Rust 1.73</b>, Windows 10, Intel i7 9700K, "target-feature" set
 
