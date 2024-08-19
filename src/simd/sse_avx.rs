@@ -36,7 +36,7 @@ unsafe fn read(s: &[u8]) -> __m128i {
         return _mm_maskz_loadu_epi8((1 << len) - 1, ::core::mem::transmute_copy(&s));
     }
 
-    _mm_loadu_si128(core::mem::transmute_copy(&s))
+    _mm_loadu_si128(::core::mem::transmute_copy(&s))
 }
 
 #[cfg(all(
@@ -51,7 +51,7 @@ unsafe fn read_avx(s: &[u8]) -> __m256i {
         return _mm256_maskz_loadu_epi8((1 << len) - 1, ::core::mem::transmute_copy(&s));
     }
 
-    _mm256_loadu_si256(core::mem::transmute_copy(&s))
+    _mm256_loadu_si256(::core::mem::transmute_copy(&s))
 } */
 
 /// s = "1234567890123456"
@@ -60,7 +60,7 @@ unsafe fn read(s: &[u8]) -> __m128i {
     let len = s.len();
 
     match len >> 2 {
-        4.. => _mm_loadu_si128(core::mem::transmute_copy(&s)),
+        4.. => _mm_loadu_si128(::core::mem::transmute_copy(&s)),
         2 | 3 => {
             let hi = u64::from_le_bytes(s.get_safe_unchecked(len - 8..len).try_into().unwrap())
                 .overflowing_shr(8 * (16 - len as u32))
@@ -104,7 +104,7 @@ unsafe fn read(s: &[u8]) -> __m128i {
 #[inline]
 unsafe fn load(s: &[u8]) -> __m128i {
     match s.len() {
-        16.. => _mm_loadu_si128(core::mem::transmute_copy(&s)),
+        16.. => _mm_loadu_si128(::core::mem::transmute_copy(&s)),
         15 => _mm_set_epi32(
             i32::from_le_bytes(s[11..15].try_into().unwrap()) >> 8,
             i32::from_le_bytes(s[8..12].try_into().unwrap()),
@@ -194,7 +194,7 @@ unsafe fn load(s: &[u8]) -> __m128i {
 #[inline]
 unsafe fn load_avx(s: &[u8]) -> __m256i {
     match s.len() {
-        32.. => _mm256_loadu_si256(core::mem::transmute_copy(&s)),
+        32.. => _mm256_loadu_si256(::core::mem::transmute_copy(&s)),
         31 => _mm256_set_epi32(
             i32::from_le_bytes(s[27..31].try_into().unwrap()) >> 8,
             i32::from_le_bytes(s[24..28].try_into().unwrap()),

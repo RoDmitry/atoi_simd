@@ -1,4 +1,4 @@
-use atoi_simd::{parse, parse_skipped, parse_any};
+use atoi_simd::{parse, parse_any, parse_skipped};
 use criterion::{
     criterion_group, criterion_main, measurement::WallTime, BenchmarkGroup, BenchmarkId, Criterion,
 };
@@ -123,16 +123,12 @@ fn bench_any_32(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
     let str = str.to_owned() + "s1111111111111111111";
     let str_neg = "-".to_owned() + &str;
 
-    bench_group.bench_with_input(
-        BenchmarkId::new("parse_any u32", len),
-        &str,
-        |b, val| b.iter(|| parse_any::<u32>(val.as_bytes()).unwrap()),
-    );
-    bench_group.bench_with_input(
-        BenchmarkId::new("parse_any i32", len),
-        &str,
-        |b, val| b.iter(|| parse_any::<i32>(val.as_bytes()).unwrap()),
-    );
+    bench_group.bench_with_input(BenchmarkId::new("parse_any u32", len), &str, |b, val| {
+        b.iter(|| parse_any::<u32>(val.as_bytes()).unwrap())
+    });
+    bench_group.bench_with_input(BenchmarkId::new("parse_any i32", len), &str, |b, val| {
+        b.iter(|| parse_any::<i32>(val.as_bytes()).unwrap())
+    });
     bench_group.bench_with_input(
         BenchmarkId::new("parse_any neg i32", len),
         &str_neg,
@@ -145,17 +141,13 @@ fn bench_any_64(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
     let str = str.to_owned() + "s1111111111111111111";
     let str_neg = "-".to_owned() + &str;
 
-    bench_group.bench_with_input(
-        BenchmarkId::new("parse_any u64", len),
-        &str,
-        |b, val| b.iter(|| parse_any::<u64>(val.as_bytes()).unwrap()),
-    );
+    bench_group.bench_with_input(BenchmarkId::new("parse_any u64", len), &str, |b, val| {
+        b.iter(|| parse_any::<u64>(val.as_bytes()).unwrap())
+    });
     if len < 20 {
-        bench_group.bench_with_input(
-            BenchmarkId::new("parse_any i64", len),
-            &str,
-            |b, val| b.iter(|| parse_any::<i64>(val.as_bytes()).unwrap()),
-        );
+        bench_group.bench_with_input(BenchmarkId::new("parse_any i64", len), &str, |b, val| {
+            b.iter(|| parse_any::<i64>(val.as_bytes()).unwrap())
+        });
         bench_group.bench_with_input(
             BenchmarkId::new("parse_any neg i64", len),
             &str_neg,
@@ -169,16 +161,12 @@ fn bench_any_128(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
     let str = str.to_owned() + "s111111111111111111111111111111111111111";
     let str_neg = "-".to_owned() + &str;
 
-    bench_group.bench_with_input(
-        BenchmarkId::new("parse_any u128", len),
-        &str,
-        |b, val| b.iter(|| parse_any::<u128>(val.as_bytes()).unwrap()),
-    );
-    bench_group.bench_with_input(
-        BenchmarkId::new("parse_any i128", len),
-        &str,
-        |b, val| b.iter(|| parse_any::<i128>(val.as_bytes()).unwrap()),
-    );
+    bench_group.bench_with_input(BenchmarkId::new("parse_any u128", len), &str, |b, val| {
+        b.iter(|| parse_any::<u128>(val.as_bytes()).unwrap())
+    });
+    bench_group.bench_with_input(BenchmarkId::new("parse_any i128", len), &str, |b, val| {
+        b.iter(|| parse_any::<i128>(val.as_bytes()).unwrap())
+    });
     bench_group.bench_with_input(
         BenchmarkId::new("parse_any neg i128", len),
         &str_neg,

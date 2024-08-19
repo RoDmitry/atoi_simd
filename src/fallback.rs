@@ -97,7 +97,7 @@ fn process_16(mut val: u128, len: usize) -> u64 {
 /* #[inline(always)]
 fn parse_4(s: &[u8]) -> Result<(u32, usize), AtoiSimdError> {
     let val: u32 = unsafe { read_unaligned(s.as_ptr().cast()) };
-    // let val: u64 = unsafe { *core::mem::transmute_copy::<&[u8], *const u64>(&s) };
+    // let val: u64 = unsafe { *::core::mem::transmute_copy::<&[u8], *const u64>(&s) };
     let len = check_4(val);
     if len == 0 {
         return Err(AtoiSimdError::Empty);
