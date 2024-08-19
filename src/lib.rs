@@ -108,7 +108,7 @@ pub fn parse_any_neg<T: ParseNeg>(s: &[u8]) -> Result<(T, usize), AtoiSimdError>
     T::atoi_simd_parse_any_neg(s)
 }
 
-/// Parses a slice of digits. Was made to be used as a drop-in replacement for `str::parse`.
+/// Parses a slice of digits. Has been made to be used as a drop-in replacement for `str::parse`.
 /// Checks the first '-' char for signed integers.
 /// Skips the '+' char and extra zeroes at the beginning.
 /// It's slower than `parse()`.
