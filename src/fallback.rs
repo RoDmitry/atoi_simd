@@ -1,9 +1,9 @@
 #![allow(dead_code)]
 
-use crate::safe_unchecked::SliceGetter;
 use crate::short::parse_short_pos;
 use crate::AtoiSimdError;
 use ::core::convert::TryInto;
+use debug_unsafe::slice::SliceGetter;
 
 macro_rules! overflow {
     ($curr:ident, $shift:expr, $more:ident, $max:expr) => {

@@ -16,6 +16,9 @@ edition = "2018"
 name = "atoi_simd"
 path = "src/lib.rs"
 
+[dependencies]
+debug_unsafe = "0.1"
+
 [dev-dependencies]
 arrayvec = "0.7"
 numtoa = "0.2"

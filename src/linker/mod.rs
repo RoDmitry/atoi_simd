@@ -44,7 +44,8 @@ mod fb_32;
 )))]
 mod fb_64;
 
-use crate::{safe_unchecked::SliceGetter, AtoiSimdError};
+use crate::AtoiSimdError;
+use debug_unsafe::slice::SliceGetter;
 
 /// Note: all of the provided methods are `#[inline(always)]`
 pub trait ParsePos: Sized {

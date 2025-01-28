@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
-use crate::safe_unchecked::SliceGetter;
 use crate::AtoiSimdError;
+use debug_unsafe::slice::SliceGetter;
 
 macro_rules! overflow {
     ($curr:ident * 10 + $more:ident, $max:expr) => {

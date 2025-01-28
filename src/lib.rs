@@ -53,7 +53,6 @@ mod error;
 )))]
 mod fallback;
 mod linker;
-mod safe_unchecked;
 mod short;
 #[cfg(any(
     all(target_arch = "aarch64", target_feature = "neon"),

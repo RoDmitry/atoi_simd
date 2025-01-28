@@ -11,13 +11,13 @@ use self::arch::{
     _mm_mul_epu32, _mm_or_si128, _mm_packus_epi32, _mm_set1_epi8, _mm_set_epi16, _mm_set_epi32,
     _mm_set_epi8, _mm_setzero_si128, _mm_srli_epi64,
 };
-use crate::safe_unchecked::SliceGetter;
 use crate::AtoiSimdError;
 #[cfg(target_arch = "x86")]
 use ::core::arch::x86 as arch;
 #[cfg(target_arch = "x86_64")]
 use ::core::arch::x86_64 as arch;
 use ::core::convert::TryInto;
+use debug_unsafe::slice::SliceGetter;
 
 pub(crate) const SHORT: usize = 4;
 
