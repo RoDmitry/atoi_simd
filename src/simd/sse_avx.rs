@@ -54,7 +54,6 @@ unsafe fn read_avx(s: &[u8]) -> __m256i {
     _mm256_loadu_si256(::core::mem::transmute_copy(&s))
 } */
 
-/// s = "1234567890123456"
 /* #[inline(always)]
 unsafe fn read(s: &[u8]) -> __m128i {
     let len = s.len();
@@ -774,6 +773,6 @@ pub(crate) fn parse_simd_u128(s: &[u8]) -> Result<(u128, usize), AtoiSimdError> 
             }
         };
 
-        return process_avx(s, chunk, len, chunk_extra, len_extra);
+        process_avx(s, chunk, len, chunk_extra, len_extra)
     }
 }
