@@ -1,5 +1,7 @@
-use crate::short::{parse_short_neg, parse_short_pos};
-use crate::AtoiSimdError;
+use crate::{
+    short::{parse_short_neg, parse_short_pos},
+    AtoiSimdError,
+};
 
 #[inline(always)]
 fn parse_simd_checked_pre_pos(s: &[u8]) -> Result<u64, AtoiSimdError> {

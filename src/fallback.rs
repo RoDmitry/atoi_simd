@@ -1,7 +1,6 @@
 #![allow(dead_code)]
 
-use crate::short::parse_short_pos;
-use crate::AtoiSimdError;
+use crate::{short::parse_short_pos, AtoiSimdError};
 use ::core::convert::TryInto;
 use debug_unsafe::slice::SliceGetter;
 

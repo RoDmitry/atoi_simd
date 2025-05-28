@@ -1,6 +1,5 @@
 use crate::AtoiSimdError;
-use ::core::arch::aarch64::*;
-use ::core::convert::TryInto;
+use ::core::{arch::aarch64::*, convert::TryInto};
 use debug_unsafe::slice::SliceGetter;
 
 pub(crate) const SHORT: usize = 4;

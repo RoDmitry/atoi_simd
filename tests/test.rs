@@ -1,7 +1,4 @@
-#[allow(unused_imports)]
-use ::core::cmp::PartialEq;
-use ::core::fmt::Debug;
-use ::core::str::FromStr;
+use ::core::{fmt::Debug, str::FromStr};
 use arrayvec::ArrayString;
 use atoi_simd::*;
 
