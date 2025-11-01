@@ -94,7 +94,7 @@ fn process_16(mut val: u128, len: usize) -> u64 {
 }
 
 /* #[inline(always)]
-fn parse_4(s: &[u8]) -> Result<(u32, usize), AtoiSimdError> {
+fn parse_4(s: &[u8]) -> Result<(u32, usize), AtoiSimdError<'_>> {
     let val: u32 = unsafe { read_unaligned(s.as_ptr().cast()) };
     // let val: u64 = unsafe { *::core::mem::transmute_copy::<&[u8], *const u64>(&s) };
     let len = check_4(val);
@@ -106,7 +106,7 @@ fn parse_4(s: &[u8]) -> Result<(u32, usize), AtoiSimdError> {
 } */
 
 #[inline(always)]
-fn parse_8(s: &[u8]) -> Result<(u64, usize), AtoiSimdError> {
+fn parse_8(s: &[u8]) -> Result<(u64, usize), AtoiSimdError<'_>> {
     let val = load_8(s);
     let len = check_len_8(val);
     if len == 0 {
@@ -117,7 +117,7 @@ fn parse_8(s: &[u8]) -> Result<(u64, usize), AtoiSimdError> {
 }
 
 /* #[inline(always)]
-fn parse_16(s: &[u8]) -> Result<(u64, usize), AtoiSimdError> {
+fn parse_16(s: &[u8]) -> Result<(u64, usize), AtoiSimdError<'_>> {
     let val = load_16(s);
     let len = check_len_16(val);
     if len == 0 {
@@ -134,7 +134,7 @@ enum EarlyReturn<T, E> {
 }
 
 #[inline(always)]
-fn parse_16_by_8(s: &[u8]) -> EarlyReturn<(u64, usize), AtoiSimdError> {
+fn parse_16_by_8(s: &[u8]) -> EarlyReturn<(u64, usize), AtoiSimdError<'_>> {
     let mut val = load_8(s);
     let mut len = check_len_8(val);
     match len {
@@ -161,7 +161,7 @@ fn parse_16_by_8(s: &[u8]) -> EarlyReturn<(u64, usize), AtoiSimdError> {
 }
 
 #[inline(always)]
-pub(crate) fn parse_fb_pos<const MAX: u64>(s: &[u8]) -> Result<(u64, usize), AtoiSimdError> {
+pub(crate) fn parse_fb_pos<const MAX: u64>(s: &[u8]) -> Result<(u64, usize), AtoiSimdError<'_>> {
     let (val, len) = match parse_16_by_8(s) {
         EarlyReturn::Ok(v) | EarlyReturn::Ret(v) => v,
         EarlyReturn::Err(e) => return Err(e),
@@ -174,7 +174,7 @@ pub(crate) fn parse_fb_pos<const MAX: u64>(s: &[u8]) -> Result<(u64, usize), Ato
 }
 
 #[inline(always)]
-pub(crate) fn parse_fb_neg<const MIN: i64>(s: &[u8]) -> Result<(i64, usize), AtoiSimdError> {
+pub(crate) fn parse_fb_neg<const MIN: i64>(s: &[u8]) -> Result<(i64, usize), AtoiSimdError<'_>> {
     debug_assert!(MIN < 0);
     let (val, len) = match parse_16_by_8(s) {
         EarlyReturn::Ok((v, l)) | EarlyReturn::Ret((v, l)) => (-(v as i64), l),
@@ -190,7 +190,7 @@ pub(crate) fn parse_fb_neg<const MIN: i64>(s: &[u8]) -> Result<(i64, usize), Ato
 #[inline(always)]
 pub(crate) fn parse_fb_64_pos<const MAX: u64, const LEN_MORE: usize>(
     s: &[u8],
-) -> Result<(u64, usize), AtoiSimdError> {
+) -> Result<(u64, usize), AtoiSimdError<'_>> {
     if s.len() < 10 {
         return parse_short_pos::<MAX>(s);
     }
@@ -219,7 +219,7 @@ pub(crate) fn parse_fb_64_pos<const MAX: u64, const LEN_MORE: usize>(
 }
 
 #[inline(always)]
-pub(crate) fn parse_fb_64_neg(s: &[u8]) -> Result<(i64, usize), AtoiSimdError> {
+pub(crate) fn parse_fb_64_neg(s: &[u8]) -> Result<(i64, usize), AtoiSimdError<'_>> {
     let (val, len) = parse_fb_64_pos::<{ i64::MAX as u64 + 1 }, 3>(s)?;
     if val > i64::MAX as u64 {
         return Ok((i64::MIN, len));
@@ -229,7 +229,9 @@ pub(crate) fn parse_fb_64_neg(s: &[u8]) -> Result<(i64, usize), AtoiSimdError> {
 }
 
 #[inline(always)]
-pub(crate) fn parse_fb_128_pos<const MAX: u128>(s: &[u8]) -> Result<(u128, usize), AtoiSimdError> {
+pub(crate) fn parse_fb_128_pos<const MAX: u128>(
+    s: &[u8],
+) -> Result<(u128, usize), AtoiSimdError<'_>> {
     if s.len() < 5 {
         return parse_short_pos::<{ u64::MAX }>(s).map(|(v, l)| (v as u128, l));
     }
@@ -266,7 +268,7 @@ pub(crate) fn parse_fb_128_pos<const MAX: u128>(s: &[u8]) -> Result<(u128, usize
 }
 
 #[inline(always)]
-pub(crate) fn parse_fb_128_neg(s: &[u8]) -> Result<(i128, usize), AtoiSimdError> {
+pub(crate) fn parse_fb_128_neg(s: &[u8]) -> Result<(i128, usize), AtoiSimdError<'_>> {
     let (val, len) = parse_fb_128_pos::<{ i128::MAX as u128 + 1 }>(s)?;
     if val > i128::MAX as u128 {
         return Ok((i128::MIN, len));
@@ -276,7 +278,7 @@ pub(crate) fn parse_fb_128_neg(s: &[u8]) -> Result<(i128, usize), AtoiSimdError>
 }
 
 #[inline(always)]
-pub(crate) fn parse_fb_checked_pos<const MAX: u64>(s: &[u8]) -> Result<u64, AtoiSimdError> {
+pub(crate) fn parse_fb_checked_pos<const MAX: u64>(s: &[u8]) -> Result<u64, AtoiSimdError<'_>> {
     let (res, len) = parse_fb_pos::<MAX>(s)?;
     if len != s.len() {
         return Err(AtoiSimdError::Invalid64(res, len, s));
@@ -285,7 +287,7 @@ pub(crate) fn parse_fb_checked_pos<const MAX: u64>(s: &[u8]) -> Result<u64, Atoi
 }
 
 #[inline(always)]
-pub(crate) fn parse_fb_checked_neg<const MIN: i64>(s: &[u8]) -> Result<i64, AtoiSimdError> {
+pub(crate) fn parse_fb_checked_neg<const MIN: i64>(s: &[u8]) -> Result<i64, AtoiSimdError<'_>> {
     debug_assert!(MIN < 0);
     let (res, len) = parse_fb_neg::<MIN>(s)?;
     if len != s.len() {
@@ -297,7 +299,7 @@ pub(crate) fn parse_fb_checked_neg<const MIN: i64>(s: &[u8]) -> Result<i64, Atoi
 #[inline(always)]
 pub(crate) fn parse_fb_checked_64_pos<const MAX: u64, const LEN_MORE: usize>(
     s: &[u8],
-) -> Result<u64, AtoiSimdError> {
+) -> Result<u64, AtoiSimdError<'_>> {
     let (res, len) = parse_fb_64_pos::<MAX, LEN_MORE>(s)?;
     if len != s.len() {
         return Err(AtoiSimdError::Invalid64(res, len, s));
@@ -306,7 +308,7 @@ pub(crate) fn parse_fb_checked_64_pos<const MAX: u64, const LEN_MORE: usize>(
 }
 
 #[inline(always)]
-pub(crate) fn parse_fb_checked_64_neg(s: &[u8]) -> Result<i64, AtoiSimdError> {
+pub(crate) fn parse_fb_checked_64_neg(s: &[u8]) -> Result<i64, AtoiSimdError<'_>> {
     let (res, len) = parse_fb_64_neg(s)?;
     if len != s.len() {
         return Err(AtoiSimdError::Invalid64(-res as u64, len, s));
@@ -315,7 +317,9 @@ pub(crate) fn parse_fb_checked_64_neg(s: &[u8]) -> Result<i64, AtoiSimdError> {
 }
 
 #[inline(always)]
-pub(crate) fn parse_fb_checked_128_pos<const MAX: u128>(s: &[u8]) -> Result<u128, AtoiSimdError> {
+pub(crate) fn parse_fb_checked_128_pos<const MAX: u128>(
+    s: &[u8],
+) -> Result<u128, AtoiSimdError<'_>> {
     let (res, len) = parse_fb_128_pos::<MAX>(s)?;
     if len != s.len() {
         return Err(AtoiSimdError::Invalid128(res, len, s));
@@ -324,7 +328,7 @@ pub(crate) fn parse_fb_checked_128_pos<const MAX: u128>(s: &[u8]) -> Result<u128
 }
 
 #[inline(always)]
-pub(crate) fn parse_fb_checked_128_neg(s: &[u8]) -> Result<i128, AtoiSimdError> {
+pub(crate) fn parse_fb_checked_128_neg(s: &[u8]) -> Result<i128, AtoiSimdError<'_>> {
     let (res, len) = parse_fb_128_neg(s)?;
     if len != s.len() {
         return Err(AtoiSimdError::Invalid128(-res as u128, len, s));
@@ -333,7 +337,7 @@ pub(crate) fn parse_fb_checked_128_neg(s: &[u8]) -> Result<i128, AtoiSimdError> 
 }
 
 /* #[inline(always)]
-pub(crate) fn parse_short_pos<const MAX: u64>(s: &[u8]) -> Result<(u64, usize), AtoiSimdError> {
+pub(crate) fn parse_short_pos<const MAX: u64>(s: &[u8]) -> Result<(u64, usize), AtoiSimdError<'_>> {
     let (val, len) = parse_4(s)?;
     let val = val as u64;
     if val > MAX {
@@ -344,7 +348,7 @@ pub(crate) fn parse_short_pos<const MAX: u64>(s: &[u8]) -> Result<(u64, usize), 
 }
 
 #[inline(always)]
-pub(crate) fn parse_short_neg<const MIN: i64>(s: &[u8]) -> Result<(i64, usize), AtoiSimdError> {
+pub(crate) fn parse_short_neg<const MIN: i64>(s: &[u8]) -> Result<(i64, usize), AtoiSimdError<'_>> {
     debug_assert!(MIN < 0);
     let (val, len) = parse_4(s)?;
     let val = -(val as i64);
@@ -356,7 +360,7 @@ pub(crate) fn parse_short_neg<const MIN: i64>(s: &[u8]) -> Result<(i64, usize), 
 }
 
 #[inline(always)]
-pub(crate) fn parse_short_checked_neg<const MIN: i64>(s: &[u8]) -> Result<i64, AtoiSimdError> {
+pub(crate) fn parse_short_checked_neg<const MIN: i64>(s: &[u8]) -> Result<i64, AtoiSimdError<'_>> {
     debug_assert!(MIN < 0);
     let (res, len) = parse_short_neg::<MIN>(s)?;
     if len != s.len() {

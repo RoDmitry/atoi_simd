@@ -49,30 +49,30 @@ use debug_unsafe::slice::SliceGetter;
 
 /// Note: all of the provided methods are `#[inline(always)]`
 pub trait ParsePos: Sized {
-    fn atoi_simd_parse_pos(s: &[u8]) -> Result<Self, AtoiSimdError>;
-    fn atoi_simd_parse_any_pos(s: &[u8]) -> Result<(Self, usize), AtoiSimdError>;
+    fn atoi_simd_parse_pos(s: &[u8]) -> Result<Self, AtoiSimdError<'_>>;
+    fn atoi_simd_parse_any_pos(s: &[u8]) -> Result<(Self, usize), AtoiSimdError<'_>>;
 }
 
 /// Note: all of the provided methods are `#[inline(always)]`
 pub trait ParseNeg: Sized {
-    fn atoi_simd_parse_neg(s: &[u8]) -> Result<Self, AtoiSimdError>;
-    fn atoi_simd_parse_any_neg(s: &[u8]) -> Result<(Self, usize), AtoiSimdError>;
+    fn atoi_simd_parse_neg(s: &[u8]) -> Result<Self, AtoiSimdError<'_>>;
+    fn atoi_simd_parse_any_neg(s: &[u8]) -> Result<(Self, usize), AtoiSimdError<'_>>;
 }
 
 /// Note: all of the provided methods are `#[inline(always)]`
 pub trait Parse: ParsePos {
     #[inline(always)]
-    fn atoi_simd_parse(s: &[u8]) -> Result<Self, AtoiSimdError> {
+    fn atoi_simd_parse(s: &[u8]) -> Result<Self, AtoiSimdError<'_>> {
         Self::atoi_simd_parse_pos(s)
     }
 
     #[inline(always)]
-    fn atoi_simd_parse_any(s: &[u8]) -> Result<(Self, usize), AtoiSimdError> {
+    fn atoi_simd_parse_any(s: &[u8]) -> Result<(Self, usize), AtoiSimdError<'_>> {
         Self::atoi_simd_parse_any_pos(s)
     }
 
     #[inline(always)]
-    fn atoi_simd_parse_skipped(s: &[u8]) -> Result<Self, AtoiSimdError> {
+    fn atoi_simd_parse_skipped(s: &[u8]) -> Result<Self, AtoiSimdError<'_>> {
         let mut i = 0;
         if *s.first().ok_or(AtoiSimdError::Empty)? == b'+' {
             i = 1;
@@ -87,7 +87,7 @@ pub trait Parse: ParsePos {
 }
 
 #[inline(always)]
-fn atoi_simd_parse_signed<T: ParsePos + ParseNeg>(s: &[u8]) -> Result<T, AtoiSimdError> {
+fn atoi_simd_parse_signed<T: ParsePos + ParseNeg>(s: &[u8]) -> Result<T, AtoiSimdError<'_>> {
     if *s.first().ok_or(AtoiSimdError::Empty)? == b'-' {
         T::atoi_simd_parse_neg(s.get_safe_unchecked(1..))
     } else {
@@ -98,7 +98,7 @@ fn atoi_simd_parse_signed<T: ParsePos + ParseNeg>(s: &[u8]) -> Result<T, AtoiSim
 #[inline(always)]
 fn atoi_simd_parse_any_signed<T: ParsePos + ParseNeg>(
     s: &[u8],
-) -> Result<(T, usize), AtoiSimdError> {
+) -> Result<(T, usize), AtoiSimdError<'_>> {
     if *s.first().ok_or(AtoiSimdError::Empty)? == b'-' {
         T::atoi_simd_parse_any_neg(s.get_safe_unchecked(1..)).map(|(v, i)| (v, i + 1))
     } else {
@@ -107,7 +107,9 @@ fn atoi_simd_parse_any_signed<T: ParsePos + ParseNeg>(
 }
 
 #[inline(always)]
-fn atoi_simd_parse_skipped_signed<T: ParsePos + ParseNeg>(s: &[u8]) -> Result<T, AtoiSimdError> {
+fn atoi_simd_parse_skipped_signed<T: ParsePos + ParseNeg>(
+    s: &[u8],
+) -> Result<T, AtoiSimdError<'_>> {
     let mut neg = false;
     let mut i = match *s.first().ok_or(AtoiSimdError::Empty)? {
         b'+' => 1,
@@ -141,17 +143,17 @@ macro_rules! parse_impl_signed {
     ($($t:ty)*) => {$(
         impl Parse for $t {
             #[inline(always)]
-            fn atoi_simd_parse(s: &[u8]) -> Result<Self, AtoiSimdError> {
+            fn atoi_simd_parse(s: &[u8]) -> Result<Self, AtoiSimdError<'_>> {
                 atoi_simd_parse_signed(s)
             }
 
             #[inline(always)]
-            fn atoi_simd_parse_any(s: &[u8]) -> Result<(Self, usize), AtoiSimdError> {
+            fn atoi_simd_parse_any(s: &[u8]) -> Result<(Self, usize), AtoiSimdError<'_>> {
                 atoi_simd_parse_any_signed(s)
             }
 
             #[inline(always)]
-            fn atoi_simd_parse_skipped(s: &[u8]) -> Result<Self, AtoiSimdError> {
+            fn atoi_simd_parse_skipped(s: &[u8]) -> Result<Self, AtoiSimdError<'_>> {
                 atoi_simd_parse_skipped_signed(s)
             }
         }

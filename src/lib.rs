@@ -72,40 +72,40 @@ pub use crate::{
 
 /// Parses a slice of digits, and checks the first '-' char for signed integers.
 #[inline]
-pub fn parse<T: Parse>(s: &[u8]) -> Result<T, AtoiSimdError> {
+pub fn parse<T: Parse>(s: &[u8]) -> Result<T, AtoiSimdError<'_>> {
     T::atoi_simd_parse(s)
 }
 
 /// Parses a positive integer.
 #[inline]
-pub fn parse_pos<T: Parse>(s: &[u8]) -> Result<T, AtoiSimdError> {
+pub fn parse_pos<T: Parse>(s: &[u8]) -> Result<T, AtoiSimdError<'_>> {
     T::atoi_simd_parse_pos(s)
 }
 
 /// Parses a negative integer. Slice must not contain '-' sign.
 #[inline]
-pub fn parse_neg<T: ParseNeg>(s: &[u8]) -> Result<T, AtoiSimdError> {
+pub fn parse_neg<T: ParseNeg>(s: &[u8]) -> Result<T, AtoiSimdError<'_>> {
     T::atoi_simd_parse_neg(s)
 }
 
 /// Parses a slice of digits until it reaches invalid character, and checks the first '-' char for signed integers.
 /// Returns the parsed value and the parsed size of the slice.
 #[inline]
-pub fn parse_any<T: Parse>(s: &[u8]) -> Result<(T, usize), AtoiSimdError> {
+pub fn parse_any<T: Parse>(s: &[u8]) -> Result<(T, usize), AtoiSimdError<'_>> {
     T::atoi_simd_parse_any(s)
 }
 
 /// Parses a positive integer until it reaches an invalid character.
 /// Returns the parsed value and the parsed size of the slice.
 #[inline]
-pub fn parse_any_pos<T: Parse>(s: &[u8]) -> Result<(T, usize), AtoiSimdError> {
+pub fn parse_any_pos<T: Parse>(s: &[u8]) -> Result<(T, usize), AtoiSimdError<'_>> {
     T::atoi_simd_parse_any_pos(s)
 }
 
 /// Parses a negative integer until it reaches an invalid character. Slice must not contain '-' sign.
 /// Returns the parsed value and the parsed size of the slice.
 #[inline]
-pub fn parse_any_neg<T: ParseNeg>(s: &[u8]) -> Result<(T, usize), AtoiSimdError> {
+pub fn parse_any_neg<T: ParseNeg>(s: &[u8]) -> Result<(T, usize), AtoiSimdError<'_>> {
     T::atoi_simd_parse_any_neg(s)
 }
 
@@ -114,24 +114,24 @@ pub fn parse_any_neg<T: ParseNeg>(s: &[u8]) -> Result<(T, usize), AtoiSimdError>
 /// Skips the '+' char and extra zeroes at the beginning.
 /// It's slower than `parse()`.
 #[inline]
-pub fn parse_skipped<T: Parse>(s: &[u8]) -> Result<T, AtoiSimdError> {
+pub fn parse_skipped<T: Parse>(s: &[u8]) -> Result<T, AtoiSimdError<'_>> {
     T::atoi_simd_parse_skipped(s)
 }
 
 #[deprecated(since = "0.16.0", note = "Use `parse_any` instead")]
 #[inline]
-pub fn parse_until_invalid<T: Parse>(s: &[u8]) -> Result<(T, usize), AtoiSimdError> {
+pub fn parse_until_invalid<T: Parse>(s: &[u8]) -> Result<(T, usize), AtoiSimdError<'_>> {
     parse_any(s)
 }
 
 #[deprecated(since = "0.16.0", note = "Use `parse_any_pos` instead")]
 #[inline]
-pub fn parse_until_invalid_pos<T: Parse>(s: &[u8]) -> Result<(T, usize), AtoiSimdError> {
+pub fn parse_until_invalid_pos<T: Parse>(s: &[u8]) -> Result<(T, usize), AtoiSimdError<'_>> {
     parse_any_pos(s)
 }
 
 #[deprecated(since = "0.16.0", note = "Use `parse_any_neg` instead")]
 #[inline]
-pub fn parse_until_invalid_neg<T: ParseNeg>(s: &[u8]) -> Result<(T, usize), AtoiSimdError> {
+pub fn parse_until_invalid_neg<T: ParseNeg>(s: &[u8]) -> Result<(T, usize), AtoiSimdError<'_>> {
     parse_any_neg(s)
 }

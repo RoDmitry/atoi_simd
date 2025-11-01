@@ -624,7 +624,7 @@ unsafe fn simd_sse_len(s: &[u8]) -> (u32, __m128i) {
 }
 
 #[inline]
-pub(crate) fn parse_simd_16(s: &[u8]) -> Result<(u64, usize), AtoiSimdError> {
+pub(crate) fn parse_simd_16(s: &[u8]) -> Result<(u64, usize), AtoiSimdError<'_>> {
     unsafe {
         let (len, chunk) = simd_sse_len(s);
         parse_simd_sse(len, chunk)
@@ -640,7 +640,7 @@ unsafe fn process_avx(
     len: u32,
     chunk_extra: __m128i,
     len_extra: u32,
-) -> Result<(u128, usize), AtoiSimdError> {
+) -> Result<(u128, usize), AtoiSimdError<'_>> {
     let mut mult = _mm256_set_epi8(
         1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10,
         1, 10, 1, 10, 1, 10,
@@ -733,7 +733,7 @@ unsafe fn process_avx(
 
 /// Uses AVX/AVX2 intrinsics
 #[inline(always)]
-pub(crate) fn parse_simd_u128(s: &[u8]) -> Result<(u128, usize), AtoiSimdError> {
+pub(crate) fn parse_simd_u128(s: &[u8]) -> Result<(u128, usize), AtoiSimdError<'_>> {
     unsafe {
         let mut chunk = load_avx(s);
         let len = check_len_avx(chunk);

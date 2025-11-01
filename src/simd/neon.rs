@@ -269,7 +269,7 @@ unsafe fn parse_simd_neon(
 }
 
 #[inline(always)]
-unsafe fn simd_neon_len(s: &[u8]) -> Result<(usize, uint8x16_t), AtoiSimdError> {
+unsafe fn simd_neon_len(s: &[u8]) -> Result<(usize, uint8x16_t), AtoiSimdError<'_>> {
     let mut chunk = load_16(s);
     let len = check_len_16(chunk) as usize;
 
@@ -279,7 +279,7 @@ unsafe fn simd_neon_len(s: &[u8]) -> Result<(usize, uint8x16_t), AtoiSimdError> 
 }
 
 #[inline(always)]
-pub(crate) fn parse_simd_16(s: &[u8]) -> Result<(u64, usize), AtoiSimdError> {
+pub(crate) fn parse_simd_16(s: &[u8]) -> Result<(u64, usize), AtoiSimdError<'_>> {
     unsafe {
         let (len, chunk) = simd_neon_len(s)?;
         parse_simd_neon(len, chunk)
@@ -412,7 +412,7 @@ unsafe fn parse_simd_extra<'a>(
 }
 
 #[inline(always)]
-pub(crate) fn parse_simd_u128(s: &[u8]) -> Result<(u128, usize), AtoiSimdError> {
+pub(crate) fn parse_simd_u128(s: &[u8]) -> Result<(u128, usize), AtoiSimdError<'_>> {
     unsafe {
         let mut chunk1 = load_16(s);
         let mut len = check_len_16(chunk1) as usize;

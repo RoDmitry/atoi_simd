@@ -4,7 +4,7 @@ use atoi_simd::*;
 
 const INVALID_CHARS: [char; 6] = ['/', ':', '\0', '\x7f', '!', 'a'];
 
-fn test_each_position<T: Copy>(s: &str, func: fn(&[u8]) -> Result<T, AtoiSimdError>) {
+fn test_each_position<T: Copy>(s: &str, func: fn(&[u8]) -> Result<T, AtoiSimdError<'_>>) {
     let mut s_new = ArrayString::<40>::new();
     for j in 0..=s.len() {
         for ch_invalid in INVALID_CHARS {
@@ -19,7 +19,7 @@ fn test_each_position<T: Copy>(s: &str, func: fn(&[u8]) -> Result<T, AtoiSimdErr
 
 fn test_each_position_any<T: Copy + Debug + PartialEq + FromStr>(
     s: &str,
-    func: fn(&[u8]) -> Result<(T, usize), AtoiSimdError>,
+    func: fn(&[u8]) -> Result<(T, usize), AtoiSimdError<'_>>,
 ) where
     <T as FromStr>::Err: Debug,
 {
