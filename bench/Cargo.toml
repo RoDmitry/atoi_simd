@@ -3,7 +3,7 @@ name = "atoi_simd_benchmark"
 version = "0.0.0"
 authors = ["Dmitry Rodionov <gh@rdmtr.com>"]
 description = "Fast `&[u8]` to integer parser benchmark"
-edition = "2018"
+edition = "2021"
 publish = false
 
 [dependencies]
