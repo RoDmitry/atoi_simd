@@ -17,7 +17,7 @@ fn test_each_position<T: Copy>(s: &str, func: fn(&[u8]) -> Result<T, AtoiSimdErr
     }
 }
 
-fn test_each_position_any<T: Copy + Debug + PartialEq + FromStr>(
+fn test_each_position_prefix<T: Copy + Debug + PartialEq + FromStr>(
     s: &str,
     func: fn(&[u8]) -> Result<(T, usize), AtoiSimdError<'_>>,
 ) where
@@ -70,7 +70,7 @@ fn parse_tester<
     }
 }
 
-fn parse_any_tester<
+fn parse_prefix_tester<
     T: Copy + Debug + PartialEq + FromStr + Parse,
     const LEN: usize,
     const LEN_NEG: usize,
@@ -89,18 +89,18 @@ fn parse_any_tester<
     for ch in chars {
         s.push(ch);
         assert_eq!(
-            parse_any::<T>(s.as_bytes()).unwrap(),
+            parse_prefix::<T>(s.as_bytes()).unwrap(),
             (s.parse::<T>().unwrap(), s.len())
         );
 
         if LEN_NEG > 0 {
             s_neg.push(ch);
             assert_eq!(
-                parse_any::<T>(s_neg.as_bytes()).unwrap(),
+                parse_prefix::<T>(s_neg.as_bytes()).unwrap(),
                 (s_neg.parse::<T>().unwrap(), s_neg.len())
             );
         }
-        test_each_position_any(&s, parse_any::<T>);
+        test_each_position_prefix(&s, parse_prefix::<T>);
     }
 }
 
@@ -120,12 +120,12 @@ fn test_parse_u8() {
 }
 
 #[test]
-fn test_parse_any_u8() {
-    assert!(parse_any::<u8>(b"").is_err());
+fn test_parse_prefix_u8() {
+    assert!(parse_prefix::<u8>(b"").is_err());
 
-    assert_eq!(parse_any::<u8>(b"0").unwrap(), (0_u8, 1_usize));
+    assert_eq!(parse_prefix::<u8>(b"0").unwrap(), (0_u8, 1_usize));
 
-    parse_any_tester::<u8, 3, 0, _>('1'..='3');
+    parse_prefix_tester::<u8, 3, 0, _>('1'..='3');
 }
 
 #[test]
@@ -164,12 +164,12 @@ fn test_parse_u16() {
 }
 
 #[test]
-fn test_parse_any_u16() {
-    assert!(parse_any::<u16>(b"").is_err());
+fn test_parse_prefix_u16() {
+    assert!(parse_prefix::<u16>(b"").is_err());
 
-    assert_eq!(parse_any::<u16>(b"0").unwrap(), (0_u16, 1_usize));
+    assert_eq!(parse_prefix::<u16>(b"0").unwrap(), (0_u16, 1_usize));
 
-    parse_any_tester::<u16, 5, 0, _>('1'..='5');
+    parse_prefix_tester::<u16, 5, 0, _>('1'..='5');
 }
 
 #[test]
@@ -209,12 +209,12 @@ fn test_parse_u32() {
 }
 
 #[test]
-fn test_parse_any_u32() {
-    assert!(parse_any::<u32>(b"").is_err());
+fn test_parse_prefix_u32() {
+    assert!(parse_prefix::<u32>(b"").is_err());
 
-    assert_eq!(parse_any::<u32>(b"0").unwrap(), (0_u32, 1_usize));
+    assert_eq!(parse_prefix::<u32>(b"0").unwrap(), (0_u32, 1_usize));
 
-    parse_any_tester::<u32, 10, 0, _>(('1'..='9').chain('0'..='0'));
+    parse_prefix_tester::<u32, 10, 0, _>(('1'..='9').chain('0'..='0'));
 }
 
 #[test]
@@ -254,28 +254,28 @@ fn test_parse_u64() {
 }
 
 #[test]
-fn test_parse_any_u64() {
-    assert!(parse_any::<u64>(b"").is_err());
+fn test_parse_prefix_u64() {
+    assert!(parse_prefix::<u64>(b"").is_err());
 
-    assert_eq!(parse_any::<u64>(b"0").unwrap(), (0_u64, 1_usize));
+    assert_eq!(parse_prefix::<u64>(b"0").unwrap(), (0_u64, 1_usize));
 
-    parse_any_tester::<u64, 20, 0, _>(('1'..='9').chain('0'..='9').chain('0'..='0'));
+    parse_prefix_tester::<u64, 20, 0, _>(('1'..='9').chain('0'..='9').chain('0'..='0'));
 
     assert_eq!(
-        parse_any::<u64>(b"18446744073709551615").unwrap(),
+        parse_prefix::<u64>(b"18446744073709551615").unwrap(),
         (u64::MAX, 20)
     );
 
     assert_eq!(
-        parse_any::<u64>(b"18446744073709551615s").unwrap(),
+        parse_prefix::<u64>(b"18446744073709551615s").unwrap(),
         (u64::MAX, 20)
     );
 
-    assert!(parse_any::<u64>(b"18446744073709551616").is_err());
-    assert!(parse_any::<u64>(b"18446744073709551616s").is_err());
-    assert!(parse_any::<u64>(b"99999999999999999999").is_err());
-    assert!(parse_any::<u64>(b"99999999999999999999s").is_err());
-    assert!(parse_any::<u64>(b"1234567890123456789012345").is_err());
+    assert!(parse_prefix::<u64>(b"18446744073709551616").is_err());
+    assert!(parse_prefix::<u64>(b"18446744073709551616s").is_err());
+    assert!(parse_prefix::<u64>(b"99999999999999999999").is_err());
+    assert!(parse_prefix::<u64>(b"99999999999999999999s").is_err());
+    assert!(parse_prefix::<u64>(b"1234567890123456789012345").is_err());
 }
 
 #[test]
@@ -348,12 +348,12 @@ fn test_parse_u128() {
 }
 
 #[test]
-fn test_parse_any_u128() {
-    assert!(parse_any::<u128>(b"").is_err());
+fn test_parse_prefix_u128() {
+    assert!(parse_prefix::<u128>(b"").is_err());
 
-    assert_eq!(parse_any::<u128>(b"0").unwrap(), (0_u128, 1_usize));
+    assert_eq!(parse_prefix::<u128>(b"0").unwrap(), (0_u128, 1_usize));
 
-    parse_any_tester::<u128, 39, 0, _>(
+    parse_prefix_tester::<u128, 39, 0, _>(
         ('1'..='9')
             .chain('0'..='9')
             .chain('0'..='9')
@@ -361,20 +361,20 @@ fn test_parse_any_u128() {
     );
 
     assert_eq!(
-        parse_any::<u128>(b"340282366920938463463374607431768211455").unwrap(),
+        parse_prefix::<u128>(b"340282366920938463463374607431768211455").unwrap(),
         (u128::MAX, 39)
     );
 
     assert_eq!(
-        parse_any::<u128>(b"340282366920938463463374607431768211455s").unwrap(),
+        parse_prefix::<u128>(b"340282366920938463463374607431768211455s").unwrap(),
         (u128::MAX, 39)
     );
 
-    assert!(parse_any::<u128>(b"340282366920938463463374607431768211456").is_err());
-    assert!(parse_any::<u128>(b"340282366920938463463374607431768211456s").is_err());
-    assert!(parse_any::<u128>(b"999999999999999999999999999999999999999").is_err());
-    assert!(parse_any::<u128>(b"999999999999999999999999999999999999999s").is_err());
-    assert!(parse_any::<u128>(b"9999999999999999999999999999999999999999999").is_err());
+    assert!(parse_prefix::<u128>(b"340282366920938463463374607431768211456").is_err());
+    assert!(parse_prefix::<u128>(b"340282366920938463463374607431768211456s").is_err());
+    assert!(parse_prefix::<u128>(b"999999999999999999999999999999999999999").is_err());
+    assert!(parse_prefix::<u128>(b"999999999999999999999999999999999999999s").is_err());
+    assert!(parse_prefix::<u128>(b"9999999999999999999999999999999999999999999").is_err());
 }
 
 #[test]
@@ -583,218 +583,218 @@ fn test_parse_neg() {
 }
 
 #[test]
-fn test_parse_any() {
-    let tmp = parse_any::<u8>(b"123s").unwrap();
+fn test_parse_prefix() {
+    let tmp = parse_prefix::<u8>(b"123s").unwrap();
     assert_eq!(tmp, (123_u8, 3));
 
-    let tmp = parse_any::<i8>(b"-123s").unwrap();
+    let tmp = parse_prefix::<i8>(b"-123s").unwrap();
     assert_eq!(tmp, (-123_i8, 4));
 
-    let tmp = parse_any::<u16>(b"1234s").unwrap();
+    let tmp = parse_prefix::<u16>(b"1234s").unwrap();
     assert_eq!(tmp, (1234_u16, 4));
 
-    let tmp = parse_any::<i16>(b"-1234s").unwrap();
+    let tmp = parse_prefix::<i16>(b"-1234s").unwrap();
     assert_eq!(tmp, (-1234_i16, 5));
 
-    let tmp = parse_any::<u32>(b"1234s").unwrap();
+    let tmp = parse_prefix::<u32>(b"1234s").unwrap();
     assert_eq!(tmp, (1234_u32, 4));
 
-    let tmp = parse_any::<i32>(b"-1234s").unwrap();
+    let tmp = parse_prefix::<i32>(b"-1234s").unwrap();
     assert_eq!(tmp, (-1234_i32, 5));
 
-    let tmp = parse_any::<u64>(b"1234s").unwrap();
+    let tmp = parse_prefix::<u64>(b"1234s").unwrap();
     assert_eq!(tmp, (1234_u64, 4));
 
-    let tmp = parse_any::<i64>(b"-1234s").unwrap();
+    let tmp = parse_prefix::<i64>(b"-1234s").unwrap();
     assert_eq!(tmp, (-1234_i64, 5));
 
-    let tmp = parse_any::<u128>(b"1234s").unwrap();
+    let tmp = parse_prefix::<u128>(b"1234s").unwrap();
     assert_eq!(tmp, (1234_u128, 4));
 
-    let tmp = parse_any::<i128>(b"-1234s").unwrap();
+    let tmp = parse_prefix::<i128>(b"-1234s").unwrap();
     assert_eq!(tmp, (-1234_i128, 5));
 
-    let tmp = parse_any::<u128>(b"12345678901234567890s").unwrap();
+    let tmp = parse_prefix::<u128>(b"12345678901234567890s").unwrap();
     assert_eq!(tmp, (12345678901234567890_u128, 20));
 
-    let tmp = parse_any::<i128>(b"-12345678901234567890s").unwrap();
+    let tmp = parse_prefix::<i128>(b"-12345678901234567890s").unwrap();
     assert_eq!(tmp, (-12345678901234567890_i128, 21));
 
-    let tmp = parse_any::<u64>(
+    let tmp = parse_prefix::<u64>(
         b"12345678901234567890s11111111111111111111111111111111111111111111111111111111111111",
     )
     .unwrap();
     assert_eq!(tmp, (12345678901234567890_u64, 20));
 
-    let tmp = parse_any::<i64>(
+    let tmp = parse_prefix::<i64>(
         b"-1234567890123456789s11111111111111111111111111111111111111111111111111111111111111",
     )
     .unwrap();
     assert_eq!(tmp, (-1234567890123456789_i64, 20));
 
-    let tmp = parse_any::<u128>(
+    let tmp = parse_prefix::<u128>(
         b"12345678901234567890s11111111111111111111111111111111111111111111111111111111111111",
     )
     .unwrap();
     assert_eq!(tmp, (12345678901234567890_u128, 20));
 
-    let tmp = parse_any::<i128>(
+    let tmp = parse_prefix::<i128>(
         b"-12345678901234567890s11111111111111111111111111111111111111111111111111111111111111",
     )
     .unwrap();
     assert_eq!(tmp, (-12345678901234567890_i128, 21));
 
-    assert_eq!(parse_any::<u64>(b"0 asdf").unwrap(), (0, 1));
+    assert_eq!(parse_prefix::<u64>(b"0 asdf").unwrap(), (0, 1));
 
-    assert_eq!(parse_any::<u64>(b"1:2 3:4 1:5s").unwrap(), (1, 1));
+    assert_eq!(parse_prefix::<u64>(b"1:2 3:4 1:5s").unwrap(), (1, 1));
 
-    assert_eq!(parse_any::<u64>(b"12:2 3:4 1:5s").unwrap(), (12, 2));
+    assert_eq!(parse_prefix::<u64>(b"12:2 3:4 1:5s").unwrap(), (12, 2));
 
-    assert_eq!(parse_any::<u64>(b"123:2 3:4 1:5s").unwrap(), (123, 3));
+    assert_eq!(parse_prefix::<u64>(b"123:2 3:4 1:5s").unwrap(), (123, 3));
 
-    assert_eq!(parse_any::<u64>(b"1234:2 3:4 1:5s").unwrap(), (1234, 4));
+    assert_eq!(parse_prefix::<u64>(b"1234:2 3:4 1:5s").unwrap(), (1234, 4));
 
     assert_eq!(
-        parse_any::<u64>(b"18446744073709551615").unwrap(),
+        parse_prefix::<u64>(b"18446744073709551615").unwrap(),
         (u64::MAX, 20)
     );
 
     assert_eq!(
-        parse_any::<u64>(b"18446744073709551615s11111111111").unwrap(),
+        parse_prefix::<u64>(b"18446744073709551615s11111111111").unwrap(),
         (u64::MAX, 20)
     );
 
-    assert!(parse_any::<u64>(b"18446744073709551616").is_err());
-    assert!(parse_any::<u64>(b"99999999999999999999").is_err());
+    assert!(parse_prefix::<u64>(b"18446744073709551616").is_err());
+    assert!(parse_prefix::<u64>(b"99999999999999999999").is_err());
 
     assert_eq!(
-        parse_any::<i64>(b"9223372036854775807").unwrap(),
+        parse_prefix::<i64>(b"9223372036854775807").unwrap(),
         (i64::MAX, 19)
     );
 
     assert_eq!(
-        parse_any::<i64>(b"-9223372036854775808").unwrap(),
+        parse_prefix::<i64>(b"-9223372036854775808").unwrap(),
         (i64::MIN, 20)
     );
 
-    assert!(parse_any::<i64>(b"-").is_err());
-    assert!(parse_any::<i64>(b"9223372036854775808").is_err());
-    assert!(parse_any::<i64>(b"-9223372036854775809").is_err());
-    assert!(parse_any::<i64>(b"18446744073709551615").is_err());
-    assert!(parse_any::<i64>(b"99999999999999999999").is_err());
-    assert!(parse_any::<i64>(b"-99999999999999999999").is_err());
+    assert!(parse_prefix::<i64>(b"-").is_err());
+    assert!(parse_prefix::<i64>(b"9223372036854775808").is_err());
+    assert!(parse_prefix::<i64>(b"-9223372036854775809").is_err());
+    assert!(parse_prefix::<i64>(b"18446744073709551615").is_err());
+    assert!(parse_prefix::<i64>(b"99999999999999999999").is_err());
+    assert!(parse_prefix::<i64>(b"-99999999999999999999").is_err());
 
     assert_eq!(
-        parse_any::<u128>(b"9999999999999999").unwrap(),
+        parse_prefix::<u128>(b"9999999999999999").unwrap(),
         (9_999_999_999_999_999_u128, 16)
     );
 
     assert_eq!(
-        parse_any::<u128>(b"12345678901234567890123456789012").unwrap(),
+        parse_prefix::<u128>(b"12345678901234567890123456789012").unwrap(),
         (1234567890_1234567890_1234567890_12_u128, 32)
     );
 
     assert_eq!(
-        parse_any::<u128>(b"12345678901234567890123456789012s1111111111111").unwrap(),
+        parse_prefix::<u128>(b"12345678901234567890123456789012s1111111111111").unwrap(),
         (1234567890_1234567890_1234567890_12_u128, 32)
     );
 
     assert_eq!(
-        parse_any::<u128>(b"123456789012345678901234567890123456789s1111111111111").unwrap(),
+        parse_prefix::<u128>(b"123456789012345678901234567890123456789s1111111111111").unwrap(),
         (1234567890_1234567890_1234567890_123456789_u128, 39)
     );
 
     assert_eq!(
-        parse_any::<i128>(b"-9999999999999999").unwrap(),
+        parse_prefix::<i128>(b"-9999999999999999").unwrap(),
         (-9_999_999_999_999_999_i128, 17)
     );
 
     assert_eq!(
-        parse_any::<i128>(b"9999999999999999").unwrap(),
+        parse_prefix::<i128>(b"9999999999999999").unwrap(),
         (9_999_999_999_999_999_i128, 16)
     );
 
     assert_eq!(
-        parse_any::<i128>(b"-99999999999999999999999999999999").unwrap(),
+        parse_prefix::<i128>(b"-99999999999999999999999999999999").unwrap(),
         (-99_999_999_999_999_999_999_999_999_999_999_i128, 33)
     );
 
     assert_eq!(
-        parse_any::<i128>(b"99999999999999999999999999999999").unwrap(),
+        parse_prefix::<i128>(b"99999999999999999999999999999999").unwrap(),
         (99_999_999_999_999_999_999_999_999_999_999_i128, 32)
     );
 
     assert_eq!(
-        parse_any::<i128>(b"12345678901234567890123456789012").unwrap(),
+        parse_prefix::<i128>(b"12345678901234567890123456789012").unwrap(),
         (1234567890_1234567890_1234567890_12_i128, 32)
     );
 
     assert_eq!(
-        parse_any::<i128>(b"-12345678901234567890123456789012").unwrap(),
+        parse_prefix::<i128>(b"-12345678901234567890123456789012").unwrap(),
         (-1234567890_1234567890_1234567890_12_i128, 33)
     );
 }
 
 #[test]
-fn test_parse_any_pos() {
-    let tmp = parse_any_pos::<u8>(b"123s").unwrap();
+fn test_parse_prefix_pos() {
+    let tmp = parse_prefix_pos::<u8>(b"123s").unwrap();
     assert_eq!(tmp, (123_u8, 3));
 
-    let tmp = parse_any_pos::<i8>(b"123s").unwrap();
+    let tmp = parse_prefix_pos::<i8>(b"123s").unwrap();
     assert_eq!(tmp, (123_i8, 3));
 
-    let tmp = parse_any_pos::<u16>(b"123s").unwrap();
+    let tmp = parse_prefix_pos::<u16>(b"123s").unwrap();
     assert_eq!(tmp, (123_u16, 3));
 
-    let tmp = parse_any_pos::<u16>(b"1234s").unwrap();
+    let tmp = parse_prefix_pos::<u16>(b"1234s").unwrap();
     assert_eq!(tmp, (1234_u16, 4));
 
-    let tmp = parse_any_pos::<i16>(b"1234s").unwrap();
+    let tmp = parse_prefix_pos::<i16>(b"1234s").unwrap();
     assert_eq!(tmp, (1234_i16, 4));
 
-    let tmp = parse_any_pos::<u32>(b"1234s").unwrap();
+    let tmp = parse_prefix_pos::<u32>(b"1234s").unwrap();
     assert_eq!(tmp, (1234_u32, 4));
 
-    let tmp = parse_any_pos::<i32>(b"1234s").unwrap();
+    let tmp = parse_prefix_pos::<i32>(b"1234s").unwrap();
     assert_eq!(tmp, (1234_i32, 4));
 
-    let tmp = parse_any_pos::<u64>(b"1234s").unwrap();
+    let tmp = parse_prefix_pos::<u64>(b"1234s").unwrap();
     assert_eq!(tmp, (1234_u64, 4));
 
-    let tmp = parse_any_pos::<i64>(b"1234s").unwrap();
+    let tmp = parse_prefix_pos::<i64>(b"1234s").unwrap();
     assert_eq!(tmp, (1234_i64, 4));
 
-    let tmp = parse_any_pos::<u128>(b"1234s").unwrap();
+    let tmp = parse_prefix_pos::<u128>(b"1234s").unwrap();
     assert_eq!(tmp, (1234_u128, 4));
 
-    let tmp = parse_any_pos::<u128>(b"12345678901234567890s").unwrap();
+    let tmp = parse_prefix_pos::<u128>(b"12345678901234567890s").unwrap();
     assert_eq!(tmp, (12345678901234567890_u128, 20));
 
-    let tmp = parse_any_pos::<i128>(b"1234s").unwrap();
+    let tmp = parse_prefix_pos::<i128>(b"1234s").unwrap();
     assert_eq!(tmp, (1234_i128, 4));
 
-    let tmp = parse_any_pos::<i128>(b"12345678901234567890s").unwrap();
+    let tmp = parse_prefix_pos::<i128>(b"12345678901234567890s").unwrap();
     assert_eq!(tmp, (12345678901234567890_i128, 20));
 }
 
 #[test]
-fn test_parse_any_neg() {
-    let tmp = parse_any_neg::<i8>(b"123s").unwrap();
+fn test_parse_prefix_neg() {
+    let tmp = parse_prefix_neg::<i8>(b"123s").unwrap();
     assert_eq!(tmp, (-123_i8, 3));
 
-    let tmp = parse_any_neg::<i16>(b"1234s").unwrap();
+    let tmp = parse_prefix_neg::<i16>(b"1234s").unwrap();
     assert_eq!(tmp, (-1234_i16, 4));
 
-    let tmp = parse_any_neg::<i32>(b"1234s").unwrap();
+    let tmp = parse_prefix_neg::<i32>(b"1234s").unwrap();
     assert_eq!(tmp, (-1234_i32, 4));
 
-    let tmp = parse_any_neg::<i64>(b"1234s").unwrap();
+    let tmp = parse_prefix_neg::<i64>(b"1234s").unwrap();
     assert_eq!(tmp, (-1234_i64, 4));
 
-    let tmp = parse_any_neg::<i128>(b"1234s").unwrap();
+    let tmp = parse_prefix_neg::<i128>(b"1234s").unwrap();
     assert_eq!(tmp, (-1234_i128, 4));
 
-    let tmp = parse_any_neg::<i128>(b"12345678901234567890s").unwrap();
+    let tmp = parse_prefix_neg::<i128>(b"12345678901234567890s").unwrap();
     assert_eq!(tmp, (-12345678901234567890_i128, 20));
 }
 

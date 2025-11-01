@@ -1,4 +1,4 @@
-use atoi_simd::{parse, parse_any, parse_skipped};
+use atoi_simd::{parse, parse_prefix, parse_skipped};
 use criterion::{
     criterion_group, criterion_main, measurement::WallTime, BenchmarkGroup, BenchmarkId, Criterion,
 };
@@ -118,59 +118,63 @@ fn bench_128(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
     );
 }
 
-fn bench_any_32(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
+fn bench_prefix_32(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
     let len = str.len();
     let str = str.to_owned() + "s1111111111111111111";
     let str_neg = "-".to_owned() + &str;
 
-    bench_group.bench_with_input(BenchmarkId::new("parse_any u32", len), &str, |b, val| {
-        b.iter(|| parse_any::<u32>(val.as_bytes()).unwrap())
+    bench_group.bench_with_input(BenchmarkId::new("parse_prefix u32", len), &str, |b, val| {
+        b.iter(|| parse_prefix::<u32>(val.as_bytes()).unwrap())
     });
-    bench_group.bench_with_input(BenchmarkId::new("parse_any i32", len), &str, |b, val| {
-        b.iter(|| parse_any::<i32>(val.as_bytes()).unwrap())
+    bench_group.bench_with_input(BenchmarkId::new("parse_prefix i32", len), &str, |b, val| {
+        b.iter(|| parse_prefix::<i32>(val.as_bytes()).unwrap())
     });
     bench_group.bench_with_input(
-        BenchmarkId::new("parse_any neg i32", len),
+        BenchmarkId::new("parse_prefix neg i32", len),
         &str_neg,
-        |b, val| b.iter(|| parse_any::<i32>(val.as_bytes()).unwrap()),
+        |b, val| b.iter(|| parse_prefix::<i32>(val.as_bytes()).unwrap()),
     );
 }
 
-fn bench_any_64(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
+fn bench_prefix_64(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
     let len = str.len();
     let str = str.to_owned() + "s1111111111111111111";
     let str_neg = "-".to_owned() + &str;
 
-    bench_group.bench_with_input(BenchmarkId::new("parse_any u64", len), &str, |b, val| {
-        b.iter(|| parse_any::<u64>(val.as_bytes()).unwrap())
+    bench_group.bench_with_input(BenchmarkId::new("parse_prefix u64", len), &str, |b, val| {
+        b.iter(|| parse_prefix::<u64>(val.as_bytes()).unwrap())
     });
     if len < 20 {
-        bench_group.bench_with_input(BenchmarkId::new("parse_any i64", len), &str, |b, val| {
-            b.iter(|| parse_any::<i64>(val.as_bytes()).unwrap())
+        bench_group.bench_with_input(BenchmarkId::new("parse_prefix i64", len), &str, |b, val| {
+            b.iter(|| parse_prefix::<i64>(val.as_bytes()).unwrap())
         });
         bench_group.bench_with_input(
-            BenchmarkId::new("parse_any neg i64", len),
+            BenchmarkId::new("parse_prefix neg i64", len),
             &str_neg,
-            |b, val| b.iter(|| parse_any::<i64>(val.as_bytes()).unwrap()),
+            |b, val| b.iter(|| parse_prefix::<i64>(val.as_bytes()).unwrap()),
         );
     }
 }
 
-fn bench_any_128(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
+fn bench_prefix_128(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
     let len = str.len();
     let str = str.to_owned() + "s111111111111111111111111111111111111111";
     let str_neg = "-".to_owned() + &str;
 
-    bench_group.bench_with_input(BenchmarkId::new("parse_any u128", len), &str, |b, val| {
-        b.iter(|| parse_any::<u128>(val.as_bytes()).unwrap())
-    });
-    bench_group.bench_with_input(BenchmarkId::new("parse_any i128", len), &str, |b, val| {
-        b.iter(|| parse_any::<i128>(val.as_bytes()).unwrap())
-    });
     bench_group.bench_with_input(
-        BenchmarkId::new("parse_any neg i128", len),
+        BenchmarkId::new("parse_prefix u128", len),
+        &str,
+        |b, val| b.iter(|| parse_prefix::<u128>(val.as_bytes()).unwrap()),
+    );
+    bench_group.bench_with_input(
+        BenchmarkId::new("parse_prefix i128", len),
+        &str,
+        |b, val| b.iter(|| parse_prefix::<i128>(val.as_bytes()).unwrap()),
+    );
+    bench_group.bench_with_input(
+        BenchmarkId::new("parse_prefix neg i128", len),
         &str_neg,
-        |b, val| b.iter(|| parse_any::<i128>(val.as_bytes()).unwrap()),
+        |b, val| b.iter(|| parse_prefix::<i128>(val.as_bytes()).unwrap()),
     );
 }
 
@@ -214,60 +218,60 @@ fn benchmark(c: &mut Criterion) {
     {
         let mut bench_group = c.benchmark_group("benchmark 32");
         benchmark_group_max_10(&mut bench_group, bench_32);
-        benchmark_group_max_10(&mut bench_group, bench_any_32);
+        benchmark_group_max_10(&mut bench_group, bench_prefix_32);
         bench_group.finish();
     }
     {
         let mut bench_group = c.benchmark_group("benchmark 64");
         benchmark_group_max_20(&mut bench_group, bench_64);
-        benchmark_group_max_20(&mut bench_group, bench_any_64);
+        benchmark_group_max_20(&mut bench_group, bench_prefix_64);
         bench_group.finish();
     }
 
     let mut bench_group = c.benchmark_group("benchmark 128");
 
     benchmark_group_max_20(&mut bench_group, bench_128);
-    benchmark_group_max_20(&mut bench_group, bench_any_128);
+    benchmark_group_max_20(&mut bench_group, bench_prefix_128);
 
     let mut str = "123456789012345678901".to_owned();
     bench_128(&mut bench_group, &str);
-    bench_any_128(&mut bench_group, &str);
+    bench_prefix_128(&mut bench_group, &str);
 
     str = "1234567890123456789012345".to_owned();
     bench_128(&mut bench_group, &str);
-    bench_any_128(&mut bench_group, &str);
+    bench_prefix_128(&mut bench_group, &str);
 
     str = "123456789012345678901234567890".to_owned();
     bench_128(&mut bench_group, &str);
-    bench_any_128(&mut bench_group, &str);
+    bench_prefix_128(&mut bench_group, &str);
 
     str = "1234567890123456789012345678901".to_owned();
     bench_128(&mut bench_group, &str);
-    bench_any_128(&mut bench_group, &str);
+    bench_prefix_128(&mut bench_group, &str);
 
     str = "12345678901234567890123456789012".to_owned();
     bench_128(&mut bench_group, &str);
-    bench_any_128(&mut bench_group, &str);
+    bench_prefix_128(&mut bench_group, &str);
 
     str = "123456789012345678901234567890123".to_owned();
     bench_128(&mut bench_group, &str);
-    bench_any_128(&mut bench_group, &str);
+    bench_prefix_128(&mut bench_group, &str);
 
     str = "1234567890123456789012345678901234".to_owned();
     bench_128(&mut bench_group, &str);
-    bench_any_128(&mut bench_group, &str);
+    bench_prefix_128(&mut bench_group, &str);
 
     str = "123456789012345678901234567890123456".to_owned();
     bench_128(&mut bench_group, &str);
-    bench_any_128(&mut bench_group, &str);
+    bench_prefix_128(&mut bench_group, &str);
 
     str = "12345678901234567890123456789012345678".to_owned();
     bench_128(&mut bench_group, &str);
-    bench_any_128(&mut bench_group, &str);
+    bench_prefix_128(&mut bench_group, &str);
 
     str = "123456789012345678901234567890123456789".to_owned();
     bench_128(&mut bench_group, &str);
-    bench_any_128(&mut bench_group, &str);
+    bench_prefix_128(&mut bench_group, &str);
 
     bench_group.finish();
 }

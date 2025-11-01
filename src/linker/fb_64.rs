@@ -9,7 +9,7 @@ impl ParsePos for usize {
     }
 
     #[inline(always)]
-    fn atoi_simd_parse_any_pos(s: &[u8]) -> Result<(usize, usize), AtoiSimdError<'_>> {
+    fn atoi_simd_parse_prefix_pos(s: &[u8]) -> Result<(usize, usize), AtoiSimdError<'_>> {
         parse_fb_64_pos::<{ u64::MAX }, 4>(s).map(|(v, i)| (v as usize, i))
     }
 }
@@ -22,7 +22,7 @@ impl ParsePos for isize {
     }
 
     #[inline(always)]
-    fn atoi_simd_parse_any_pos(s: &[u8]) -> Result<(isize, usize), AtoiSimdError<'_>> {
+    fn atoi_simd_parse_prefix_pos(s: &[u8]) -> Result<(isize, usize), AtoiSimdError<'_>> {
         parse_fb_64_pos::<{ i64::MAX as u64 }, 3>(s).map(|(v, i)| (v as isize, i))
     }
 }
@@ -35,7 +35,7 @@ impl ParseNeg for isize {
     }
 
     #[inline(always)]
-    fn atoi_simd_parse_any_neg(s: &[u8]) -> Result<(isize, usize), AtoiSimdError<'_>> {
+    fn atoi_simd_parse_prefix_neg(s: &[u8]) -> Result<(isize, usize), AtoiSimdError<'_>> {
         parse_fb_64_neg(s).map(|(v, i)| (v as isize, i))
     }
 }
@@ -47,7 +47,7 @@ impl ParsePos for u64 {
     }
 
     #[inline(always)]
-    fn atoi_simd_parse_any_pos(s: &[u8]) -> Result<(u64, usize), AtoiSimdError<'_>> {
+    fn atoi_simd_parse_prefix_pos(s: &[u8]) -> Result<(u64, usize), AtoiSimdError<'_>> {
         parse_fb_64_pos::<{ u64::MAX }, 4>(s)
     }
 }
@@ -59,7 +59,7 @@ impl ParsePos for i64 {
     }
 
     #[inline(always)]
-    fn atoi_simd_parse_any_pos(s: &[u8]) -> Result<(i64, usize), AtoiSimdError<'_>> {
+    fn atoi_simd_parse_prefix_pos(s: &[u8]) -> Result<(i64, usize), AtoiSimdError<'_>> {
         parse_fb_64_pos::<{ i64::MAX as u64 }, 3>(s).map(|(v, i)| (v as i64, i))
     }
 }
@@ -71,7 +71,7 @@ impl ParseNeg for i64 {
     }
 
     #[inline(always)]
-    fn atoi_simd_parse_any_neg(s: &[u8]) -> Result<(i64, usize), AtoiSimdError<'_>> {
+    fn atoi_simd_parse_prefix_neg(s: &[u8]) -> Result<(i64, usize), AtoiSimdError<'_>> {
         parse_fb_64_neg(s)
     }
 }
@@ -83,7 +83,7 @@ impl ParsePos for u128 {
     }
 
     #[inline(always)]
-    fn atoi_simd_parse_any_pos(s: &[u8]) -> Result<(u128, usize), AtoiSimdError<'_>> {
+    fn atoi_simd_parse_prefix_pos(s: &[u8]) -> Result<(u128, usize), AtoiSimdError<'_>> {
         parse_fb_128_pos::<{ u128::MAX }>(s)
     }
 }
@@ -95,7 +95,7 @@ impl ParsePos for i128 {
     }
 
     #[inline(always)]
-    fn atoi_simd_parse_any_pos(s: &[u8]) -> Result<(i128, usize), AtoiSimdError<'_>> {
+    fn atoi_simd_parse_prefix_pos(s: &[u8]) -> Result<(i128, usize), AtoiSimdError<'_>> {
         parse_fb_128_pos::<{ i128::MAX as u128 }>(s).map(|(v, i)| (v as i128, i))
     }
 }
@@ -107,7 +107,7 @@ impl ParseNeg for i128 {
     }
 
     #[inline(always)]
-    fn atoi_simd_parse_any_neg(s: &[u8]) -> Result<(i128, usize), AtoiSimdError<'_>> {
+    fn atoi_simd_parse_prefix_neg(s: &[u8]) -> Result<(i128, usize), AtoiSimdError<'_>> {
         parse_fb_128_neg(s)
     }
 }

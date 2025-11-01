@@ -14,11 +14,11 @@ Has good test coverage, and can be considered safe.
 To enable SIMD it needs the `target-feature` or `target-cpu` flags set, or it will fallback to non-SIMD functions.
 You can copy the `./.cargo/config.toml` to your project, or use one of the following environment variables:
 
--   `RUSTFLAGS="-C target-feature=+sse2,+sse3,+sse4.1,+ssse3,+avx,+avx2"` for x86_64
+-   `RUSTFLAGS="-C target-feature=+sse2,+sse3,+sse4.1,+ssse3,+avx,+avx2"` for x86_64;
 
--   `RUSTFLAGS="-C target-feature=+neon"` for Arm64
+-   `RUSTFLAGS="-C target-feature=+neon"` for Arm64;
 
--   `RUSTFLAGS="-C target-cpu=native"` will optimize for your current cpu
+-   `RUSTFLAGS="-C target-cpu=native"` will optimize for your current cpu.
 
 For Windows PowerShell you can set it with `$Env:RUSTFLAGS='-C target-feature=+sse2,+sse3,+sse4.1,+ssse3,+avx,+avx2'`
 
@@ -38,7 +38,7 @@ assert_eq!(val, 1234_u64);
 
 assert_eq!(atoi_simd::parse::<i64>(b"-2345"), Ok(-2345_i64));
 
-assert_eq!(atoi_simd::parse_any::<u64>(b"123something_else"), Ok((123_u64, 3)));
+assert_eq!(atoi_simd::parse_prefix::<u64>(b"123something_else"), Ok((123_u64, 3)));
 
 // a drop-in replacement for `str::parse`
 assert_eq!(atoi_simd::parse_skipped::<u64>(b"+000000000000000000001234"), Ok(1234_u64));

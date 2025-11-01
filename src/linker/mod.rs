@@ -50,13 +50,13 @@ use debug_unsafe::slice::SliceGetter;
 /// Note: all of the provided methods are `#[inline(always)]`
 pub trait ParsePos: Sized {
     fn atoi_simd_parse_pos(s: &[u8]) -> Result<Self, AtoiSimdError<'_>>;
-    fn atoi_simd_parse_any_pos(s: &[u8]) -> Result<(Self, usize), AtoiSimdError<'_>>;
+    fn atoi_simd_parse_prefix_pos(s: &[u8]) -> Result<(Self, usize), AtoiSimdError<'_>>;
 }
 
 /// Note: all of the provided methods are `#[inline(always)]`
 pub trait ParseNeg: Sized {
     fn atoi_simd_parse_neg(s: &[u8]) -> Result<Self, AtoiSimdError<'_>>;
-    fn atoi_simd_parse_any_neg(s: &[u8]) -> Result<(Self, usize), AtoiSimdError<'_>>;
+    fn atoi_simd_parse_prefix_neg(s: &[u8]) -> Result<(Self, usize), AtoiSimdError<'_>>;
 }
 
 /// Note: all of the provided methods are `#[inline(always)]`
@@ -67,8 +67,8 @@ pub trait Parse: ParsePos {
     }
 
     #[inline(always)]
-    fn atoi_simd_parse_any(s: &[u8]) -> Result<(Self, usize), AtoiSimdError<'_>> {
-        Self::atoi_simd_parse_any_pos(s)
+    fn atoi_simd_parse_prefix(s: &[u8]) -> Result<(Self, usize), AtoiSimdError<'_>> {
+        Self::atoi_simd_parse_prefix_pos(s)
     }
 
     #[inline(always)]
@@ -96,13 +96,13 @@ fn atoi_simd_parse_signed<T: ParsePos + ParseNeg>(s: &[u8]) -> Result<T, AtoiSim
 }
 
 #[inline(always)]
-fn atoi_simd_parse_any_signed<T: ParsePos + ParseNeg>(
+fn atoi_simd_parse_prefix_signed<T: ParsePos + ParseNeg>(
     s: &[u8],
 ) -> Result<(T, usize), AtoiSimdError<'_>> {
     if *s.first().ok_or(AtoiSimdError::Empty)? == b'-' {
-        T::atoi_simd_parse_any_neg(s.get_safe_unchecked(1..)).map(|(v, i)| (v, i + 1))
+        T::atoi_simd_parse_prefix_neg(s.get_safe_unchecked(1..)).map(|(v, i)| (v, i + 1))
     } else {
-        T::atoi_simd_parse_any_pos(s)
+        T::atoi_simd_parse_prefix_pos(s)
     }
 }
 
@@ -148,8 +148,8 @@ macro_rules! parse_impl_signed {
             }
 
             #[inline(always)]
-            fn atoi_simd_parse_any(s: &[u8]) -> Result<(Self, usize), AtoiSimdError<'_>> {
-                atoi_simd_parse_any_signed(s)
+            fn atoi_simd_parse_prefix(s: &[u8]) -> Result<(Self, usize), AtoiSimdError<'_>> {
+                atoi_simd_parse_prefix_signed(s)
             }
 
             #[inline(always)]

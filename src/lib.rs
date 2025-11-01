@@ -12,11 +12,11 @@
 //! To enable SIMD it needs the `target-feature` or `target-cpu` flags set, or it will fallback to non-SIMD functions.
 //! You can copy the `./.cargo/config.toml` to your project, or use one of the following environment variables:
 //!
-//! -   `RUSTFLAGS="-C target-feature=+sse2,+sse3,+sse4.1,+ssse3,+avx,+avx2"` for x86_64
+//! -   `RUSTFLAGS="-C target-feature=+sse2,+sse3,+sse4.1,+ssse3,+avx,+avx2"` for x86_64;
 //!
-//! -   `RUSTFLAGS="-C target-feature=+neon"` for Arm64
+//! -   `RUSTFLAGS="-C target-feature=+neon"` for Arm64;
 //!
-//! -   `RUSTFLAGS="-C target-cpu=native"` will optimize for your current cpu
+//! -   `RUSTFLAGS="-C target-cpu=native"` will optimize for your current cpu.
 //!
 //! If you have `&str` then use `.as_bytes()`
 //!
@@ -30,7 +30,7 @@
 //!
 //! assert_eq!(atoi_simd::parse::<i64>(b"-2345"), Ok(-2345_i64));
 //!
-//! assert_eq!(atoi_simd::parse_any::<u64>(b"123something_else"), Ok((123_u64, 3)));
+//! assert_eq!(atoi_simd::parse_prefix::<u64>(b"123something_else"), Ok((123_u64, 3)));
 //!
 //! // a drop-in replacement for `str::parse`
 //! assert_eq!(atoi_simd::parse_skipped::<u64>(b"+000000000000000000001234"), Ok(1234_u64));
@@ -70,7 +70,7 @@ pub use crate::{
     linker::{Parse, ParseNeg},
 };
 
-/// Parses a slice of digits, and checks the first '-' char for signed integers.
+/// Parses a slice of digits, and checks for the first '-' char for signed integers.
 #[inline]
 pub fn parse<T: Parse>(s: &[u8]) -> Result<T, AtoiSimdError<'_>> {
     T::atoi_simd_parse(s)
@@ -88,29 +88,30 @@ pub fn parse_neg<T: ParseNeg>(s: &[u8]) -> Result<T, AtoiSimdError<'_>> {
     T::atoi_simd_parse_neg(s)
 }
 
-/// Parses a slice of digits until it reaches invalid character, and checks the first '-' char for signed integers.
+/// Parses a slice of digits until it reaches an invalid character,
+/// and checks for the first '-' char for signed integers.
 /// Returns the parsed value and the parsed size of the slice.
 #[inline]
-pub fn parse_any<T: Parse>(s: &[u8]) -> Result<(T, usize), AtoiSimdError<'_>> {
-    T::atoi_simd_parse_any(s)
+pub fn parse_prefix<T: Parse>(s: &[u8]) -> Result<(T, usize), AtoiSimdError<'_>> {
+    T::atoi_simd_parse_prefix(s)
 }
 
 /// Parses a positive integer until it reaches an invalid character.
 /// Returns the parsed value and the parsed size of the slice.
 #[inline]
-pub fn parse_any_pos<T: Parse>(s: &[u8]) -> Result<(T, usize), AtoiSimdError<'_>> {
-    T::atoi_simd_parse_any_pos(s)
+pub fn parse_prefix_pos<T: Parse>(s: &[u8]) -> Result<(T, usize), AtoiSimdError<'_>> {
+    T::atoi_simd_parse_prefix_pos(s)
 }
 
 /// Parses a negative integer until it reaches an invalid character. Slice must not contain '-' sign.
 /// Returns the parsed value and the parsed size of the slice.
 #[inline]
-pub fn parse_any_neg<T: ParseNeg>(s: &[u8]) -> Result<(T, usize), AtoiSimdError<'_>> {
-    T::atoi_simd_parse_any_neg(s)
+pub fn parse_prefix_neg<T: ParseNeg>(s: &[u8]) -> Result<(T, usize), AtoiSimdError<'_>> {
+    T::atoi_simd_parse_prefix_neg(s)
 }
 
 /// Parses a slice of digits. Has been made to be used as a drop-in replacement for `str::parse`.
-/// Checks the first '-' char for signed integers.
+/// Checks for the first '-' char for signed integers.
 /// Skips the '+' char and extra zeroes at the beginning.
 /// It's slower than `parse()`.
 #[inline]
@@ -118,20 +119,20 @@ pub fn parse_skipped<T: Parse>(s: &[u8]) -> Result<T, AtoiSimdError<'_>> {
     T::atoi_simd_parse_skipped(s)
 }
 
-#[deprecated(since = "0.16.0", note = "Use `parse_any` instead")]
+#[deprecated(since = "0.17.0", note = "Use `parse_prefix` instead")]
 #[inline]
-pub fn parse_until_invalid<T: Parse>(s: &[u8]) -> Result<(T, usize), AtoiSimdError<'_>> {
-    parse_any(s)
+pub fn parse_any<T: Parse>(s: &[u8]) -> Result<(T, usize), AtoiSimdError<'_>> {
+    parse_prefix(s)
 }
 
-#[deprecated(since = "0.16.0", note = "Use `parse_any_pos` instead")]
+#[deprecated(since = "0.17.0", note = "Use `parse_prefix_pos` instead")]
 #[inline]
-pub fn parse_until_invalid_pos<T: Parse>(s: &[u8]) -> Result<(T, usize), AtoiSimdError<'_>> {
-    parse_any_pos(s)
+pub fn parse_any_pos<T: Parse>(s: &[u8]) -> Result<(T, usize), AtoiSimdError<'_>> {
+    parse_prefix_pos(s)
 }
 
-#[deprecated(since = "0.16.0", note = "Use `parse_any_neg` instead")]
+#[deprecated(since = "0.17.0", note = "Use `parse_prefix_neg` instead")]
 #[inline]
-pub fn parse_until_invalid_neg<T: ParseNeg>(s: &[u8]) -> Result<(T, usize), AtoiSimdError<'_>> {
-    parse_any_neg(s)
+pub fn parse_any_neg<T: ParseNeg>(s: &[u8]) -> Result<(T, usize), AtoiSimdError<'_>> {
+    parse_prefix_neg(s)
 }
