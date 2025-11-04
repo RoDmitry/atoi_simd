@@ -11,6 +11,7 @@ include = ["src"]
 readme = "README.md"
 license = "MIT OR Apache-2.0"
 edition = "2021"
+rust-version = "1.59"
 
 [lib]
 name = "atoi_simd"
