@@ -206,6 +206,7 @@ unsafe fn check_len_16(mut chunk: uint8x16_t) -> u32 {
     res.trailing_zeros() >> 2
 }
 
+/// len must be <= 16
 #[inline(always)]
 unsafe fn parse_simd_neon(
     len: usize,
@@ -494,8 +495,14 @@ pub(crate) fn parse_simd_u128(s: &[u8]) -> Result<(u128, usize), AtoiSimdError<'
             16 => {
                 (extra, len) = parse_simd_extra(s, &mut chunk1, &mut chunk2)?;
             }
-            #[allow(unreachable_patterns)]
-            _ => ::core::hint::unreachable_unchecked(), // unreachable since 1.75
+            // SAFETY: len is always <= 16
+            _ => {
+                if cfg!(debug_assertions) {
+                    panic!("parse_simd_u128: wrong size {}", len);
+                } else {
+                    ::core::hint::unreachable_unchecked()
+                }
+            }
         };
 
         let (sum1, chunk1) = odd_even_8(chunk1);

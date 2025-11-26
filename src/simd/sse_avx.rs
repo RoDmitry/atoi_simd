@@ -561,6 +561,7 @@ unsafe fn to_u32x4(chunk: __m128i) -> [u32; 4] {
     ::core::mem::transmute(chunk)
 }
 
+/// len must be <= 16
 #[inline]
 unsafe fn parse_simd_sse(
     len: u32,

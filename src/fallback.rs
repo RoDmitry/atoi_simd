@@ -133,6 +133,7 @@ enum EarlyReturn<T, E> {
     Ret(T),
 }
 
+/// len must be <= 8
 #[inline(always)]
 fn parse_16_by_8(s: &[u8]) -> EarlyReturn<(u64, usize), AtoiSimdError<'_>> {
     let mut val = load_8(s);
