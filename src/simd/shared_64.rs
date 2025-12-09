@@ -6,15 +6,16 @@ pub(crate) use super::parse_simd_u128;
 
 #[inline(always)]
 pub(crate) fn parse_simd_checked_u128(s: &[u8]) -> Result<u128, AtoiSimdError<'_>> {
-    let len = s.len();
-    let (res, len) = if len < super::SHORT {
+    let s_len = s.len();
+    let (res, len) = if s_len < super::SHORT {
         parse_short_pos::<{ u64::MAX }>(s).map(|(v, l)| (v as u128, l))?
-    } else if len < 17 {
+    } else if s_len < 17 {
         super::parse_simd_16(s).map(|(v, l)| (v as u128, l))?
     } else {
+        crate::cold_path();
         parse_simd_u128(s)?
     };
-    if len != s.len() {
+    if len != s_len {
         return Err(AtoiSimdError::Invalid128(res, len, s));
     }
     Ok(res)
@@ -24,130 +25,114 @@ pub(crate) fn parse_simd_checked_u128(s: &[u8]) -> Result<u128, AtoiSimdError<'_
 pub(crate) fn parse_simd_i128(s: &[u8]) -> Result<(i128, usize), AtoiSimdError<'_>> {
     let (res, len) = parse_simd_u128(s)?;
     if res > i128::MAX as u128 {
-        return Err(AtoiSimdError::Overflow(s));
+        Err(AtoiSimdError::Overflow(s))
+    } else {
+        Ok((res as i128, len))
     }
-    Ok((res as i128, len))
 }
 
 #[inline(always)]
 pub(crate) fn parse_simd_checked_i128(s: &[u8]) -> Result<i128, AtoiSimdError<'_>> {
     let res = parse_simd_checked_u128(s)?;
     if res > i128::MAX as u128 {
-        return Err(AtoiSimdError::Overflow(s));
+        Err(AtoiSimdError::Overflow(s))
+    } else {
+        Ok(res as i128)
     }
-    Ok(res as i128)
 }
 
 #[inline(always)]
 pub(crate) fn parse_simd_u64(s: &[u8]) -> Result<(u64, usize), AtoiSimdError<'_>> {
     let (res, len) = parse_simd_u128(s)?;
-    if len > 20 {
-        return Err(AtoiSimdError::Size(len, s));
-    } else if len == 20 && res > u64::MAX as u128 {
-        return Err(AtoiSimdError::Overflow(s));
+    if res > u64::MAX as u128 {
+        crate::cold_path();
+        Err(AtoiSimdError::Overflow(s))
+    } else {
+        Ok((res as u64, len))
     }
-    Ok((res as u64, len))
 }
 
 #[inline(always)]
 pub(crate) fn parse_simd_checked_u64(s: &[u8]) -> Result<u64, AtoiSimdError<'_>> {
-    let len = s.len();
-    if len > 20 {
-        return Err(AtoiSimdError::Size(len, s));
-    }
     let res = parse_simd_checked_u128(s)?;
-    if len == 20 && res > u64::MAX as u128 {
-        return Err(AtoiSimdError::Overflow(s));
+    if res > u64::MAX as u128 {
+        crate::cold_path();
+        Err(AtoiSimdError::Overflow(s))
+    } else {
+        Ok(res as u64)
     }
-    Ok(res as u64)
 }
 
 #[inline(always)]
 pub(crate) fn parse_simd_i64(s: &[u8]) -> Result<(i64, usize), AtoiSimdError<'_>> {
     let (res, len) = parse_simd_u128(s)?;
-    if len > 19 {
-        return Err(AtoiSimdError::Size(len, s));
-    } else if len == 19 && res > i64::MAX as u128 {
-        return Err(AtoiSimdError::Overflow(s));
+    if res > i64::MAX as u128 {
+        crate::cold_path();
+        Err(AtoiSimdError::Overflow(s))
+    } else {
+        Ok((res as i64, len))
     }
-    Ok((res as i64, len))
 }
 
 #[inline(always)]
 pub(crate) fn parse_simd_checked_i64(s: &[u8]) -> Result<i64, AtoiSimdError<'_>> {
-    let len = s.len();
-    if len > 19 {
-        return Err(AtoiSimdError::Size(len, s));
-    }
     let res = parse_simd_checked_u128(s)?;
-    if len == 19 && res > i64::MAX as u128 {
-        return Err(AtoiSimdError::Overflow(s));
+    if res > i64::MAX as u128 {
+        crate::cold_path();
+        Err(AtoiSimdError::Overflow(s))
+    } else {
+        Ok(res as i64)
     }
-    Ok(res as i64)
 }
 
 #[inline(always)]
 pub(crate) fn parse_simd_i64_neg(s: &[u8]) -> Result<(i64, usize), AtoiSimdError<'_>> {
     let (res, len) = parse_simd_u128(s)?;
-    if len > 19 {
-        return Err(AtoiSimdError::Size(len, s));
-    } else if len == 19 {
-        const MAX: u128 = -(i64::MIN as i128) as u128;
-        if res > MAX {
-            return Err(AtoiSimdError::Overflow(s));
-        } else if res == MAX {
-            return Ok((i64::MIN, len));
-        }
+    const MAX: u128 = -(i64::MIN as i128) as u128;
+    if res > MAX {
+        Err(AtoiSimdError::Overflow(s))
+    } else if res == MAX {
+        Ok((i64::MIN, len))
+    } else {
+        Ok((-(res as i64), len))
     }
-    Ok((-(res as i64), len))
 }
 
 #[inline(always)]
 pub(crate) fn parse_simd_checked_i64_neg(s: &[u8]) -> Result<i64, AtoiSimdError<'_>> {
-    let len = s.len();
-    if len > 19 {
-        return Err(AtoiSimdError::Size(len, s));
-    }
     let res = parse_simd_checked_u128(s)?;
-    if len == 19 {
-        const MAX: u128 = -(i64::MIN as i128) as u128;
-        if res > MAX {
-            return Err(AtoiSimdError::Overflow(s));
-        } else if res == MAX {
-            return Ok(i64::MIN);
-        }
+    const MAX: u128 = -(i64::MIN as i128) as u128;
+    if res > MAX {
+        Err(AtoiSimdError::Overflow(s))
+    } else if res == MAX {
+        Ok(i64::MIN)
+    } else {
+        Ok(-(res as i64))
     }
-    Ok(-(res as i64))
 }
 
 #[inline(always)]
 pub(crate) fn parse_simd_i128_neg(s: &[u8]) -> Result<(i128, usize), AtoiSimdError<'_>> {
     let (res, len) = parse_simd_u128(s)?;
-    if len == 39 {
-        const MAX: u128 = i128::MAX as u128 + 1;
-        if res > MAX {
-            return Err(AtoiSimdError::Overflow(s));
-        } else if res == MAX {
-            return Ok((i128::MIN, len));
-        }
+    const MAX: u128 = i128::MAX as u128 + 1;
+    if res > MAX {
+        Err(AtoiSimdError::Overflow(s))
+    } else if res == MAX {
+        Ok((i128::MIN, len))
+    } else {
+        Ok((-(res as i128), len))
     }
-    Ok((-(res as i128), len))
 }
 
 #[inline(always)]
 pub(crate) fn parse_simd_checked_i128_neg(s: &[u8]) -> Result<i128, AtoiSimdError<'_>> {
-    let len = s.len();
-    if len > 39 {
-        return Err(AtoiSimdError::Size(len, s));
-    }
     let res = parse_simd_checked_u128(s)?;
-    if len == 39 {
-        const MAX: u128 = i128::MAX as u128 + 1;
-        if res > MAX {
-            return Err(AtoiSimdError::Overflow(s));
-        } else if res == MAX {
-            return Ok(i128::MIN);
-        }
+    const MAX: u128 = i128::MAX as u128 + 1;
+    if res > MAX {
+        Err(AtoiSimdError::Overflow(s))
+    } else if res == MAX {
+        Ok(i128::MIN)
+    } else {
+        Ok(-(res as i128))
     }
-    Ok(-(res as i128))
 }
