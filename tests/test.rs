@@ -289,8 +289,6 @@ fn test_parse_i64() {
     parse_tester::<i64, 19, 20, _>(('1'..='9').chain('0'..='9'));
 
     assert_eq!(parse::<i64>(b"9223372036854775807").unwrap(), i64::MAX);
-    assert_eq!(parse_pos::<i64>(b"000000000000000000000000000000000009223372036854775807").unwrap(), i64::MAX);
-    assert_eq!(parse::<i64>(b"000000000000000000000000000000000009223372036854775807").unwrap(), i64::MAX);
     assert_eq!(parse::<i64>(b"-9223372036854775808").unwrap(), i64::MIN);
 
     assert!(parse::<i64>(b"9223372036854775808").is_err());
@@ -481,41 +479,126 @@ fn test_parse_types() {
 
 #[test]
 fn test_zeroes() {
+    let tmp: u8 = parse(b"0000000000000000").unwrap();
+    assert_eq!(tmp, 0_u8);
+
+    let tmp: u8 = parse(b"000000000000000000000000000000000000000000000000").unwrap();
+    assert_eq!(tmp, 0_u8);
+
     let tmp: u8 = parse(b"0000000000000001").unwrap();
     assert_eq!(tmp, 1_u8);
+
+    let tmp: i8 = parse(b"-0000000000000000").unwrap();
+    assert_eq!(tmp, 0_i8);
 
     let tmp: i8 = parse(b"-0000000000000001").unwrap();
     assert_eq!(tmp, -1_i8);
 
+    let tmp: u16 = parse(b"0000000000000000").unwrap();
+    assert_eq!(tmp, 0_u16);
+
+    let tmp: u16 = parse(b"000000000000000000000000000000000000000000000000").unwrap();
+    assert_eq!(tmp, 0_u16);
+
     let tmp: u16 = parse(b"0000000000000001").unwrap();
     assert_eq!(tmp, 1_u16);
+
+    let tmp: i16 = parse(b"-0000000000000000").unwrap();
+    assert_eq!(tmp, 0_i16);
 
     let tmp: i16 = parse(b"-0000000000000001").unwrap();
     assert_eq!(tmp, -1_i16);
 
+    let tmp: u32 = parse(b"0000000000000000").unwrap();
+    assert_eq!(tmp, 0_u32);
+
+    let tmp: u32 = parse(b"000000000000000000000000000000000000000000000000").unwrap();
+    assert_eq!(tmp, 0_u32);
+
     let tmp: u32 = parse(b"0000000000000001").unwrap();
     assert_eq!(tmp, 1_u32);
+
+    let tmp: i32 = parse(b"-0000000000000000").unwrap();
+    assert_eq!(tmp, 0_i32);
 
     let tmp: i32 = parse(b"-0000000000000001").unwrap();
     assert_eq!(tmp, -1_i32);
 
+    assert_eq!(
+        parse::<i32>(b"0000000000000000000000000000000000000000000000002147483647").unwrap(),
+        i32::MAX
+    );
+    assert_eq!(
+        parse::<i32>(b"-0000000000000000000000000000000000000000000000002147483648").unwrap(),
+        i32::MIN
+    );
+
+    let tmp: usize = parse(b"0000000000000000").unwrap();
+    assert_eq!(tmp, 0_usize);
+
     let tmp: usize = parse(b"0000000000000001").unwrap();
     assert_eq!(tmp, 1_usize);
+
+    let tmp: isize = parse(b"-0000000000000000").unwrap();
+    assert_eq!(tmp, 0_isize);
 
     let tmp: isize = parse(b"-0000000000000001").unwrap();
     assert_eq!(tmp, -1_isize);
 
+    let tmp: u64 = parse(b"00000000000000000000").unwrap();
+    assert_eq!(tmp, 0_u64);
+
+    let tmp: u64 = parse(b"000000000000000000000000000000000000000000000000000000000000").unwrap();
+    assert_eq!(tmp, 0_u64);
+
     let tmp: u64 = parse(b"00000000000000000001").unwrap();
     assert_eq!(tmp, 1_u64);
+
+    let tmp: i64 = parse(b"-0000000000000000000").unwrap();
+    assert_eq!(tmp, 0_i64);
 
     let tmp: i64 = parse(b"-0000000000000000001").unwrap();
     assert_eq!(tmp, -1_i64);
 
+    assert_eq!(
+        parse_pos::<i64>(b"0000000000000000009223372036854775807").unwrap(),
+        i64::MAX
+    );
+    assert_eq!(
+        parse::<i64>(b"0000000000000000009223372036854775807").unwrap(),
+        i64::MAX
+    );
+
+    assert_eq!(
+        parse_pos::<i64>(b"000000000000000000000000000000000000009223372036854775807").unwrap(),
+        i64::MAX
+    );
+    assert_eq!(
+        parse::<i64>(b"000000000000000000000000000000000000009223372036854775807").unwrap(),
+        i64::MAX
+    );
+
+    let tmp: u128 = parse(b"000000000000000000000000000000000000000").unwrap();
+    assert_eq!(tmp, 0_u128);
+
     let tmp: u128 = parse(b"000000000000000000000000000000000000001").unwrap();
     assert_eq!(tmp, 1_u128);
 
+    let tmp: i128 = parse(b"-000000000000000000000000000000000000000").unwrap();
+    assert_eq!(tmp, 0_i128);
+
     let tmp: i128 = parse(b"-000000000000000000000000000000000000001").unwrap();
     assert_eq!(tmp, -1_i128);
+
+    let tmp: u128 =
+        parse(b"0000000000000000000000000000000000000000000000000000000000000000000000000")
+            .unwrap();
+    assert_eq!(tmp, 0_u128);
+
+    let tmp: u128 =
+        parse(b"0000000000000000000000000000000000000000000000000000000000000000000000001")
+            .unwrap();
+    assert_eq!(tmp, 1_u128);
 }
 
 #[test]
