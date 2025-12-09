@@ -39,6 +39,10 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 // #![feature(stdsimd)]
 
+#[inline(always)]
+#[cold]
+pub(crate) fn cold_path() {}
+
 mod error;
 #[cfg(not(any(
     all(target_arch = "aarch64", target_feature = "neon"),

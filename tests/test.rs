@@ -289,6 +289,8 @@ fn test_parse_i64() {
     parse_tester::<i64, 19, 20, _>(('1'..='9').chain('0'..='9'));
 
     assert_eq!(parse::<i64>(b"9223372036854775807").unwrap(), i64::MAX);
+    assert_eq!(parse_pos::<i64>(b"000000000000000000000000000000000009223372036854775807").unwrap(), i64::MAX);
+    assert_eq!(parse::<i64>(b"000000000000000000000000000000000009223372036854775807").unwrap(), i64::MAX);
     assert_eq!(parse::<i64>(b"-9223372036854775808").unwrap(), i64::MIN);
 
     assert!(parse::<i64>(b"9223372036854775808").is_err());
