@@ -39,6 +39,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 // #![feature(stdsimd)]
 
+#[allow(unused)]
 #[inline(always)]
 #[cold]
 pub(crate) fn cold_path() {}
