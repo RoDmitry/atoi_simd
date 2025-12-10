@@ -11,6 +11,7 @@ use self::arch::{
     _mm_maddubs_epi16, _mm_movemask_epi8, _mm_mul_epu32, _mm_or_si128, _mm_packus_epi32,
     _mm_set1_epi8, _mm_set_epi16, _mm_set_epi32, _mm_set_epi8, _mm_setzero_si128, _mm_srli_epi64,
 };
+use super::shared_64::process_skipped;
 use crate::AtoiSimdError;
 #[cfg(target_arch = "x86")]
 use ::core::arch::x86 as arch;
@@ -621,7 +622,7 @@ unsafe fn parse_simd_sse(
 ) -> Result<(u64, usize), AtoiSimdError<'static>> {
     chunk = match len {
         0 => return Err(AtoiSimdError::Empty),
-        1 => return Ok(((_mm_cvtsi128_si32(chunk) & 0xFF) as u64, len as usize)),
+        1 => return Ok(((_mm_cvtsi128_si32(chunk) & 0xFF) as u64, 1)),
         2 => _mm_bslli_si128(chunk, 14),
         3 => _mm_bslli_si128(chunk, 13),
         4 => _mm_bslli_si128(chunk, 12),
@@ -692,22 +693,6 @@ pub(crate) fn parse_simd_16_skipped(s: &[u8]) -> Result<(u64, usize), AtoiSimdEr
 
         let res = parse_simd_sse(len, chunk);
         process_skipped(res, skipped)
-    }
-}
-
-#[inline(always)]
-fn process_skipped(
-    res: Result<(u64, usize), AtoiSimdError<'_>>,
-    skipped: u32,
-) -> Result<(u64, usize), AtoiSimdError<'_>> {
-    if skipped > 0 {
-        if matches!(res, Err(AtoiSimdError::Empty)) {
-            Ok((0, skipped as usize))
-        } else {
-            res.map(|(v, l)| (v, l + skipped as usize))
-        }
-    } else {
-        res
     }
 }
 

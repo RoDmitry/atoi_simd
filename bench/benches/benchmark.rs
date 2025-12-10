@@ -197,12 +197,13 @@ fn benchmark_group_max_20(
     func: fn(bench_group: &mut BenchmarkGroup<WallTime>, str: &str),
 ) {
     let mut str = String::new();
-    for i in '1'..='9' {
+    for i in '1'..='5' {
         str.push(i);
         func(bench_group, &str);
     }
+    str = "123456789012345".to_owned();
 
-    for i in '0'..='7' {
+    for i in '6'..='7' {
         str.push(i);
         func(bench_group, &str);
     }
