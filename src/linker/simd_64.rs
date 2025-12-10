@@ -79,12 +79,12 @@ impl ParseNeg for i64 {
 impl ParsePos for u128 {
     #[inline(always)]
     fn atoi_simd_parse_pos(s: &[u8]) -> Result<u128, AtoiSimdError<'_>> {
-        parse_simd_checked_u128(s)
+        parse_simd_checked_u128::<39>(s)
     }
 
     #[inline(always)]
     fn atoi_simd_parse_prefix_pos(s: &[u8]) -> Result<(u128, usize), AtoiSimdError<'_>> {
-        parse_simd_u128(s)
+        parse_simd_u128::<39>(s)
     }
 }
 
