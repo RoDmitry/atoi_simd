@@ -1,3 +1,4 @@
+use super::shared_64::process_skipped;
 use crate::AtoiSimdError;
 use ::core::{arch::aarch64::*, convert::TryInto};
 use debug_unsafe::slice::SliceGetter;
@@ -286,6 +287,23 @@ pub(crate) fn parse_simd_16(s: &[u8]) -> Result<(u64, usize), AtoiSimdError<'_>>
         parse_simd_neon(len, chunk)
     }
 }
+
+#[inline(always)]
+pub(crate) fn parse_simd_16_skipped(s: &[u8]) -> Result<(u64, usize), AtoiSimdError<'_>> {
+    unsafe {
+        let (len, chunk) = simd_neon_len(s)?;
+        parse_simd_neon(len, chunk)
+    }
+}
+
+// #[inline]
+// pub(crate) fn parse_simd_16_skipped(s: &[u8]) -> Result<(u64, usize), AtoiSimdError<'_>> {
+//     unsafe {
+//         let (len, skipped, chunk) = simd_neon_len_skipped(s)?;
+//         let res = parse_simd_neon(len, chunk);
+//         process_skipped(res, skipped)
+//     }
+// }
 
 #[inline(always)]
 unsafe fn odd_even_8(chunk: uint8x16_t) -> (uint8x8_t, uint8x8_t) {
