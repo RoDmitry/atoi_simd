@@ -281,7 +281,7 @@ unsafe fn simd_neon_len(s: &[u8]) -> Result<(usize, uint8x16_t), AtoiSimdError<'
 }
 
 #[inline(always)]
-pub(crate) fn parse_simd_16(s: &[u8]) -> Result<(u64, usize), AtoiSimdError<'_>> {
+pub(crate) fn parse_simd_16_noskip(s: &[u8]) -> Result<(u64, usize), AtoiSimdError<'_>> {
     unsafe {
         let (len, chunk) = simd_neon_len(s)?;
         parse_simd_neon(len, chunk)
@@ -289,7 +289,7 @@ pub(crate) fn parse_simd_16(s: &[u8]) -> Result<(u64, usize), AtoiSimdError<'_>>
 }
 
 #[inline(always)]
-pub(crate) fn parse_simd_16_skipped(s: &[u8]) -> Result<(u64, usize), AtoiSimdError<'_>> {
+pub(crate) fn parse_simd_16(s: &[u8]) -> Result<(u64, usize), AtoiSimdError<'_>> {
     unsafe {
         let (len, chunk) = simd_neon_len(s)?;
         parse_simd_neon(len, chunk)
@@ -365,7 +365,7 @@ unsafe fn parse_simd_extra<'a>(
     chunk1: &mut uint8x16_t,
     chunk2: &mut uint8x16_t,
 ) -> Result<(u128, usize), AtoiSimdError<'a>> {
-    let mut chunk3 = load_8(s.get_safe_unchecked(32..));
+    let mut chunk3 = load_8(s);
     let mut len = check_len_8(chunk3) as usize;
     chunk3 = vand_u8(chunk3, vdup_n_u8(0xF));
     let mut chunk3_16 = vcombine_u8(chunk3, vdup_n_u8(0));
@@ -431,10 +431,17 @@ unsafe fn parse_simd_extra<'a>(
 }
 
 #[inline(always)]
-pub(crate) fn parse_simd_u128(s: &[u8]) -> Result<(u128, usize), AtoiSimdError<'_>> {
+pub(crate) fn parse_simd_u128<const LEN_LIMIT: u32>(
+    s: &[u8],
+) -> Result<(u128, usize), AtoiSimdError<'_>> {
+    const { debug_assert!(LEN_LIMIT > 16, "use `parse_simd_16` instead") };
+    const { debug_assert!(LEN_LIMIT <= 39) };
     unsafe {
         let mut chunk1 = load_16(s);
         let mut len = check_len_16(chunk1) as usize;
+        if len > LEN_LIMIT as usize {
+            return Err(AtoiSimdError::Size(len as usize, s));
+        }
 
         let mult = vdupq_n_u8(0xF);
         chunk1 = vandq_u8(chunk1, mult);
@@ -511,7 +518,8 @@ pub(crate) fn parse_simd_u128(s: &[u8]) -> Result<(u128, usize), AtoiSimdError<'
                 chunk1 = vextq_u8(vdupq_n_u8(0), chunk1, 15);
             }
             16 => {
-                (extra, len) = parse_simd_extra(s, &mut chunk1, &mut chunk2)?;
+                (extra, len) =
+                    parse_simd_extra(s.get_safe_unchecked(32..), &mut chunk1, &mut chunk2)?;
             }
             // SAFETY: len is always <= 16
             _ => {
