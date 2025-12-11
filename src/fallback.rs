@@ -153,7 +153,7 @@ fn parse_16_by_8(s: &[u8]) -> EarlyReturn<(u64, usize), AtoiSimdError<'_>> {
         }
         _ => {
             if cfg!(debug_assertions) {
-                panic!("fallback parse_16_by_8: wrong size {}", len);
+                panic!("fallback parse_16_by_8: wrong len {}", len);
             } else {
                 unsafe { ::core::hint::unreachable_unchecked() }
             }

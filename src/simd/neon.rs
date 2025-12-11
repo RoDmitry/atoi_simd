@@ -187,7 +187,11 @@ unsafe fn check_len_8(mut chunk: uint8x8_t) -> u32 {
 
     let chunk = vreinterpret_u64_u8(chunk);
     let res = vget_lane_u64(chunk, 0);
-    res.trailing_zeros() >> 3
+
+    let len = res.trailing_zeros() >> 3;
+    debug_assert!(len <= 8);
+    unsafe { ::core::hint::assert_unchecked(len <= 8) }
+    len
 }
 
 #[inline(always)]
@@ -204,7 +208,11 @@ unsafe fn check_len_16(mut chunk: uint8x16_t) -> u32 {
 
     let chunk = vreinterpret_u64_u8(chunk);
     let res = vget_lane_u64(chunk, 0);
-    res.trailing_zeros() >> 2
+
+    let len = res.trailing_zeros() >> 2;
+    debug_assert!(len <= 16);
+    unsafe { ::core::hint::assert_unchecked(len <= 16) }
+    len
 }
 
 /// len must be <= 16
@@ -233,7 +241,7 @@ unsafe fn parse_simd_neon(
         16 => chunk,
         _ => {
             if cfg!(debug_assertions) {
-                panic!("parse_simd_neon: wrong size {}", len);
+                panic!("parse_simd_neon: wrong len {}", len);
             } else {
                 ::core::hint::unreachable_unchecked()
             }
@@ -439,20 +447,25 @@ pub(crate) fn parse_simd_u128<const LEN_LIMIT: u32>(
     unsafe {
         let mut chunk1 = load_16(s);
         let mut len = check_len_16(chunk1) as usize;
-        if len > LEN_LIMIT as usize {
-            return Err(AtoiSimdError::Size(len as usize, s));
-        }
 
         let mult = vdupq_n_u8(0xF);
         chunk1 = vandq_u8(chunk1, mult);
 
-        if len < 16 {
+        if len < 16 || s.len() == 16 {
             return parse_simd_neon(len, chunk1).map(|(v, l)| (v as u128, l));
         };
+        // temporal code, todo: fix
+        if s.len() > LEN_LIMIT as usize {
+            return Err(AtoiSimdError::Size(s.len(), s));
+        }
 
         let mut chunk2 = load_16(s.get_safe_unchecked(16..));
 
         len = check_len_16(chunk2) as usize;
+        if len > (LEN_LIMIT - 16) as usize { // max 32
+            return Err(AtoiSimdError::Size(len as usize, s));
+        }
+
         chunk2 = vandq_u8(chunk2, mult);
         let mut extra = 0;
         match len {
@@ -524,7 +537,7 @@ pub(crate) fn parse_simd_u128<const LEN_LIMIT: u32>(
             // SAFETY: len is always <= 16
             _ => {
                 if cfg!(debug_assertions) {
-                    panic!("parse_simd_u128: wrong size {}", len);
+                    panic!("parse_simd_u128: wrong len {}", len);
                 } else {
                     ::core::hint::unreachable_unchecked()
                 }
@@ -570,21 +583,19 @@ mod test {
 
     #[test]
     fn test_check_len_8() {
-        unsafe {
-            let data = [
-                ([b'1', 0, 0, 0, 0, 0, 0, 0], 1),
-                ([b'1', b'2', 0, 0, 0, 0, 0, 0], 2),
-                ([b'1', b'2', b'3', b'4', b'5', b'6', b'7', b'8'], 8),
-            ];
+        let data = [
+            ([b'1', 0, 0, 0, 0, 0, 0, 0], 1),
+            ([b'1', b'2', 0, 0, 0, 0, 0, 0], 2),
+            ([b'1', b'2', b'3', b'4', b'5', b'6', b'7', b'8'], 8),
+        ];
 
-            for (input, len) in data {
-                assert_eq!(
-                    check_len_8(vld1_u8(input.as_ptr())),
-                    len,
-                    "input: {:?}",
-                    input
-                );
-            }
+        for (input, len) in data {
+            assert_eq!(
+                unsafe { check_len_8(vld1_u8(input.as_ptr())) },
+                len,
+                "input: {:?}",
+                input
+            );
         }
     }
 }

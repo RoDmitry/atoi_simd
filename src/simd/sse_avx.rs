@@ -641,7 +641,7 @@ unsafe fn parse_simd_sse(
         16 => chunk,
         _ => {
             if cfg!(debug_assertions) {
-                panic!("parse_simd_sse: wrong size {}", len);
+                panic!("parse_simd_sse: wrong len {}", len);
             } else {
                 ::core::hint::unreachable_unchecked()
             }
@@ -809,7 +809,7 @@ pub(crate) fn parse_simd_u128<const LEN_LIMIT: u32>(
     const { debug_assert!(LEN_LIMIT <= 39) };
     unsafe {
         let (len, skipped, mut chunk) = check_avx_len::<{ LEN_LIMIT }>(s);
-        if len > LEN_LIMIT {
+        if len > LEN_LIMIT { // max 32
             return Err(AtoiSimdError::Size(len as usize, s));
         }
         let total_len = len + skipped;
