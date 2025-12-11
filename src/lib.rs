@@ -44,6 +44,24 @@
 #[cold]
 pub(crate) fn cold_path() {}
 
+#[inline(always)]
+pub(crate) fn skip_zeroes(s: &mut &[u8]) -> u32 {
+    use debug_unsafe::slice::SliceGetter;
+
+    let mut skipped = 0;
+    while s.len() > 4 {
+        let data = u32::from_le_bytes(s[0..4].try_into().unwrap());
+        let xor = data ^ 0x30303030;
+        let zeroes_len = xor.trailing_zeros() >> 3;
+        if zeroes_len == 0 {
+            break;
+        }
+        skipped += zeroes_len;
+        *s = s.get_safe_unchecked((zeroes_len as usize)..);
+    }
+    skipped
+}
+
 mod error;
 #[cfg(not(any(
     all(target_arch = "aarch64", target_feature = "neon"),

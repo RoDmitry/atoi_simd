@@ -11,7 +11,7 @@ use self::arch::{
     _mm_maddubs_epi16, _mm_movemask_epi8, _mm_mul_epu32, _mm_or_si128, _mm_packus_epi32,
     _mm_set1_epi8, _mm_set_epi16, _mm_set_epi32, _mm_set_epi8, _mm_setzero_si128, _mm_srli_epi64,
 };
-use super::shared_64::process_skipped;
+use super::process_skipped;
 use crate::AtoiSimdError;
 #[cfg(target_arch = "x86")]
 use ::core::arch::x86 as arch;

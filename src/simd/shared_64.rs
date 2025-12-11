@@ -137,19 +137,3 @@ pub(crate) fn parse_simd_checked_i128_neg(s: &[u8]) -> Result<i128, AtoiSimdErro
         Ok(-(res as i128))
     }
 }
-
-#[inline(always)]
-pub(super) fn process_skipped(
-    res: Result<(u64, usize), AtoiSimdError<'_>>,
-    skipped: u32,
-) -> Result<(u64, usize), AtoiSimdError<'_>> {
-    if skipped > 0 {
-        if matches!(res, Err(AtoiSimdError::Empty)) {
-            Ok((0, skipped as usize))
-        } else {
-            res.map(|(v, l)| (v, l + skipped as usize))
-        }
-    } else {
-        res
-    }
-}

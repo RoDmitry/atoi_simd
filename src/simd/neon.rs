@@ -1,5 +1,5 @@
-use super::shared_64::process_skipped;
-use crate::AtoiSimdError;
+use super::process_skipped;
+use crate::{skip_zeroes, AtoiSimdError};
 use ::core::{arch::aarch64::*, convert::TryInto};
 use debug_unsafe::slice::SliceGetter;
 
@@ -440,10 +440,11 @@ unsafe fn parse_simd_extra<'a>(
 
 #[inline(always)]
 pub(crate) fn parse_simd_u128<const LEN_LIMIT: u32>(
-    s: &[u8],
+    mut s: &[u8],
 ) -> Result<(u128, usize), AtoiSimdError<'_>> {
     const { debug_assert!(LEN_LIMIT > 16, "use `parse_simd_16` instead") };
     const { debug_assert!(LEN_LIMIT <= 39) };
+    let skipped = skip_zeroes(&mut s);
     unsafe {
         let mut chunk1 = load_16(s);
         let mut len = check_len_16(chunk1) as usize;
@@ -452,19 +453,20 @@ pub(crate) fn parse_simd_u128<const LEN_LIMIT: u32>(
         chunk1 = vandq_u8(chunk1, mult);
 
         if len < 16 || s.len() == 16 {
-            return parse_simd_neon(len, chunk1).map(|(v, l)| (v as u128, l));
+            let res = parse_simd_neon(len, chunk1);
+            return process_skipped(res, skipped).map(|(v, l)| (v as u128, l));
         };
         // temporal code, todo: fix
-        if s.len() > LEN_LIMIT as usize {
-            return Err(AtoiSimdError::Size(s.len(), s));
-        }
+        // if s.len() > LEN_LIMIT as usize {
+        //     return Err(AtoiSimdError::Size(s.len(), s));
+        // }
 
         let mut chunk2 = load_16(s.get_safe_unchecked(16..));
 
         len = check_len_16(chunk2) as usize;
-        if len > (LEN_LIMIT - 16) as usize { // max 32
-            return Err(AtoiSimdError::Size(len as usize, s));
-        }
+        // if len > (LEN_LIMIT - 16) as usize { // max 32
+        //     return Err(AtoiSimdError::Size(len as usize, s));
+        // }
 
         chunk2 = vandq_u8(chunk2, mult);
         let mut extra = 0;
@@ -573,7 +575,7 @@ pub(crate) fn parse_simd_u128<const LEN_LIMIT: u32>(
             res = res.checked_add(extra).ok_or(AtoiSimdError::Overflow(s))?;
         }
 
-        Ok((res, len + 16))
+        Ok((res, len + 16 + skipped as usize))
     }
 }
 
