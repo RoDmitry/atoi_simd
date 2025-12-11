@@ -464,9 +464,10 @@ pub(crate) fn parse_simd_u128<const LEN_LIMIT: u32>(
         let mut chunk2 = load_16(s.get_safe_unchecked(16..));
 
         len = check_len_16(chunk2) as usize;
-        // if len > (LEN_LIMIT - 16) as usize { // max 32
-        //     return Err(AtoiSimdError::Size(len as usize, s));
-        // }
+        // note: only LEN_LIMIT <= 32 is checked
+        if len > (LEN_LIMIT - 16) as usize {
+            return Err(AtoiSimdError::Size(len as usize, s));
+        }
 
         chunk2 = vandq_u8(chunk2, mult);
         let mut extra = 0;
