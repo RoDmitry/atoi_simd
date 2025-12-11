@@ -44,15 +44,16 @@
 #[cold]
 pub(crate) fn cold_path() {}
 
+#[allow(unused)]
 #[inline(always)]
 pub(crate) fn skip_zeroes(s: &mut &[u8]) -> u32 {
     use debug_unsafe::slice::SliceGetter;
 
     let mut skipped = 0;
-    while s.len() > 4 {
+    while s.len() > 16 {
         let data = u32::from_le_bytes(s[0..4].try_into().unwrap());
         let xor = data ^ 0x30303030;
-        let zeroes_len = xor.trailing_zeros() >> 3;
+        let zeroes_len = xor.trailing_zeros() / 8;
         if zeroes_len == 0 {
             break;
         }

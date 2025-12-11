@@ -808,7 +808,8 @@ pub(crate) fn parse_simd_u128<const LEN_LIMIT: u32>(
     const { debug_assert!(LEN_LIMIT <= 39) };
     unsafe {
         let (len, skipped, mut chunk) = check_avx_len::<{ LEN_LIMIT }>(s);
-        if len > LEN_LIMIT { // max 32
+        // note: len <= 32
+        if len > LEN_LIMIT {
             return Err(AtoiSimdError::Size(len as usize, s));
         }
         let total_len = len + skipped;
