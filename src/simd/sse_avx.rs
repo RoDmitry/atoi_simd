@@ -550,8 +550,7 @@ unsafe fn check_len(mut s: &[u8]) -> (u32, u32, __m128i) {
 
         let check_chunk = _mm_or_si128(check_high, check_low);
         let res = _mm_movemask_epi8(check_chunk) as u16;
-        let len = res.trailing_zeros();
-        if len == 16 {
+        if res == 0 {
             crate::cold_path();
             let zeros_chunk = _mm_cmpeq_epi8(chunk, cmp_min);
             let res = _mm_movemask_epi8(zeros_chunk);
@@ -563,13 +562,13 @@ unsafe fn check_len(mut s: &[u8]) -> (u32, u32, __m128i) {
             }
         }
 
-        return (len, skipped, chunk);
+        return (res.trailing_zeros(), skipped, chunk);
     }
 }
 
 #[inline(always)]
 unsafe fn check_avx_len<const LEN_LIMIT: u32>(mut s: &[u8]) -> (u32, u32, __m256i) {
-    let max_len = LEN_LIMIT.min(32);
+    let max_len = LEN_LIMIT.min(31);
     let mut skipped = 0;
     loop {
         let chunk = load_avx(s);
@@ -582,7 +581,7 @@ unsafe fn check_avx_len<const LEN_LIMIT: u32>(mut s: &[u8]) -> (u32, u32, __m256
         let check_chunk = _mm256_or_si256(check_high, check_low);
         let res = _mm256_movemask_epi8(check_chunk);
         let len = res.trailing_zeros();
-        if len >= max_len {
+        if len > max_len {
             crate::cold_path();
             let zeros_chunk = _mm256_cmpeq_epi8(chunk, cmp_min);
             let res = _mm256_movemask_epi8(zeros_chunk);
@@ -668,7 +667,7 @@ unsafe fn parse_simd_sse(
     Ok((res, len as usize))
 }
 
-#[inline]
+#[inline(always)]
 unsafe fn simd_sse_len(s: &[u8]) -> (u32, __m128i) {
     let (len, mut chunk) = check_len_noskip(s);
 
@@ -677,7 +676,7 @@ unsafe fn simd_sse_len(s: &[u8]) -> (u32, __m128i) {
     (len, chunk)
 }
 
-#[inline]
+#[inline(always)]
 pub(crate) fn parse_simd_16_noskip(s: &[u8]) -> Result<(u64, usize), AtoiSimdError<'_>> {
     unsafe {
         let (len, chunk) = simd_sse_len(s);
@@ -685,7 +684,7 @@ pub(crate) fn parse_simd_16_noskip(s: &[u8]) -> Result<(u64, usize), AtoiSimdErr
     }
 }
 
-#[inline]
+#[inline(always)]
 pub(crate) fn parse_simd_16(s: &[u8]) -> Result<(u64, usize), AtoiSimdError<'_>> {
     unsafe {
         let (len, skipped, mut chunk) = check_len(s);
