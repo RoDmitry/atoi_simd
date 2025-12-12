@@ -506,9 +506,7 @@ unsafe fn load_avx(s: &[u8]) -> __m256i {
 /// to numbers      [ 0x06050403020100090807060504030201 ]
 #[inline(always)]
 unsafe fn to_numbers(chunk: __m128i) -> __m128i {
-    let mult = _mm_set1_epi8(0xF);
-
-    _mm_and_si128(chunk, mult)
+    _mm_and_si128(chunk, _mm_set1_epi8(0xF))
 }
 
 #[inline(always)]
@@ -522,7 +520,7 @@ unsafe fn process_avx_gt(cmp_left: __m256i, cmp_right: __m256i) -> __m256i {
 }
 
 #[inline(always)]
-unsafe fn check_len_noskip(s: &[u8]) -> (u32, __m128i) {
+unsafe fn load_len_noskip(s: &[u8]) -> (u32, __m128i) {
     let chunk = load(s);
 
     let cmp_max = _mm_set1_epi8(CHAR_MAX);
@@ -538,7 +536,7 @@ unsafe fn check_len_noskip(s: &[u8]) -> (u32, __m128i) {
 }
 
 #[inline(always)]
-unsafe fn check_len(mut s: &[u8]) -> (u32, u32, __m128i) {
+unsafe fn load_len(mut s: &[u8]) -> (u32, u32, __m128i) {
     let mut skipped = 0;
     loop {
         let chunk = load(s);
@@ -550,6 +548,8 @@ unsafe fn check_len(mut s: &[u8]) -> (u32, u32, __m128i) {
 
         let check_chunk = _mm_or_si128(check_high, check_low);
         let res = _mm_movemask_epi8(check_chunk) as u16;
+
+        // if all numbers
         if res == 0 {
             crate::cold_path();
             let zeros_chunk = _mm_cmpeq_epi8(chunk, cmp_min);
@@ -581,11 +581,12 @@ unsafe fn check_avx_len<const LEN_LIMIT: u32>(mut s: &[u8]) -> (u32, u32, __m256
         let check_chunk = _mm256_or_si256(check_high, check_low);
         let res = _mm256_movemask_epi8(check_chunk);
         let len = res.trailing_zeros();
+
         if len > max_len {
             crate::cold_path();
             let zeros_chunk = _mm256_cmpeq_epi8(chunk, cmp_min);
-            let res = _mm256_movemask_epi8(zeros_chunk);
-            let zeros = res.trailing_ones();
+            let zeros_res = _mm256_movemask_epi8(zeros_chunk);
+            let zeros = zeros_res.trailing_ones();
             if zeros > 0 {
                 skipped += zeros;
                 s = s.get_safe_unchecked((zeros as usize)..);
@@ -668,8 +669,8 @@ unsafe fn parse_simd_sse(
 }
 
 #[inline(always)]
-unsafe fn simd_sse_len(s: &[u8]) -> (u32, __m128i) {
-    let (len, mut chunk) = check_len_noskip(s);
+unsafe fn simd_sse_len_noskip(s: &[u8]) -> (u32, __m128i) {
+    let (len, mut chunk) = load_len_noskip(s);
 
     chunk = to_numbers(chunk);
 
@@ -679,7 +680,7 @@ unsafe fn simd_sse_len(s: &[u8]) -> (u32, __m128i) {
 #[inline(always)]
 pub(crate) fn parse_simd_16_noskip(s: &[u8]) -> Result<(u64, usize), AtoiSimdError<'_>> {
     unsafe {
-        let (len, chunk) = simd_sse_len(s);
+        let (len, chunk) = simd_sse_len_noskip(s);
         parse_simd_sse(len, chunk)
     }
 }
@@ -687,7 +688,7 @@ pub(crate) fn parse_simd_16_noskip(s: &[u8]) -> Result<(u64, usize), AtoiSimdErr
 #[inline(always)]
 pub(crate) fn parse_simd_16(s: &[u8]) -> Result<(u64, usize), AtoiSimdError<'_>> {
     unsafe {
-        let (len, skipped, mut chunk) = check_len(s);
+        let (len, skipped, mut chunk) = load_len(s);
 
         chunk = to_numbers(chunk);
 

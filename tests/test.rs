@@ -551,6 +551,9 @@ fn test_zeroes() {
     let tmp: u64 = parse(b"000000000000000000000000000000000000000000000000000000000000").unwrap();
     assert_eq!(tmp, 0_u64);
 
+    let tmp: u64 = parse(b"0000000000000123").unwrap();
+    assert_eq!(tmp, 123_u64);
+
     let tmp: u64 = parse(b"00000000000000000001").unwrap();
     assert_eq!(tmp, 1_u64);
 
