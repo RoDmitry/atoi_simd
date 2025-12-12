@@ -176,7 +176,7 @@ pub(crate) fn parse_fb_pos<const MAX: u64>(s: &[u8]) -> Result<(u64, usize), Ato
 
 #[inline(always)]
 pub(crate) fn parse_fb_neg<const MIN: i64>(s: &[u8]) -> Result<(i64, usize), AtoiSimdError<'_>> {
-    debug_assert!(MIN < 0);
+    const { assert!(MIN < 0) }
     let (val, len) = match parse_16_by_8(s) {
         EarlyReturn::Ok((v, l)) | EarlyReturn::Ret((v, l)) => (-(v as i64), l),
         EarlyReturn::Err(e) => return Err(e),
@@ -289,7 +289,7 @@ pub(crate) fn parse_fb_checked_pos<const MAX: u64>(s: &[u8]) -> Result<u64, Atoi
 
 #[inline(always)]
 pub(crate) fn parse_fb_checked_neg<const MIN: i64>(s: &[u8]) -> Result<i64, AtoiSimdError<'_>> {
-    debug_assert!(MIN < 0);
+    const { assert!(MIN < 0) }
     let (res, len) = parse_fb_neg::<MIN>(s)?;
     if len != s.len() {
         return Err(AtoiSimdError::Invalid64(-res as u64, len, s));
@@ -350,7 +350,7 @@ pub(crate) fn parse_short_pos<const MAX: u64>(s: &[u8]) -> Result<(u64, usize), 
 
 #[inline(always)]
 pub(crate) fn parse_short_neg<const MIN: i64>(s: &[u8]) -> Result<(i64, usize), AtoiSimdError<'_>> {
-    debug_assert!(MIN < 0);
+    const { assert!(MIN < 0) }
     let (val, len) = parse_4(s)?;
     let val = -(val as i64);
     if val < MIN {
@@ -362,7 +362,7 @@ pub(crate) fn parse_short_neg<const MIN: i64>(s: &[u8]) -> Result<(i64, usize), 
 
 #[inline(always)]
 pub(crate) fn parse_short_checked_neg<const MIN: i64>(s: &[u8]) -> Result<i64, AtoiSimdError<'_>> {
-    debug_assert!(MIN < 0);
+    const { assert!(MIN < 0) }
     let (res, len) = parse_short_neg::<MIN>(s)?;
     if len != s.len() {
         return Err(AtoiSimdError::Invalid64(-res as u64, len));

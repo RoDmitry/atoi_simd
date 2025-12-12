@@ -442,8 +442,8 @@ unsafe fn parse_simd_extra<'a>(
 pub(crate) fn parse_simd_u128<const LEN_LIMIT: u32>(
     mut s: &[u8],
 ) -> Result<(u128, usize), AtoiSimdError<'_>> {
-    const { debug_assert!(LEN_LIMIT > 16, "use `parse_simd_16` instead") };
-    const { debug_assert!(LEN_LIMIT <= 39) };
+    const { assert!(LEN_LIMIT > 16, "use `parse_simd_16` instead") };
+    const { assert!(LEN_LIMIT <= 39) };
     let skipped = skip_zeroes(&mut s);
     unsafe {
         let mut chunk1 = load_16(s);

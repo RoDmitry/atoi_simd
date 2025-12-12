@@ -804,8 +804,8 @@ unsafe fn process_avx(
 pub(crate) fn parse_simd_u128<const LEN_LIMIT: u32>(
     s: &[u8],
 ) -> Result<(u128, usize), AtoiSimdError<'_>> {
-    const { debug_assert!(LEN_LIMIT > 16, "use `parse_simd_16` instead") };
-    const { debug_assert!(LEN_LIMIT <= 39) };
+    const { assert!(LEN_LIMIT > 16, "use `parse_simd_16` instead") };
+    const { assert!(LEN_LIMIT <= 39) };
     unsafe {
         let (len, skipped, mut chunk) = check_avx_len::<{ LEN_LIMIT }>(s);
         // note: len <= 32
