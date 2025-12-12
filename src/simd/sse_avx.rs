@@ -567,7 +567,7 @@ unsafe fn load_len(mut s: &[u8]) -> (u32, u32, __m128i) {
 }
 
 #[inline(always)]
-unsafe fn load_avx_len<const LEN_LIMIT: u32>(mut s: &[u8]) -> (u32, u32, __m256i) {
+unsafe fn load_avx_len<const LEN_LIMIT: u32>(s: &mut &[u8]) -> (u32, u32, __m256i) {
     let max_len = LEN_LIMIT.min(31);
     let mut skipped = 0;
     loop {
@@ -589,7 +589,7 @@ unsafe fn load_avx_len<const LEN_LIMIT: u32>(mut s: &[u8]) -> (u32, u32, __m256i
             let zeros = zeros_res.trailing_ones();
             if zeros > 0 {
                 skipped += zeros;
-                s = s.get_safe_unchecked((zeros as usize)..);
+                *s = s.get_safe_unchecked((zeros as usize)..);
                 continue;
             }
         }
@@ -803,12 +803,12 @@ unsafe fn process_avx(
 /// Uses AVX/AVX2 intrinsics
 #[inline(always)]
 pub(crate) fn parse_simd_u128<const LEN_LIMIT: u32>(
-    s: &[u8],
+    mut s: &[u8],
 ) -> Result<(u128, usize), AtoiSimdError<'_>> {
     const { assert!(LEN_LIMIT > 16, "use `parse_simd_16` instead") };
     const { assert!(LEN_LIMIT <= 39) };
     unsafe {
-        let (len, skipped, mut chunk) = load_avx_len::<{ LEN_LIMIT }>(s);
+        let (len, skipped, mut chunk) = load_avx_len::<{ LEN_LIMIT }>(&mut s);
         // note: len <= 32
         if len > LEN_LIMIT {
             return Err(AtoiSimdError::Size(len as usize, s));
@@ -846,7 +846,7 @@ pub(crate) fn parse_simd_u128<const LEN_LIMIT: u32>(
             30 => _mm256_alignr_epi8(chunk, chunk_sh, 14),
             31 => _mm256_alignr_epi8(chunk, chunk_sh, 15),
             32 => {
-                if s.len() > total_len as usize {
+                if s.len() > len as usize {
                     (len_extra, chunk_extra) = simd_sse_len_noskip(s.get_safe_unchecked(32..));
                 }
                 chunk

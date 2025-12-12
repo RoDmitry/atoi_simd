@@ -37,6 +37,12 @@ fn bench_64(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
     bench_group.bench_with_input(BenchmarkId::new("parse u64", str.len()), str, |b, val| {
         b.iter(|| parse::<u64>(val.as_bytes()).unwrap())
     });
+    let one_zero = "0".to_owned() + str;
+    bench_group.bench_with_input(
+        BenchmarkId::new("parse zero u64", one_zero.len()),
+        &one_zero,
+        |b, val| b.iter(|| parse::<u64>(val.as_bytes()).unwrap()),
+    );
     if str.len() < 20 {
         bench_group.bench_with_input(BenchmarkId::new("parse i64", str.len()), str, |b, val| {
             b.iter(|| parse::<i64>(val.as_bytes()).unwrap())
@@ -96,6 +102,12 @@ fn bench_128(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
     bench_group.bench_with_input(BenchmarkId::new("parse u128", str.len()), str, |b, val| {
         b.iter(|| parse::<u128>(val.as_bytes()).unwrap())
     });
+    let one_zero = "0".to_owned() + str;
+    bench_group.bench_with_input(
+        BenchmarkId::new("parse zero u128", one_zero.len()),
+        &one_zero,
+        |b, val| b.iter(|| parse::<u128>(val.as_bytes()).unwrap()),
+    );
     bench_group.bench_with_input(BenchmarkId::new("parse i128", str.len()), str, |b, val| {
         b.iter(|| parse::<i128>(val.as_bytes()).unwrap())
     });

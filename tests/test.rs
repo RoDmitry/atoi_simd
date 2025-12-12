@@ -5,7 +5,7 @@ use atoi_simd::*;
 const INVALID_CHARS: [char; 6] = ['/', ':', '\0', '\x7f', '!', 'a'];
 
 fn test_each_position<T: Copy>(s: &str, func: fn(&[u8]) -> Result<T, AtoiSimdError<'_>>) {
-    let mut s_new = ArrayString::<40>::new();
+    let mut s_new = ArrayString::<41>::new();
     for j in 0..=s.len() {
         for ch_invalid in INVALID_CHARS {
             s_new.push_str(&s[0..j]);
@@ -23,7 +23,7 @@ fn test_each_position_prefix<T: Copy + Debug + PartialEq + FromStr>(
 ) where
     <T as FromStr>::Err: Debug,
 {
-    let mut s_new = ArrayString::<40>::new();
+    let mut s_new = ArrayString::<41>::new();
     for j in 1..=s.len() {
         for ch_invalid in INVALID_CHARS {
             let ts = &s[0..j];
@@ -32,7 +32,9 @@ fn test_each_position_prefix<T: Copy + Debug + PartialEq + FromStr>(
             s_new.push_str(&s[j..s.len()]);
             assert_eq!(
                 func(s_new.as_bytes()).unwrap(),
-                (ts.parse::<T>().unwrap(), j)
+                (ts.parse::<T>().unwrap(), j),
+                "input: {}",
+                s_new
             );
             s_new.clear();
         }
@@ -68,6 +70,8 @@ fn parse_tester<
             );
         }
     }
+    assert_eq!(s.len(), LEN);
+    assert_eq!(s_neg.len(), LEN_NEG);
 }
 
 fn parse_prefix_tester<
@@ -102,6 +106,8 @@ fn parse_prefix_tester<
         }
         test_each_position_prefix(&s, parse_prefix::<T>);
     }
+    assert_eq!(s.len(), LEN);
+    assert_eq!(s_neg.len(), LEN_NEG);
 }
 
 #[test]
@@ -110,7 +116,7 @@ fn test_parse_u8() {
 
     assert_eq!(parse::<u8>(b"0").unwrap(), 0_u8);
 
-    parse_tester::<u8, 3, 0, _>('1'..='3');
+    parse_tester::<u8, 4, 0, _>('0'..='3');
 
     assert_eq!(parse::<u8>(b"255").unwrap(), u8::MAX);
 
@@ -135,7 +141,7 @@ fn test_parse_i8() {
     assert_eq!(parse::<i8>(b"0").unwrap(), 0_i8);
     assert_eq!(parse::<i8>(b"-0").unwrap(), 0_i8);
 
-    parse_tester::<i8, 3, 4, _>('1'..='3');
+    parse_tester::<i8, 4, 5, _>('0'..='3');
 
     assert_eq!(parse::<i8>(b"127").unwrap(), i8::MAX);
     assert_eq!(parse::<i8>(b"-128").unwrap(), i8::MIN);
@@ -154,7 +160,7 @@ fn test_parse_u16() {
 
     assert_eq!(parse::<u16>(b"0").unwrap(), 0_u16);
 
-    parse_tester::<u16, 5, 0, _>('1'..='5');
+    parse_tester::<u16, 6, 0, _>('0'..='5');
 
     assert_eq!(parse::<u16>(b"65535").unwrap(), u16::MAX);
 
@@ -180,7 +186,7 @@ fn test_parse_i16() {
     assert_eq!(parse::<i16>(b"0").unwrap(), 0_i16);
     assert_eq!(parse::<i16>(b"-0").unwrap(), 0_i16);
 
-    parse_tester::<i16, 5, 6, _>('1'..='5');
+    parse_tester::<i16, 6, 7, _>('0'..='5');
 
     assert_eq!(parse::<i16>(b"32767").unwrap(), i16::MAX);
     assert_eq!(parse::<i16>(b"-32768").unwrap(), i16::MIN);
@@ -199,7 +205,7 @@ fn test_parse_u32() {
 
     assert_eq!(parse::<u32>(b"0").unwrap(), 0_u32);
 
-    parse_tester::<u32, 10, 0, _>(('1'..='9').chain('0'..='0'));
+    parse_tester::<u32, 11, 0, _>(('0'..='9').chain('0'..='0'));
 
     assert_eq!(parse::<u32>(b"4294967295").unwrap(), u32::MAX);
 
@@ -214,7 +220,7 @@ fn test_parse_prefix_u32() {
 
     assert_eq!(parse_prefix::<u32>(b"0").unwrap(), (0_u32, 1_usize));
 
-    parse_prefix_tester::<u32, 10, 0, _>(('1'..='9').chain('0'..='0'));
+    parse_prefix_tester::<u32, 11, 0, _>(('0'..='9').chain('0'..='0'));
 }
 
 #[test]
@@ -225,7 +231,7 @@ fn test_parse_i32() {
     assert_eq!(parse::<i32>(b"0").unwrap(), 0_i32);
     assert_eq!(parse::<i32>(b"-0").unwrap(), 0_i32);
 
-    parse_tester::<i32, 10, 11, _>(('1'..='9').chain('0'..='0'));
+    parse_tester::<i32, 11, 12, _>(('0'..='9').chain('0'..='0'));
 
     assert_eq!(parse::<i32>(b"2147483647").unwrap(), i32::MAX);
     assert_eq!(parse::<i32>(b"-2147483648").unwrap(), i32::MIN);
@@ -244,7 +250,7 @@ fn test_parse_u64() {
 
     assert_eq!(parse::<u64>(b"0").unwrap(), 0_u64);
 
-    parse_tester::<u64, 20, 0, _>(('1'..='9').chain('0'..='9').chain('0'..='0'));
+    parse_tester::<u64, 21, 0, _>(('0'..='9').chain('0'..='9').chain('0'..='0'));
 
     assert_eq!(parse::<u64>(b"18446744073709551615").unwrap(), u64::MAX);
 
@@ -259,7 +265,7 @@ fn test_parse_prefix_u64() {
 
     assert_eq!(parse_prefix::<u64>(b"0").unwrap(), (0_u64, 1_usize));
 
-    parse_prefix_tester::<u64, 20, 0, _>(('1'..='9').chain('0'..='9').chain('0'..='0'));
+    parse_prefix_tester::<u64, 21, 0, _>(('0'..='9').chain('0'..='9').chain('0'..='0'));
 
     assert_eq!(
         parse_prefix::<u64>(b"18446744073709551615").unwrap(),
@@ -286,7 +292,7 @@ fn test_parse_i64() {
     assert_eq!(parse::<i64>(b"0").unwrap(), 0_i64);
     assert_eq!(parse::<i64>(b"-0").unwrap(), 0_i64);
 
-    parse_tester::<i64, 19, 20, _>(('1'..='9').chain('0'..='9'));
+    parse_tester::<i64, 20, 21, _>(('0'..='9').chain('0'..='9'));
 
     assert_eq!(parse::<i64>(b"9223372036854775807").unwrap(), i64::MAX);
     assert_eq!(parse::<i64>(b"-9223372036854775808").unwrap(), i64::MIN);
@@ -305,8 +311,8 @@ fn test_parse_u128() {
 
     assert_eq!(parse::<u128>(b"0").unwrap(), 0_u128);
 
-    parse_tester::<u128, 39, 0, _>(
-        ('1'..='9')
+    parse_tester::<u128, 40, 0, _>(
+        ('0'..='9')
             .chain('0'..='9')
             .chain('0'..='9')
             .chain('0'..='9'),
@@ -353,8 +359,8 @@ fn test_parse_prefix_u128() {
 
     assert_eq!(parse_prefix::<u128>(b"0").unwrap(), (0_u128, 1_usize));
 
-    parse_prefix_tester::<u128, 39, 0, _>(
-        ('1'..='9')
+    parse_prefix_tester::<u128, 40, 0, _>(
+        ('0'..='9')
             .chain('0'..='9')
             .chain('0'..='9')
             .chain('0'..='9'),
@@ -385,8 +391,8 @@ fn test_parse_i128() {
     assert_eq!(parse::<i128>(b"0").unwrap(), 0_i128);
     assert_eq!(parse::<i128>(b"-0").unwrap(), 0_i128);
 
-    parse_tester::<i128, 39, 40, _>(
-        ('1'..='9')
+    parse_tester::<i128, 40, 41, _>(
+        ('0'..='9')
             .chain('0'..='9')
             .chain('0'..='9')
             .chain('0'..='9'),
