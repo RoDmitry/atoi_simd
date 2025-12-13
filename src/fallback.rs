@@ -50,11 +50,10 @@ fn load_8(s: &[u8]) -> u64 {
 /// 6
 #[inline(always)]
 fn check_len_8(val: u64) -> usize {
-    ((((val & 0xF0F0_F0F0_F0F0_F0F0)
-        | (((val.wrapping_add(0x0606_0606_0606_0606)) & 0xF0F0_F0F0_F0F0_F0F0) >> 4))
-        ^ 0x3333_3333_3333_3333)
-        .trailing_zeros()
-        >> 3) as usize // same as divide by 8 (drops extra bits from right)
+    let high = (val.wrapping_add(0x0606_0606_0606_0606) & 0xF0F0_F0F0_F0F0_F0F0) >> 4;
+    let low = val & 0xF0F0_F0F0_F0F0_F0F0;
+    let res = (high | low) ^ 0x3333_3333_3333_3333;
+    (res.trailing_zeros() / 8) as usize
 }
 
 /* #[inline(always)]
@@ -153,7 +152,7 @@ fn parse_16_by_8(s: &[u8]) -> EarlyReturn<(u64, usize), AtoiSimdError<'_>> {
         }
         _ => {
             if cfg!(debug_assertions) {
-                panic!("fallback parse_16_by_8: wrong len {}", len);
+                unreachable!("fallback parse_16_by_8: wrong len {}", len);
             } else {
                 unsafe { ::core::hint::unreachable_unchecked() }
             }
@@ -370,3 +369,18 @@ pub(crate) fn parse_short_checked_neg<const MIN: i64>(s: &[u8]) -> Result<i64, A
 
     Ok(res)
 } */
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_check_len_8() {
+        let data = [(0xFF30_3030_3030_3039, 7)];
+
+        for (input, len) in data {
+            let loaded_len = check_len_8(input);
+            assert_eq!(loaded_len, len, "input: {:X?}", input);
+        }
+    }
+}

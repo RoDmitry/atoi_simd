@@ -191,7 +191,6 @@ unsafe fn load_len_8_noskip(s: &[u8]) -> (u32, uint8x8_t) {
     let res = vget_lane_u64(check_chunk, 0);
 
     let len = res.trailing_zeros() / 8;
-    debug_assert!(len <= 8);
     unsafe { ::core::hint::assert_unchecked(len <= 8) }
 
     (len, chunk)
@@ -214,7 +213,6 @@ unsafe fn load_len_16_noskip(s: &[u8]) -> (u32, uint8x16_t) {
     let res = vget_lane_u64(check_chunk, 0);
 
     let len = res.trailing_zeros() / 4;
-    debug_assert!(len <= 16);
     unsafe { ::core::hint::assert_unchecked(len <= 16) }
 
     (len, chunk)
@@ -255,7 +253,6 @@ unsafe fn load_len_16(s: &mut &[u8]) -> (u32, u32, uint8x16_t) {
         }
 
         let len = res.trailing_zeros() / 4;
-        debug_assert!(len <= 16);
         unsafe { ::core::hint::assert_unchecked(len <= 16) }
 
         return (len, skipped, chunk);
@@ -288,7 +285,7 @@ unsafe fn parse_simd_neon(
         16 => chunk,
         _ => {
             if cfg!(debug_assertions) {
-                panic!("parse_simd_neon: wrong len {}", len);
+                unreachable!("parse_simd_neon: wrong len {}", len);
             } else {
                 ::core::hint::unreachable_unchecked()
             }
@@ -575,7 +572,7 @@ pub(crate) fn parse_simd_u128<const LEN_LIMIT: u32>(
             // SAFETY: len is always <= 16
             _ => {
                 if cfg!(debug_assertions) {
-                    panic!("parse_simd_u128: wrong len {}", len);
+                    unreachable!("parse_simd_u128: wrong len {}", len);
                 } else {
                     ::core::hint::unreachable_unchecked()
                 }
@@ -629,7 +626,7 @@ mod test {
 
         for (input, len) in data {
             let (loaded_len, _) = unsafe { load_len_8_noskip(&input) };
-            assert_eq!(loaded_len, len, "input: {:?}", input);
+            assert_eq!(loaded_len, len, "input: {:X?}", input);
         }
     }
 
@@ -661,8 +658,8 @@ mod test {
 
         for (input, len, skip) in data {
             let (loaded_len, loaded_skip, _) = unsafe { load_len_16(&mut input.as_ref()) };
-            assert_eq!(loaded_len, len, "input: {:?}", input);
-            assert_eq!(loaded_skip, skip, "input: {:?}", input);
+            assert_eq!(loaded_len, len, "input: {:X?}", input);
+            assert_eq!(loaded_skip, skip, "input: {:X?}", input);
         }
     }
 }

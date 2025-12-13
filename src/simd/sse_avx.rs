@@ -641,7 +641,7 @@ unsafe fn parse_simd_sse(
         16 => chunk,
         _ => {
             if cfg!(debug_assertions) {
-                panic!("parse_simd_sse: wrong len {}", len);
+                unreachable!("parse_simd_sse: wrong len {}", len);
             } else {
                 ::core::hint::unreachable_unchecked()
             }
