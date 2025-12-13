@@ -1,4 +1,4 @@
-use atoi_simd::{parse, parse_prefix, parse_skipped};
+use atoi_simd::{parse, parse_prefix};
 use criterion::{
     criterion_group, criterion_main, measurement::WallTime, BenchmarkGroup, BenchmarkId, Criterion,
 };
@@ -37,12 +37,11 @@ fn bench_64(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
     bench_group.bench_with_input(BenchmarkId::new("parse u64", str.len()), str, |b, val| {
         b.iter(|| parse::<u64>(val.as_bytes()).unwrap())
     });
-    let one_zero = "0".to_owned() + str;
-    bench_group.bench_with_input(
-        BenchmarkId::new("parse zero u64", one_zero.len()),
-        &one_zero,
-        |b, val| b.iter(|| parse::<u64>(val.as_bytes()).unwrap()),
-    );
+    /* bench_group.bench_with_input(
+        BenchmarkId::new("parse_skipped u64", str.len()),
+        str,
+        |b, val| b.iter(|| parse_skipped::<u64>(val.as_bytes()).unwrap()),
+    ); */
     if str.len() < 20 {
         bench_group.bench_with_input(BenchmarkId::new("parse i64", str.len()), str, |b, val| {
             b.iter(|| parse::<i64>(val.as_bytes()).unwrap())
@@ -78,20 +77,22 @@ fn bench_64(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
         );
     }
 
+    let zero = "0".to_owned() + str;
     bench_group.bench_with_input(
-        BenchmarkId::new("parse_skipped u64", str.len()),
-        str,
-        |b, val| b.iter(|| parse_skipped::<u64>(val.as_bytes()).unwrap()),
+        BenchmarkId::new("parse zero u64", zero.len()),
+        &zero,
+        |b, val| b.iter(|| parse::<u64>(val.as_bytes()).unwrap()),
     );
-    let plus_zeroes = "+0000000000000000000".to_owned() + str;
+
+    let zeroes_16 = "0000000000000000".to_owned() + str;
     bench_group.bench_with_input(
-        BenchmarkId::new("parse_skipped +zeroes u64", plus_zeroes.len()),
-        &plus_zeroes,
-        |b, val| b.iter(|| parse_skipped::<u64>(val.as_bytes()).unwrap()),
+        BenchmarkId::new("parse zeroes_16 u64", zeroes_16.len()),
+        &zeroes_16,
+        |b, val| b.iter(|| parse::<u64>(val.as_bytes()).unwrap()),
     );
     bench_group.bench_with_input(
-        BenchmarkId::new("str +zeroes u64", plus_zeroes.len()),
-        &plus_zeroes,
+        BenchmarkId::new("str zeroes_16 u64", zeroes_16.len()),
+        &zeroes_16,
         |b, val| b.iter(|| val.parse::<u64>().unwrap()),
     );
 }
@@ -102,12 +103,6 @@ fn bench_128(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
     bench_group.bench_with_input(BenchmarkId::new("parse u128", str.len()), str, |b, val| {
         b.iter(|| parse::<u128>(val.as_bytes()).unwrap())
     });
-    let one_zero = "0".to_owned() + str;
-    bench_group.bench_with_input(
-        BenchmarkId::new("parse zero u128", one_zero.len()),
-        &one_zero,
-        |b, val| b.iter(|| parse::<u128>(val.as_bytes()).unwrap()),
-    );
     bench_group.bench_with_input(BenchmarkId::new("parse i128", str.len()), str, |b, val| {
         b.iter(|| parse::<i128>(val.as_bytes()).unwrap())
     });
@@ -127,6 +122,25 @@ fn bench_128(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
         BenchmarkId::new("str neg i128", str.len()),
         &str_neg,
         |b, val| b.iter(|| val.parse::<i128>().unwrap()),
+    );
+
+    let zero = "0".to_owned() + str;
+    bench_group.bench_with_input(
+        BenchmarkId::new("parse zero u128", zero.len()),
+        &zero,
+        |b, val| b.iter(|| parse::<u128>(val.as_bytes()).unwrap()),
+    );
+
+    let zeroes_32 = "00000000000000000000000000000000".to_owned() + str;
+    bench_group.bench_with_input(
+        BenchmarkId::new("parse zeroes_32 u128", zeroes_32.len()),
+        &zeroes_32,
+        |b, val| b.iter(|| parse::<u128>(val.as_bytes()).unwrap()),
+    );
+    bench_group.bench_with_input(
+        BenchmarkId::new("str zeroes_32 u128", zeroes_32.len()),
+        &zeroes_32,
+        |b, val| b.iter(|| val.parse::<u128>().unwrap()),
     );
 }
 

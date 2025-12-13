@@ -1,11 +1,11 @@
-use ::core::{fmt::Debug, str::FromStr};
+use ::core::{fmt::Debug, iter, str::FromStr};
 use arrayvec::ArrayString;
 use atoi_simd::*;
 
 const INVALID_CHARS: [char; 6] = ['/', ':', '\0', '\x7f', '!', 'a'];
 
 fn test_each_position<T: Copy>(s: &str, func: fn(&[u8]) -> Result<T, AtoiSimdError<'_>>) {
-    let mut s_new = ArrayString::<41>::new();
+    let mut s_new = ArrayString::<51>::new();
     for j in 0..=s.len() {
         for ch_invalid in INVALID_CHARS {
             s_new.push_str(&s[0..j]);
@@ -23,7 +23,7 @@ fn test_each_position_prefix<T: Copy + Debug + PartialEq + FromStr>(
 ) where
     <T as FromStr>::Err: Debug,
 {
-    let mut s_new = ArrayString::<41>::new();
+    let mut s_new = ArrayString::<51>::new();
     for j in 1..=s.len() {
         for ch_invalid in INVALID_CHARS {
             let ts = &s[0..j];
@@ -207,6 +207,8 @@ fn test_parse_u32() {
 
     parse_tester::<u32, 11, 0, _>(('0'..='9').chain('0'..='0'));
 
+    parse_tester::<u32, 50, 0, _>(iter::repeat_n('0', 50));
+
     assert_eq!(parse::<u32>(b"4294967295").unwrap(), u32::MAX);
 
     assert!(parse::<u32>(b"4294967296").is_err());
@@ -251,6 +253,8 @@ fn test_parse_u64() {
     assert_eq!(parse::<u64>(b"0").unwrap(), 0_u64);
 
     parse_tester::<u64, 21, 0, _>(('0'..='9').chain('0'..='9').chain('0'..='0'));
+
+    parse_tester::<u64, 50, 0, _>(iter::repeat_n('0', 50));
 
     assert_eq!(parse::<u64>(b"18446744073709551615").unwrap(), u64::MAX);
 
@@ -317,6 +321,8 @@ fn test_parse_u128() {
             .chain('0'..='9')
             .chain('0'..='9'),
     );
+
+    parse_tester::<u128, 50, 0, _>(iter::repeat_n('0', 50));
 
     assert_eq!(
         parse::<u128>(b"9999999999999999").unwrap(),
