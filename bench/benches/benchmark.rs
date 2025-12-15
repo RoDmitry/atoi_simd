@@ -227,11 +227,23 @@ fn benchmark_group_max_20(
         str.push(i);
         func(bench_group, &str);
     }
-    str = "123456789012345".to_owned();
 
-    for i in '6'..='7' {
-        str.push(i);
-        func(bench_group, &str);
+    if cfg!(feature = "full") {
+        for i in '6'..='9' {
+            str.push(i);
+            func(bench_group, &str);
+        }
+
+        for i in '0'..='7' {
+            str.push(i);
+            func(bench_group, &str);
+        }
+    } else {
+        str = "123456789012345".to_owned();
+        for i in '6'..='7' {
+            str.push(i);
+            func(bench_group, &str);
+        }
     }
 
     str = "1234567890123456789".to_owned();
