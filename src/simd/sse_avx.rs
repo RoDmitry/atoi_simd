@@ -521,7 +521,7 @@ unsafe fn process_avx_gt(cmp_left: __m256i, cmp_right: __m256i) -> __m256i {
 
 #[inline(always)]
 unsafe fn load_len(s: &[u8]) -> (u32, __m128i) {
-    let chunk = load(s);
+    let mut chunk = load(s);
 
     let cmp_max = _mm_set1_epi8(CHAR_MAX);
     let cmp_min = _mm_set1_epi8(CHAR_MIN);
@@ -532,43 +532,14 @@ unsafe fn load_len(s: &[u8]) -> (u32, __m128i) {
     let res = _mm_movemask_epi8(check_chunk) as u16;
     let len = res.trailing_zeros();
 
+    chunk = to_numbers(chunk);
+
     (len, chunk)
 }
 
 #[inline(always)]
-unsafe fn load_len_skipped(mut s: &[u8]) -> (u32, u32, __m128i) {
-    let mut skipped = 0;
-    loop {
-        let chunk = load(s);
-
-        let cmp_max = _mm_set1_epi8(CHAR_MAX);
-        let cmp_min = _mm_set1_epi8(CHAR_MIN);
-        let check_high = process_gt(chunk, cmp_max);
-        let check_low = process_gt(cmp_min, chunk);
-
-        let check_chunk = _mm_or_si128(check_high, check_low);
-        let res = _mm_movemask_epi8(check_chunk) as u16;
-
-        // if all numbers
-        if res == 0 {
-            crate::cold_path();
-            let zeros_chunk = _mm_cmpeq_epi8(chunk, cmp_min);
-            let res = _mm_movemask_epi8(zeros_chunk);
-            let zeros = res.trailing_ones();
-            if zeros > 0 {
-                skipped += zeros;
-                s = s.get_safe_unchecked((zeros as usize)..);
-                continue;
-            }
-        }
-
-        return (res.trailing_zeros(), skipped, chunk);
-    }
-}
-
-#[inline(always)]
 unsafe fn load_avx_len(s: &[u8]) -> (u32, __m256i) {
-    let chunk = load_avx(s);
+    let mut chunk = load_avx(s);
 
     let cmp_max = _mm256_set1_epi8(CHAR_MAX);
     let cmp_min = _mm256_set1_epi8(CHAR_MIN);
@@ -578,6 +549,9 @@ unsafe fn load_avx_len(s: &[u8]) -> (u32, __m256i) {
     let check_chunk = _mm256_or_si256(check_high, check_low);
     let res = _mm256_movemask_epi8(check_chunk);
     let len = res.trailing_zeros();
+
+    // to numbers
+    chunk = _mm256_and_si256(chunk, _mm256_set1_epi8(0xF));
 
     (len, chunk)
 }
@@ -653,31 +627,36 @@ unsafe fn parse_simd_sse(
 }
 
 #[inline(always)]
-unsafe fn simd_sse_len(s: &[u8]) -> (u32, __m128i) {
-    let (len, mut chunk) = load_len(s);
-
-    chunk = to_numbers(chunk);
-
-    (len, chunk)
-}
-
-#[inline(always)]
 pub(crate) fn parse_simd_16_noskip(s: &[u8]) -> Result<(u64, usize), AtoiSimdError<'_>> {
     unsafe {
-        let (len, chunk) = simd_sse_len(s);
+        let (len, chunk) = load_len(s);
         parse_simd_sse(len, chunk)
     }
 }
 
 #[inline(always)]
-pub(crate) fn parse_simd_16(s: &[u8]) -> Result<(u64, usize), AtoiSimdError<'_>> {
-    unsafe {
-        let (len, skipped, mut chunk) = load_len_skipped(s);
+pub(crate) fn parse_simd_16(mut s: &[u8]) -> Result<(u64, usize), AtoiSimdError<'_>> {
+    let mut skipped = 0;
+    loop {
+        unsafe {
+            let (len, chunk) = load_len(s);
 
-        chunk = to_numbers(chunk);
+            // if all numbers
+            if len == 16 {
+                crate::cold_path();
+                let zeros_chunk = _mm_cmpeq_epi8(chunk, _mm_set1_epi8(0));
+                let res = _mm_movemask_epi8(zeros_chunk);
+                let zeros = res.trailing_ones();
+                if zeros > 0 {
+                    skipped += zeros;
+                    s = s.get_safe_unchecked((zeros as usize)..);
+                    continue;
+                }
+            }
 
-        let res = parse_simd_sse(len, chunk);
-        process_skipped(res, skipped)
+            let res = parse_simd_sse(len, chunk);
+            return process_skipped(res, skipped);
+        }
     }
 }
 
@@ -800,9 +779,6 @@ pub(crate) fn parse_simd_u128<const LEN_LIMIT: u32>(
         unsafe {
             let (len, mut chunk) = load_avx_len(s);
 
-            // to numbers
-            chunk = _mm256_and_si256(chunk, _mm256_set1_epi8(0xF));
-
             let chunk_sh = _mm256_permute2x128_si256(chunk, chunk, 0x28);
             let mut chunk_extra = _mm_set1_epi8(0);
             let mut len_extra = 0;
@@ -833,7 +809,7 @@ pub(crate) fn parse_simd_u128<const LEN_LIMIT: u32>(
                 32 => {
                     if s.len() > 32 {
                         if LEN_LIMIT > 32 {
-                            (len_extra, chunk_extra) = simd_sse_len(s.get_safe_unchecked(32..));
+                            (len_extra, chunk_extra) = load_len(s.get_safe_unchecked(32..));
                         }
 
                         if LEN_LIMIT <= 32 || LEN_LIMIT > 32 && len_extra > 7 {
