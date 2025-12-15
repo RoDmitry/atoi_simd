@@ -56,41 +56,48 @@ More information you can find [here](https://rodmitry.github.io/atoi_simd_benchm
 
 <b>Rust 1.78</b>, Windows 10, Intel i7 9700K, "target-feature" set
 
+<svg viewBox="0 0 960 540" version="1.1" xmlns="http://www.w3.org/2000/svg">
+  <rect width="100%" height="100%" fill="#fff" />
+  <image width="100%" height="100%" href="https://github.com/RoDmitry/atoi_simd_benchmark/raw/v0.16.0/benchmark%2064/report/lines.svg" />
+</svg>
+
 ![benchmark 64](https://github.com/RoDmitry/atoi_simd_benchmark/raw/v0.16.0/benchmark%2064/report/lines.svg)
 
 ![benchmark 128](https://github.com/RoDmitry/atoi_simd_benchmark/raw/v0.16.0/benchmark%20128/report/lines.svg)
 
+<img src="https://github.com/RoDmitry/atoi_simd_benchmark/raw/v0.16.0/benchmark%2064/report/lines.svg" alt="test" style="background-color:#fff" />
+
 #### `parse::<u64>()`
 
-![parse::\<u64>()](https://github.com/RoDmitry/atoi_simd_benchmark/raw/v0.16.0/benchmark%2064/parse%20u64/report/lines.svg)
+![parse::<u64>()](https://github.com/RoDmitry/atoi_simd_benchmark/raw/v0.16.0/benchmark%2064/parse%20u64/report/lines.svg)
 
 #### `str::parse::<u64>()`
 
-![str::parse::\<u64>()](https://github.com/RoDmitry/atoi_simd_benchmark/raw/v0.16.0/benchmark%2064/str%20u64/report/lines.svg)
+![str::parse::<u64>()](https://github.com/RoDmitry/atoi_simd_benchmark/raw/v0.16.0/benchmark%2064/str%20u64/report/lines.svg)
 
 #### `parse::<i64>()`
 
-![parse::\<i64>()](https://github.com/RoDmitry/atoi_simd_benchmark/raw/v0.16.0/benchmark%2064/parse%20i64/report/lines.svg)
+![parse::<i64>()](https://github.com/RoDmitry/atoi_simd_benchmark/raw/v0.16.0/benchmark%2064/parse%20i64/report/lines.svg)
 
 #### `str::parse::<i64>()`
 
-![str::parse::\<i64>()](https://github.com/RoDmitry/atoi_simd_benchmark/raw/v0.16.0/benchmark%2064/str%20i64/report/lines.svg)
+![str::parse::<i64>()](https://github.com/RoDmitry/atoi_simd_benchmark/raw/v0.16.0/benchmark%2064/str%20i64/report/lines.svg)
 
 #### `parse::<u128>()`
 
-![parse::\<u128>()](https://github.com/RoDmitry/atoi_simd_benchmark/raw/v0.16.0/benchmark%20128/parse%20u128/report/lines.svg)
+![parse::<u128>()](https://github.com/RoDmitry/atoi_simd_benchmark/raw/v0.16.0/benchmark%20128/parse%20u128/report/lines.svg)
 
 #### `str::parse::<u128>()`
 
-![str::parse::\<u128>()](https://github.com/RoDmitry/atoi_simd_benchmark/raw/v0.16.0/benchmark%20128/str%20u128/report/lines.svg)
+![str::parse::<u128>()](https://github.com/RoDmitry/atoi_simd_benchmark/raw/v0.16.0/benchmark%20128/str%20u128/report/lines.svg)
 
 #### `parse::<i128>()`
 
-![parse::\<i128>()](https://github.com/RoDmitry/atoi_simd_benchmark/raw/v0.16.0/benchmark%20128/parse%20i128/report/lines.svg)
+![parse::<i128>()](https://github.com/RoDmitry/atoi_simd_benchmark/raw/v0.16.0/benchmark%20128/parse%20i128/report/lines.svg)
 
 #### `str::parse::<i128>()`
 
-![str::parse::\<i128>()](https://github.com/RoDmitry/atoi_simd_benchmark/raw/v0.16.0/benchmark%20128/str%20i128/report/lines.svg)
+![str::parse::<i128>()](https://github.com/RoDmitry/atoi_simd_benchmark/raw/v0.16.0/benchmark%20128/str%20i128/report/lines.svg)
 
 </details>
 
@@ -104,35 +111,35 @@ More information you can find [here](https://rodmitry.github.io/atoi_simd_benchm
 
 #### `parse::<u64>()`
 
-![parse::\<u64>()](https://github.com/RoDmitry/atoi_simd_benchmark/raw/v0.15.2/benchmark%2064/parse%20u64/report/lines.svg)
+![parse::<u64>()](https://github.com/RoDmitry/atoi_simd_benchmark/raw/v0.15.2/benchmark%2064/parse%20u64/report/lines.svg)
 
 #### `str::parse::<u64>()`
 
-![str::parse::\<u64>()](https://github.com/RoDmitry/atoi_simd_benchmark/raw/v0.15.2/benchmark%2064/str%20u64/report/lines.svg)
+![str::parse::<u64>()](https://github.com/RoDmitry/atoi_simd_benchmark/raw/v0.15.2/benchmark%2064/str%20u64/report/lines.svg)
 
 #### `parse::<i64>()`
 
-![parse::\<i64>()](https://github.com/RoDmitry/atoi_simd_benchmark/raw/v0.15.2/benchmark%2064/parse%20i64/report/lines.svg)
+![parse::<i64>()](https://github.com/RoDmitry/atoi_simd_benchmark/raw/v0.15.2/benchmark%2064/parse%20i64/report/lines.svg)
 
 #### `str::parse::<i64>()`
 
-![str::parse::\<i64>()](https://github.com/RoDmitry/atoi_simd_benchmark/raw/v0.15.2/benchmark%2064/str%20i64/report/lines.svg)
+![str::parse::<i64>()](https://github.com/RoDmitry/atoi_simd_benchmark/raw/v0.15.2/benchmark%2064/str%20i64/report/lines.svg)
 
 #### `parse::<u128>()`
 
-![parse::\<u128>()](https://github.com/RoDmitry/atoi_simd_benchmark/raw/v0.15.2/benchmark%20128/parse%20u128/report/lines.svg)
+![parse::<u128>()](https://github.com/RoDmitry/atoi_simd_benchmark/raw/v0.15.2/benchmark%20128/parse%20u128/report/lines.svg)
 
 #### `str::parse::<u128>()`
 
-![str::parse::\<u128>()](https://github.com/RoDmitry/atoi_simd_benchmark/raw/v0.15.2/benchmark%20128/str%20u128/report/lines.svg)
+![str::parse::<u128>()](https://github.com/RoDmitry/atoi_simd_benchmark/raw/v0.15.2/benchmark%20128/str%20u128/report/lines.svg)
 
 #### `parse::<i128>()`
 
-![parse::\<i128>()](https://github.com/RoDmitry/atoi_simd_benchmark/raw/v0.15.2/benchmark%20128/parse%20i128/report/lines.svg)
+![parse::<i128>()](https://github.com/RoDmitry/atoi_simd_benchmark/raw/v0.15.2/benchmark%20128/parse%20i128/report/lines.svg)
 
 #### `str::parse::<i128>()`
 
-![str::parse::\<i128>()](https://github.com/RoDmitry/atoi_simd_benchmark/raw/v0.15.2/benchmark%20128/str%20i128/report/lines.svg)
+![str::parse::<i128>()](https://github.com/RoDmitry/atoi_simd_benchmark/raw/v0.15.2/benchmark%20128/str%20i128/report/lines.svg)
 
 </details>
 
@@ -146,35 +153,35 @@ More information you can find [here](https://rodmitry.github.io/atoi_simd_benchm
 
 #### `parse::<u64>()`
 
-![parse::\<u64>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.14.5/benchmark%2064/parse%20u64/report/lines.svg?raw=true)
+![parse::<u64>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.14.5/benchmark%2064/parse%20u64/report/lines.svg?raw=true)
 
 #### `str::parse::<u64>()`
 
-![str::parse::\<u64>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.14.5/benchmark%2064/str%20u64/report/lines.svg?raw=true)
+![str::parse::<u64>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.14.5/benchmark%2064/str%20u64/report/lines.svg?raw=true)
 
 #### `parse::<i64>()`
 
-![parse::\<i64>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.14.5/benchmark%2064/parse%20i64/report/lines.svg?raw=true)
+![parse::<i64>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.14.5/benchmark%2064/parse%20i64/report/lines.svg?raw=true)
 
 #### `str::parse::<i64>()`
 
-![str::parse::\<i64>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.14.5/benchmark%2064/str%20i64/report/lines.svg?raw=true)
+![str::parse::<i64>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.14.5/benchmark%2064/str%20i64/report/lines.svg?raw=true)
 
 #### `parse::<u128>()`
 
-![parse::\<u128>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.14.5/benchmark%20128/parse%20u128/report/lines.svg?raw=true)
+![parse::<u128>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.14.5/benchmark%20128/parse%20u128/report/lines.svg?raw=true)
 
 #### `str::parse::<u128>()`
 
-![str::parse::\<u128>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.14.5/benchmark%20128/str%20u128/report/lines.svg?raw=true)
+![str::parse::<u128>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.14.5/benchmark%20128/str%20u128/report/lines.svg?raw=true)
 
 #### `parse::<i128>()`
 
-![parse::\<i128>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.14.5/benchmark%20128/parse%20i128/report/lines.svg?raw=true)
+![parse::<i128>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.14.5/benchmark%20128/parse%20i128/report/lines.svg?raw=true)
 
 #### `str::parse::<i128>()`
 
-![str::parse::\<i128>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.14.5/benchmark%20128/str%20i128/report/lines.svg?raw=true)
+![str::parse::<i128>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.14.5/benchmark%20128/str%20i128/report/lines.svg?raw=true)
 
 </details>
 
@@ -188,35 +195,35 @@ More information you can find [here](https://rodmitry.github.io/atoi_simd_benchm
 
 #### `parse::<u64>()`
 
-![parse::\<u64>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.14.4/benchmark%2064/parse%20u64/report/lines.svg?raw=true)
+![parse::<u64>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.14.4/benchmark%2064/parse%20u64/report/lines.svg?raw=true)
 
 #### `str::parse::<u64>()`
 
-![str::parse::\<u64>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.14.4/benchmark%2064/str%20u64/report/lines.svg?raw=true)
+![str::parse::<u64>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.14.4/benchmark%2064/str%20u64/report/lines.svg?raw=true)
 
 #### `parse::<i64>()`
 
-![parse::\<i64>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.14.4/benchmark%2064/parse%20i64/report/lines.svg?raw=true)
+![parse::<i64>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.14.4/benchmark%2064/parse%20i64/report/lines.svg?raw=true)
 
 #### `str::parse::<i64>()`
 
-![str::parse::\<i64>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.14.4/benchmark%2064/str%20i64/report/lines.svg?raw=true)
+![str::parse::<i64>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.14.4/benchmark%2064/str%20i64/report/lines.svg?raw=true)
 
 #### `parse::<u128>()`
 
-![parse::\<u128>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.14.4/benchmark%20128/parse%20u128/report/lines.svg?raw=true)
+![parse::<u128>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.14.4/benchmark%20128/parse%20u128/report/lines.svg?raw=true)
 
 #### `str::parse::<u128>()`
 
-![str::parse::\<u128>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.14.4/benchmark%20128/str%20u128/report/lines.svg?raw=true)
+![str::parse::<u128>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.14.4/benchmark%20128/str%20u128/report/lines.svg?raw=true)
 
 #### `parse::<i128>()`
 
-![parse::\<i128>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.14.4/benchmark%20128/parse%20i128/report/lines.svg?raw=true)
+![parse::<i128>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.14.4/benchmark%20128/parse%20i128/report/lines.svg?raw=true)
 
 #### `str::parse::<i128>()`
 
-![str::parse::\<i128>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.14.4/benchmark%20128/str%20i128/report/lines.svg?raw=true)
+![str::parse::<i128>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.14.4/benchmark%20128/str%20i128/report/lines.svg?raw=true)
 
 </details>
 
@@ -230,35 +237,35 @@ More information you can find [here](https://rodmitry.github.io/atoi_simd_benchm
 
 #### `parse::<u64>()`
 
-![parse::\<u64>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.10.1/benchmark%2064/u64/report/lines.svg?raw=true)
+![parse::<u64>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.10.1/benchmark%2064/u64/report/lines.svg?raw=true)
 
 #### `str::parse::<u64>()`
 
-![str::parse::\<u64>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.10.1/benchmark%2064/str%20u64/report/lines.svg?raw=true)
+![str::parse::<u64>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.10.1/benchmark%2064/str%20u64/report/lines.svg?raw=true)
 
 #### `parse::<i64>()`
 
-![parse::\<i64>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.10.1/benchmark%2064/i64/report/lines.svg?raw=true)
+![parse::<i64>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.10.1/benchmark%2064/i64/report/lines.svg?raw=true)
 
 #### `str::parse::<i64>()`
 
-![str::parse::\<i64>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.10.1/benchmark%2064/str%20i64/report/lines.svg?raw=true)
+![str::parse::<i64>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.10.1/benchmark%2064/str%20i64/report/lines.svg?raw=true)
 
 #### `parse::<u128>()`
 
-![parse::\<u128>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.10.1/benchmark%20128/u128/report/lines.svg?raw=true)
+![parse::<u128>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.10.1/benchmark%20128/u128/report/lines.svg?raw=true)
 
 #### `str::parse::<u128>()`
 
-![str::parse::\<u128>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.10.1/benchmark%20128/str%20u128/report/lines.svg?raw=true)
+![str::parse::<u128>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.10.1/benchmark%20128/str%20u128/report/lines.svg?raw=true)
 
 #### `parse::<i128>()`
 
-![parse::\<i128>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.10.1/benchmark%20128/i128/report/lines.svg?raw=true)
+![parse::<i128>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.10.1/benchmark%20128/i128/report/lines.svg?raw=true)
 
 #### `str::parse::<i128>()`
 
-![str::parse::\<i128>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.10.1/benchmark%20128/str%20i128/report/lines.svg?raw=true)
+![str::parse::<i128>()](https://github.com/rodmitry/atoi_simd_benchmark/blob/v0.10.1/benchmark%20128/str%20i128/report/lines.svg?raw=true)
 
 </details>
 
