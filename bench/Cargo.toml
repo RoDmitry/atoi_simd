@@ -8,8 +8,12 @@ publish = false
 
 [dependencies]
 atoi_simd = { path = ".." }
-criterion = { version = "0.7", features = ["html_reports"] }
+criterion = { version = "0.8", features = ["html_reports"] }
 
 [[bench]]
 name = "benchmark"
 harness = false
+
+[profile.bench]
+lto = "fat"
+codegen-units = 1
