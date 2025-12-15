@@ -808,12 +808,12 @@ pub(crate) fn parse_simd_u128<const LEN_LIMIT: u32>(
                 31 => _mm256_alignr_epi8(chunk, chunk_sh, 15),
                 32 => {
                     if s.len() > 32 {
-                        if LEN_LIMIT > 32 {
+                        if LEN_LIMIT >= 32 {
                             (len_extra, chunk_extra) = load_len(s.get_safe_unchecked(32..));
                         }
 
-                        if LEN_LIMIT <= 32 || LEN_LIMIT > 32 && len_extra > 7 {
-                            if LEN_LIMIT > 32 {
+                        if LEN_LIMIT < 32 || LEN_LIMIT >= 32 && len_extra > 7 {
+                            if LEN_LIMIT >= 32 {
                                 // somehow `parse_prefix u64` works better without it
                                 crate::cold_path();
                             }
@@ -821,7 +821,7 @@ pub(crate) fn parse_simd_u128<const LEN_LIMIT: u32>(
                             let zeros_res = _mm256_movemask_epi8(zeros_chunk);
                             let mut zeros = zeros_res.trailing_ones();
                             if zeros > 0 {
-                                if LEN_LIMIT > 32 && zeros == 32 {
+                                if LEN_LIMIT >= 32 && zeros == 32 {
                                     crate::cold_path();
                                     let zeros_chunk = _mm_cmpeq_epi8(chunk_extra, _mm_set1_epi8(0));
                                     let res = _mm_movemask_epi8(zeros_chunk);

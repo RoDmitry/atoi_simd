@@ -137,3 +137,26 @@ pub(crate) fn parse_simd_checked_i128_neg(s: &[u8]) -> Result<i128, AtoiSimdErro
         Ok(-(res as i128))
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_corner_cases() {
+        assert_eq!(
+            parse_simd_checked_u128::<32>(b"12345678901234567890123456789012").unwrap(),
+            12345678901234567890123456789012
+        );
+
+        assert_eq!(
+            parse_simd_u128::<32>(b"12345678901234567890123456789012s").unwrap(),
+            (12345678901234567890123456789012, 32)
+        );
+
+        assert_eq!(
+            parse_simd_checked_u128::<32>(b"123456789012345678901234567890123").unwrap(),
+            123456789012345678901234567890123
+        );
+    }
+}
