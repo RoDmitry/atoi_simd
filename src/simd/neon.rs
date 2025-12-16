@@ -191,7 +191,7 @@ unsafe fn load_len_8(s: &[u8]) -> (u32, uint8x8_t) {
     let res = vget_lane_u64(check_chunk, 0);
 
     let len = res.trailing_zeros() / 8;
-    unsafe { ::core::hint::assert_unchecked(len <= 8) }
+    ::core::hint::assert_unchecked(len <= 8);
 
     // only numbers
     chunk = vand_u8(chunk, vdup_n_u8(0xF));
@@ -216,7 +216,7 @@ unsafe fn load_len_16(s: &[u8]) -> (u32, uint8x16_t) {
     let res = vget_lane_u64(check_chunk, 0);
 
     let len = res.trailing_zeros() / 4;
-    unsafe { ::core::hint::assert_unchecked(len <= 16) }
+    ::core::hint::assert_unchecked(len <= 16);
 
     // only numbers
     chunk = vandq_u8(chunk, vdupq_n_u8(0xF));
@@ -313,6 +313,7 @@ pub(crate) fn parse_simd_16(mut s: &[u8]) -> Result<(u64, usize), AtoiSimdError<
                 let zeros_res = vget_lane_u64(zeros_chunk, 0);
 
                 let zeros = zeros_res.trailing_ones() / 4;
+                ::core::hint::assert_unchecked(zeros <= 16);
                 if zeros > 0 {
                     skipped += zeros;
                     s = s.get_safe_unchecked((zeros as usize)..);
@@ -381,204 +382,246 @@ unsafe fn odd_even_small_32(chunk: uint16x4_t) -> (uint32x2_t, uint32x2_t) {
 } */
 
 #[inline(always)]
-unsafe fn parse_simd_extra<'a>(
-    s: &'a [u8],
-    chunk1: &mut uint8x16_t,
-    chunk2: &mut uint8x16_t,
-) -> Result<(u128, u32), AtoiSimdError<'a>> {
-    let (mut len, mut chunk3) = load_len_8(s);
-
-    let mut chunk3_16 = vcombine_u8(chunk3, vdup_n_u8(0));
-    chunk3_16 = match len {
-        0 => vdupq_n_u8(0), //return Ok((0, 16)), is slower
-        1 => {
-            let tmp = vextq_u8(vdupq_n_u8(0), *chunk1, 9);
-            *chunk1 = vextq_u8(*chunk1, *chunk2, 1);
-            *chunk2 = vextq_u8(*chunk2, chunk3_16, 1);
-            tmp
-        }
-        2 => {
-            let tmp = vextq_u8(vdupq_n_u8(0), *chunk1, 10);
-            *chunk1 = vextq_u8(*chunk1, *chunk2, 2);
-            *chunk2 = vextq_u8(*chunk2, chunk3_16, 2);
-            tmp
-        }
-        3 => {
-            let tmp = vextq_u8(vdupq_n_u8(0), *chunk1, 11);
-            *chunk1 = vextq_u8(*chunk1, *chunk2, 3);
-            *chunk2 = vextq_u8(*chunk2, chunk3_16, 3);
-            tmp
-        }
-        4 => {
-            let tmp = vextq_u8(vdupq_n_u8(0), *chunk1, 12);
-            *chunk1 = vextq_u8(*chunk1, *chunk2, 4);
-            *chunk2 = vextq_u8(*chunk2, chunk3_16, 4);
-            tmp
-        }
-        5 => {
-            let tmp = vextq_u8(vdupq_n_u8(0), *chunk1, 13);
-            *chunk1 = vextq_u8(*chunk1, *chunk2, 5);
-            *chunk2 = vextq_u8(*chunk2, chunk3_16, 5);
-            tmp
-        }
-        6 => {
-            let tmp = vextq_u8(vdupq_n_u8(0), *chunk1, 14);
-            *chunk1 = vextq_u8(*chunk1, *chunk2, 6);
-            *chunk2 = vextq_u8(*chunk2, chunk3_16, 6);
-            tmp
-        }
-        7 => {
-            let tmp = vextq_u8(vdupq_n_u8(0), *chunk1, 15);
-            *chunk1 = vextq_u8(*chunk1, *chunk2, 7);
-            *chunk2 = vextq_u8(*chunk2, chunk3_16, 7);
-            tmp
-        }
-        s_len => return Err(AtoiSimdError::Size(s_len as usize, s)),
-    };
-    chunk3 = vget_low_u8(chunk3_16);
-    len += 16;
-
-    let chunk3 = vmull_u8(chunk3, vld1_u8([0, 1, 10, 1, 10, 1, 10, 1].as_ptr()));
-    let chunk3 = vpaddlq_u16(chunk3);
-
-    let chunk3 = vmulq_u32(chunk3, vld1q_u32([1_000_000, 10_000, 100, 1].as_ptr()));
-
-    let res = (vaddlvq_u32(chunk3) as u128)
-        .checked_mul(100_000_000_000_000_000_000_000_000_000_000)
-        .ok_or(AtoiSimdError::Overflow(s))?;
-
-    Ok((res, len))
-}
-
-#[inline(always)]
 pub(crate) fn parse_simd_u128<const LEN_LIMIT: u32>(
     mut s: &[u8],
 ) -> Result<(u128, usize), AtoiSimdError<'_>> {
     const { assert!(LEN_LIMIT > 16, "use `parse_simd_16` instead") };
     const { assert!(LEN_LIMIT <= 39) };
     let mut skipped = 0;
-    unsafe {
-        let (mut len, mut chunk1) = load_len_16(&mut s);
+    loop {
+        unsafe {
+            let (mut len, mut chunk1) = load_len_16(&mut s);
 
-        if len < 16 || s.len() == 16 {
-            let res = parse_simd_neon(len, chunk1);
-            return process_skipped(res, skipped).map(|(v, l)| (v as u128, l));
-        };
+            if len < 16 || s.len() == 16 {
+                let res = parse_simd_neon(len, chunk1);
+                return process_skipped(res, skipped).map(|(v, l)| (v as u128, l));
+            };
 
-        let mut chunk2;
-        (len, chunk2) = load_len_16(s.get_safe_unchecked(16..));
-        // note: only LEN_LIMIT <= 32 is checked
-        if len > LEN_LIMIT - 16 {
-            return Err(AtoiSimdError::Size(len as usize, s));
-        }
+            let mut chunk2;
+            (len, chunk2) = load_len_16(s.get_safe_unchecked(16..));
 
-        let mut extra = 0;
-        match len {
-            0 => return parse_simd_neon(16, chunk1).map(|(v, l)| (v as u128, l)),
-            1 => {
-                chunk2 = vextq_u8(chunk1, chunk2, 1);
-                chunk1 = vextq_u8(vdupq_n_u8(0), chunk1, 1);
-            }
-            2 => {
-                chunk2 = vextq_u8(chunk1, chunk2, 2);
-                chunk1 = vextq_u8(vdupq_n_u8(0), chunk1, 2);
-            }
-            3 => {
-                chunk2 = vextq_u8(chunk1, chunk2, 3);
-                chunk1 = vextq_u8(vdupq_n_u8(0), chunk1, 3);
-            }
-            4 => {
-                chunk2 = vextq_u8(chunk1, chunk2, 4);
-                chunk1 = vextq_u8(vdupq_n_u8(0), chunk1, 4);
-            }
-            5 => {
-                chunk2 = vextq_u8(chunk1, chunk2, 5);
-                chunk1 = vextq_u8(vdupq_n_u8(0), chunk1, 5);
-            }
-            6 => {
-                chunk2 = vextq_u8(chunk1, chunk2, 6);
-                chunk1 = vextq_u8(vdupq_n_u8(0), chunk1, 6);
-            }
-            7 => {
-                chunk2 = vextq_u8(chunk1, chunk2, 7);
-                chunk1 = vextq_u8(vdupq_n_u8(0), chunk1, 7);
-            }
-            8 => {
-                chunk2 = vextq_u8(chunk1, chunk2, 8);
-                chunk1 = vextq_u8(vdupq_n_u8(0), chunk1, 8);
-            }
-            9 => {
-                chunk2 = vextq_u8(chunk1, chunk2, 9);
-                chunk1 = vextq_u8(vdupq_n_u8(0), chunk1, 9);
-            }
-            10 => {
-                chunk2 = vextq_u8(chunk1, chunk2, 10);
-                chunk1 = vextq_u8(vdupq_n_u8(0), chunk1, 10);
-            }
-            11 => {
-                chunk2 = vextq_u8(chunk1, chunk2, 11);
-                chunk1 = vextq_u8(vdupq_n_u8(0), chunk1, 11);
-            }
-            12 => {
-                chunk2 = vextq_u8(chunk1, chunk2, 12);
-                chunk1 = vextq_u8(vdupq_n_u8(0), chunk1, 12);
-            }
-            13 => {
-                chunk2 = vextq_u8(chunk1, chunk2, 13);
-                chunk1 = vextq_u8(vdupq_n_u8(0), chunk1, 13);
-            }
-            14 => {
-                chunk2 = vextq_u8(chunk1, chunk2, 14);
-                chunk1 = vextq_u8(vdupq_n_u8(0), chunk1, 14);
-            }
-            15 => {
-                chunk2 = vextq_u8(chunk1, chunk2, 15);
-                chunk1 = vextq_u8(vdupq_n_u8(0), chunk1, 15);
-            }
-            16 => {
-                (extra, len) =
-                    parse_simd_extra(s.get_safe_unchecked(32..), &mut chunk1, &mut chunk2)?;
-            }
-            // SAFETY: len is always <= 16
-            _ => {
-                if cfg!(debug_assertions) {
-                    unreachable!("parse_simd_u128: wrong len {}", len);
-                } else {
-                    ::core::hint::unreachable_unchecked()
+            let mut chunk3 = vdup_n_u8(0);
+            let mut len_extra = 0;
+            match len {
+                0 => return parse_simd_neon(16, chunk1).map(|(v, l)| (v as u128, l)),
+                1 => {
+                    chunk2 = vextq_u8(chunk1, chunk2, 1);
+                    chunk1 = vextq_u8(vdupq_n_u8(0), chunk1, 1);
                 }
+                2 => {
+                    chunk2 = vextq_u8(chunk1, chunk2, 2);
+                    chunk1 = vextq_u8(vdupq_n_u8(0), chunk1, 2);
+                }
+                3 => {
+                    chunk2 = vextq_u8(chunk1, chunk2, 3);
+                    chunk1 = vextq_u8(vdupq_n_u8(0), chunk1, 3);
+                }
+                4 => {
+                    chunk2 = vextq_u8(chunk1, chunk2, 4);
+                    chunk1 = vextq_u8(vdupq_n_u8(0), chunk1, 4);
+                }
+                5 => {
+                    chunk2 = vextq_u8(chunk1, chunk2, 5);
+                    chunk1 = vextq_u8(vdupq_n_u8(0), chunk1, 5);
+                }
+                6 => {
+                    chunk2 = vextq_u8(chunk1, chunk2, 6);
+                    chunk1 = vextq_u8(vdupq_n_u8(0), chunk1, 6);
+                }
+                7 => {
+                    chunk2 = vextq_u8(chunk1, chunk2, 7);
+                    chunk1 = vextq_u8(vdupq_n_u8(0), chunk1, 7);
+                }
+                8 => {
+                    chunk2 = vextq_u8(chunk1, chunk2, 8);
+                    chunk1 = vextq_u8(vdupq_n_u8(0), chunk1, 8);
+                }
+                9 => {
+                    chunk2 = vextq_u8(chunk1, chunk2, 9);
+                    chunk1 = vextq_u8(vdupq_n_u8(0), chunk1, 9);
+                }
+                10 => {
+                    chunk2 = vextq_u8(chunk1, chunk2, 10);
+                    chunk1 = vextq_u8(vdupq_n_u8(0), chunk1, 10);
+                }
+                11 => {
+                    chunk2 = vextq_u8(chunk1, chunk2, 11);
+                    chunk1 = vextq_u8(vdupq_n_u8(0), chunk1, 11);
+                }
+                12 => {
+                    chunk2 = vextq_u8(chunk1, chunk2, 12);
+                    chunk1 = vextq_u8(vdupq_n_u8(0), chunk1, 12);
+                }
+                13 => {
+                    chunk2 = vextq_u8(chunk1, chunk2, 13);
+                    chunk1 = vextq_u8(vdupq_n_u8(0), chunk1, 13);
+                }
+                14 => {
+                    chunk2 = vextq_u8(chunk1, chunk2, 14);
+                    chunk1 = vextq_u8(vdupq_n_u8(0), chunk1, 14);
+                }
+                15 => {
+                    chunk2 = vextq_u8(chunk1, chunk2, 15);
+                    chunk1 = vextq_u8(vdupq_n_u8(0), chunk1, 15);
+                }
+                16 => {
+                    if s.len() > 32 {
+                        if LEN_LIMIT >= 32 {
+                            (len_extra, chunk3) = load_len_8(s.get_safe_unchecked(32..));
+                        }
+
+                        if LEN_LIMIT < 32 || LEN_LIMIT >= 32 && len_extra > 7 {
+                            let zeros_chunk = vceqq_u8(chunk1, vdupq_n_u8(0));
+                            let zeros_chunk = vreinterpretq_u16_u8(zeros_chunk);
+                            let zeros_chunk = vshrn_n_u16(zeros_chunk, 4);
+                            let zeros_chunk = vreinterpret_u64_u8(zeros_chunk);
+                            let zeros_res = vget_lane_u64(zeros_chunk, 0);
+
+                            let mut zeros = zeros_res.trailing_ones() / 4;
+                            ::core::hint::assert_unchecked(zeros <= 16);
+                            if zeros > 0 {
+                                if zeros == 16 {
+                                    if LEN_LIMIT >= 32 {
+                                        // same as AVX2
+                                        crate::cold_path();
+                                    }
+                                    let zeros_chunk = vceqq_u8(chunk2, vdupq_n_u8(0));
+                                    let zeros_chunk = vreinterpretq_u16_u8(zeros_chunk);
+                                    let zeros_chunk = vshrn_n_u16(zeros_chunk, 4);
+                                    let zeros_chunk = vreinterpret_u64_u8(zeros_chunk);
+                                    let zeros_res = vget_lane_u64(zeros_chunk, 0);
+
+                                    let zeros2 = zeros_res.trailing_ones() / 4;
+                                    ::core::hint::assert_unchecked(zeros2 <= 16);
+                                    if LEN_LIMIT >= 32 && zeros2 == 16 {
+                                        crate::cold_path();
+
+                                        let zeros_chunk = vceq_u8(chunk3, vdup_n_u8(0));
+                                        let zeros_chunk = vreinterpret_u64_u8(zeros_chunk);
+                                        let zeros_res = vget_lane_u64(zeros_chunk, 0);
+                                        let zeros3 = zeros_res.trailing_ones() / 8;
+
+                                        zeros += zeros3.min(len_extra);
+                                    }
+                                    zeros += zeros2;
+                                }
+                                skipped += zeros;
+                                s = s.get_safe_unchecked((zeros as usize)..);
+                                continue;
+                            }
+
+                            return Err(AtoiSimdError::Size((len_extra + 32) as usize, s));
+                        }
+
+                        let mut chunk3_16 = vcombine_u8(chunk3, vdup_n_u8(0));
+                        chunk3_16 = match len_extra {
+                            0 => vdupq_n_u8(0), // maybe shift? //return Ok((0, 16)), is slower
+                            1 => {
+                                let tmp = vextq_u8(vdupq_n_u8(0), chunk1, 9);
+                                chunk1 = vextq_u8(chunk1, chunk2, 1);
+                                chunk2 = vextq_u8(chunk2, chunk3_16, 1);
+                                tmp
+                            }
+                            2 => {
+                                let tmp = vextq_u8(vdupq_n_u8(0), chunk1, 10);
+                                chunk1 = vextq_u8(chunk1, chunk2, 2);
+                                chunk2 = vextq_u8(chunk2, chunk3_16, 2);
+                                tmp
+                            }
+                            3 => {
+                                let tmp = vextq_u8(vdupq_n_u8(0), chunk1, 11);
+                                chunk1 = vextq_u8(chunk1, chunk2, 3);
+                                chunk2 = vextq_u8(chunk2, chunk3_16, 3);
+                                tmp
+                            }
+                            4 => {
+                                let tmp = vextq_u8(vdupq_n_u8(0), chunk1, 12);
+                                chunk1 = vextq_u8(chunk1, chunk2, 4);
+                                chunk2 = vextq_u8(chunk2, chunk3_16, 4);
+                                tmp
+                            }
+                            5 => {
+                                let tmp = vextq_u8(vdupq_n_u8(0), chunk1, 13);
+                                chunk1 = vextq_u8(chunk1, chunk2, 5);
+                                chunk2 = vextq_u8(chunk2, chunk3_16, 5);
+                                tmp
+                            }
+                            6 => {
+                                let tmp = vextq_u8(vdupq_n_u8(0), chunk1, 14);
+                                chunk1 = vextq_u8(chunk1, chunk2, 6);
+                                chunk2 = vextq_u8(chunk2, chunk3_16, 6);
+                                tmp
+                            }
+                            7 => {
+                                let tmp = vextq_u8(vdupq_n_u8(0), chunk1, 15);
+                                chunk1 = vextq_u8(chunk1, chunk2, 7);
+                                chunk2 = vextq_u8(chunk2, chunk3_16, 7);
+                                tmp
+                            }
+                            len_extra => {
+                                crate::cold_path();
+                                if cfg!(debug_assertions) {
+                                    unreachable!("parse_simd_u128: wrong len_extra {}", len_extra);
+                                } else {
+                                    return Err(AtoiSimdError::Size((len_extra + 32) as usize, s));
+                                }
+                            },
+                        };
+                        chunk3 = vget_low_u8(chunk3_16);
+                        len += len_extra;
+                    }
+                }
+                // SAFETY: len is always <= 16
+                _ => {
+                    if cfg!(debug_assertions) {
+                        unreachable!("parse_simd_u128: wrong len {}", len);
+                    } else {
+                        ::core::hint::unreachable_unchecked()
+                    }
+                }
+            };
+
+            let (sum1, chunk1) = odd_even_8(chunk1);
+            let (sum2, chunk2) = odd_even_8(chunk2);
+            let mult = vdupq_n_u8(10);
+            let chunk = vmlaq_u8(vcombine_u8(sum1, sum2), vcombine_u8(chunk1, chunk2), mult);
+
+            let (sum, chunk) = odd_even_16(chunk);
+            let mult = vdup_n_u8(100);
+            let chunk = vmlal_u8(sum, chunk, mult);
+
+            let (sum, chunk) = odd_even_32(chunk);
+            let chunk = vqdmlal_n_s16(
+                vreinterpretq_s32_u32(sum),
+                vreinterpret_s16_u16(chunk),
+                5000, // because it's doubling
+            );
+
+            let (sum, chunk) = odd_even_64(chunk);
+            let chunk = vqdmlal_n_s32(
+                vreinterpretq_s64_u64(sum),
+                vreinterpret_s32_u32(chunk),
+                50_000_000, // because it's doubling
+            );
+
+            let mut res = vgetq_lane_s64(chunk, 0) as u128 * 10_000_000_000_000_000
+                + vgetq_lane_s64(chunk, 1) as u128;
+
+            if len_extra > 0 {
+                let chunk3 = vmull_u8(chunk3, vld1_u8([0, 1, 10, 1, 10, 1, 10, 1].as_ptr()));
+                let chunk3 = vpaddlq_u16(chunk3);
+
+                let chunk3 = vmulq_u32(chunk3, vld1q_u32([1_000_000, 10_000, 100, 1].as_ptr()));
+
+                let extra = (vaddlvq_u32(chunk3) as u128)
+                    .checked_mul(100_000_000_000_000_000_000_000_000_000_000)
+                    .ok_or(AtoiSimdError::Overflow(s))?;
+
+                res = res.checked_add(extra).ok_or(AtoiSimdError::Overflow(s))?;
             }
-        };
 
-        let (sum1, chunk1) = odd_even_8(chunk1);
-        let (sum2, chunk2) = odd_even_8(chunk2);
-        let mult = vdupq_n_u8(10);
-        let chunk = vmlaq_u8(vcombine_u8(sum1, sum2), vcombine_u8(chunk1, chunk2), mult);
-
-        let (sum, chunk) = odd_even_16(chunk);
-        let mult = vdup_n_u8(100);
-        let chunk = vmlal_u8(sum, chunk, mult);
-
-        let (sum, chunk) = odd_even_32(chunk);
-        let chunk = vqdmlal_n_s16(
-            vreinterpretq_s32_u32(sum),
-            vreinterpret_s16_u16(chunk),
-            5000, // because it's doubling
-        );
-
-        let (sum, chunk) = odd_even_64(chunk);
-        let chunk = vqdmlal_n_s32(
-            vreinterpretq_s64_u64(sum),
-            vreinterpret_s32_u32(chunk),
-            50_000_000, // because it's doubling
-        );
-
-        let mut res = vgetq_lane_s64(chunk, 0) as u128 * 10_000_000_000_000_000
-            + vgetq_lane_s64(chunk, 1) as u128;
-        if extra > 0 {
-            res = res.checked_add(extra).ok_or(AtoiSimdError::Overflow(s))?;
+            return Ok((res, (len + 16 + skipped) as usize));
         }
-
-        Ok((res, (len + 16 + skipped) as usize))
     }
 }
 
