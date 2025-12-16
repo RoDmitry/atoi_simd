@@ -301,27 +301,104 @@ pub(crate) fn parse_simd_16(mut s: &[u8]) -> Result<(u64, usize), AtoiSimdError<
     let mut skipped = 0;
     loop {
         unsafe {
-            let (len, chunk) = load_len_16(&mut s);
+            let (len, chunk_start) = load_len_16(&mut s);
 
             // if all numbers
-            if len == 16 {
-                crate::cold_path();
-                let zeros_chunk = vceqq_u8(chunk, vdupq_n_u8(0));
-                let zeros_chunk = vreinterpretq_u16_u8(zeros_chunk);
-                let zeros_chunk = vshrn_n_u16(zeros_chunk, 4);
-                let zeros_chunk = vreinterpret_u64_u8(zeros_chunk);
-                let zeros_res = vget_lane_u64(zeros_chunk, 0);
+            // if len == 16 {
+            //     crate::cold_path();
+            //     let zeros_chunk = vceqq_u8(chunk, vdupq_n_u8(0));
+            //     let zeros_chunk = vreinterpretq_u16_u8(zeros_chunk);
+            //     let zeros_chunk = vshrn_n_u16(zeros_chunk, 4);
+            //     let zeros_chunk = vreinterpret_u64_u8(zeros_chunk);
+            //     let zeros_res = vget_lane_u64(zeros_chunk, 0);
 
-                let zeros = zeros_res.trailing_ones() / 4;
-                ::core::hint::assert_unchecked(zeros <= 16);
-                if zeros > 0 {
-                    skipped += zeros;
-                    s = s.get_safe_unchecked((zeros as usize)..);
-                    continue;
+            //     let zeros = zeros_res.trailing_ones() / 4;
+            //     ::core::hint::assert_unchecked(zeros <= 16);
+            //     if zeros > 0 {
+            //         skipped += zeros;
+            //         s = s.get_safe_unchecked((zeros as usize)..);
+            //         continue;
+            //     }
+            // }
+
+            // let res = parse_simd_neon(len, chunk);
+            let chunk = match len {
+                0 => return Err(AtoiSimdError::Empty),
+                // 1 => return Ok((vgetq_lane_u8(chunk, 0) as u64, (skipped + 1) as usize)),
+                1 => vextq_u8(vdupq_n_u8(0), chunk_start, 1),
+                2 => vextq_u8(vdupq_n_u8(0), chunk_start, 2),
+                3 => vextq_u8(vdupq_n_u8(0), chunk_start, 3),
+                4 => vextq_u8(vdupq_n_u8(0), chunk_start, 4),
+                5 => vextq_u8(vdupq_n_u8(0), chunk_start, 5),
+                6 => vextq_u8(vdupq_n_u8(0), chunk_start, 6),
+                7 => vextq_u8(vdupq_n_u8(0), chunk_start, 7),
+                8 => vextq_u8(vdupq_n_u8(0), chunk_start, 8),
+                9 => vextq_u8(vdupq_n_u8(0), chunk_start, 9),
+                10 => vextq_u8(vdupq_n_u8(0), chunk_start, 10),
+                11 => vextq_u8(vdupq_n_u8(0), chunk_start, 11),
+                12 => vextq_u8(vdupq_n_u8(0), chunk_start, 12),
+                13 => vextq_u8(vdupq_n_u8(0), chunk_start, 13),
+                14 => vextq_u8(vdupq_n_u8(0), chunk_start, 14),
+                15 => vextq_u8(vdupq_n_u8(0), chunk_start, 15),
+                16 => {
+                    crate::cold_path();
+                    let zeros_chunk = vceqq_u8(chunk_start, vdupq_n_u8(0));
+                    let zeros_chunk = vreinterpretq_u16_u8(zeros_chunk);
+                    let zeros_chunk = vshrn_n_u16(zeros_chunk, 4);
+                    let zeros_chunk = vreinterpret_u64_u8(zeros_chunk);
+                    let zeros_res = vget_lane_u64(zeros_chunk, 0);
+
+                    let zeros = zeros_res.trailing_ones() / 4;
+                    ::core::hint::assert_unchecked(zeros <= 16);
+                    if zeros > 0 {
+                        skipped += zeros;
+                        s = s.get_safe_unchecked((zeros as usize)..);
+                        continue;
+                    }
+                    chunk_start
+                },
+                _ => {
+                    if cfg!(debug_assertions) {
+                        unreachable!("parse_simd_neon: wrong len {}", len);
+                    } else {
+                        ::core::hint::unreachable_unchecked()
+                    }
                 }
-            }
+            };
 
-            let res = parse_simd_neon(len, chunk);
+            let chunk = vmulq_u8(
+                chunk,
+                vld1q_u8([10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1].as_ptr()),
+            );
+            let chunk = vpaddlq_u8(chunk);
+
+            let chunk = vmulq_u16(chunk, vld1q_u16([100, 1, 100, 1, 100, 1, 100, 1].as_ptr()));
+            let chunk = vpaddlq_u16(chunk);
+
+            let chunk = vmulq_u32(chunk, vld1q_u32([10000, 1, 10000, 1].as_ptr()));
+            let chunk = vpaddlq_u32(chunk);
+
+            // if len == 16 {
+                // crate::cold_path();
+            //     let zeros_chunk = vceqq_u8(chunk_start, vdupq_n_u8(0));
+            //     let zeros_chunk = vreinterpretq_u16_u8(zeros_chunk);
+            //     let zeros_chunk = vshrn_n_u16(zeros_chunk, 4);
+            //     let zeros_chunk = vreinterpret_u64_u8(zeros_chunk);
+            //     let zeros_res = vget_lane_u64(zeros_chunk, 0);
+
+            //     let zeros = zeros_res.trailing_ones() / 4;
+            //     ::core::hint::assert_unchecked(zeros <= 16);
+            //     if zeros > 0 {
+            //         skipped += zeros;
+            //         s = s.get_safe_unchecked((zeros as usize)..);
+            //         continue;
+            //     }
+            // }
+
+            let res = vgetq_lane_u64(chunk, 0) * 100_000_000 + vgetq_lane_u64(chunk, 1);
+
+            let res = Ok((res, len as usize));
+
             return process_skipped(res, skipped);
         }
     }
