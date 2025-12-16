@@ -177,8 +177,8 @@ unsafe fn load_16(s: &[u8]) -> uint8x16_t {
 }
 
 #[inline(always)]
-unsafe fn load_len_8_noskip(s: &[u8]) -> (u32, uint8x8_t) {
-    let chunk = load_8(s);
+unsafe fn load_len_8(s: &[u8]) -> (u32, uint8x8_t) {
+    let mut chunk = load_8(s);
     let cmp_high = vld1_dup_u8(&CHAR_MAX);
     let cmp_low = vld1_dup_u8(&CHAR_MIN);
     let check_high = vcgt_u8(chunk, cmp_high);
@@ -193,12 +193,15 @@ unsafe fn load_len_8_noskip(s: &[u8]) -> (u32, uint8x8_t) {
     let len = res.trailing_zeros() / 8;
     unsafe { ::core::hint::assert_unchecked(len <= 8) }
 
+    // only numbers
+    chunk = vand_u8(chunk, vdup_n_u8(0xF));
+
     (len, chunk)
 }
 
 #[inline(always)]
-unsafe fn load_len_16_noskip(s: &[u8]) -> (u32, uint8x16_t) {
-    let chunk = load_16(s);
+unsafe fn load_len_16(s: &[u8]) -> (u32, uint8x16_t) {
+    let mut chunk = load_16(s);
     let cmp_high = vld1q_dup_u8(&CHAR_MAX);
     let cmp_low = vld1q_dup_u8(&CHAR_MIN);
     let check_high = vcgtq_u8(chunk, cmp_high);
@@ -215,48 +218,10 @@ unsafe fn load_len_16_noskip(s: &[u8]) -> (u32, uint8x16_t) {
     let len = res.trailing_zeros() / 4;
     unsafe { ::core::hint::assert_unchecked(len <= 16) }
 
+    // only numbers
+    chunk = vandq_u8(chunk, vdupq_n_u8(0xF));
+
     (len, chunk)
-}
-
-#[inline(always)]
-unsafe fn load_len_16(s: &mut &[u8]) -> (u32, u32, uint8x16_t) {
-    let mut skipped = 0;
-    loop {
-        let chunk = load_16(s);
-        let cmp_high = vld1q_dup_u8(&CHAR_MAX);
-        let cmp_low = vld1q_dup_u8(&CHAR_MIN);
-        let check_high = vcgtq_u8(chunk, cmp_high);
-        let check_low = vcgtq_u8(cmp_low, chunk);
-
-        let check_chunk = vorrq_u8(check_high, check_low);
-
-        // into u64
-        let check_chunk = vreinterpretq_u16_u8(check_chunk);
-        let check_chunk = vshrn_n_u16(check_chunk, 4);
-        let check_chunk = vreinterpret_u64_u8(check_chunk);
-        let res = vget_lane_u64(check_chunk, 0);
-
-        // if all numbers
-        if res == 0 {
-            let zeros_chunk = vceqq_u8(chunk, cmp_low);
-            let zeros_chunk = vreinterpretq_u16_u8(zeros_chunk);
-            let zeros_chunk = vshrn_n_u16(zeros_chunk, 4);
-            let zeros_chunk = vreinterpret_u64_u8(zeros_chunk);
-            let zeros_res = vget_lane_u64(zeros_chunk, 0);
-
-            let zeros = zeros_res.trailing_ones() / 4;
-            if zeros > 0 {
-                skipped += zeros;
-                *s = s.get_safe_unchecked((zeros as usize)..);
-                continue;
-            }
-        }
-
-        let len = res.trailing_zeros() / 4;
-        unsafe { ::core::hint::assert_unchecked(len <= 16) }
-
-        return (len, skipped, chunk);
-    }
 }
 
 /// len must be <= 16
@@ -325,10 +290,7 @@ unsafe fn parse_simd_neon(
 #[inline(always)]
 pub(crate) fn parse_simd_16_noskip(s: &[u8]) -> Result<(u64, usize), AtoiSimdError<'_>> {
     unsafe {
-        let (len, mut chunk) = load_len_16_noskip(s);
-
-        // only numbers
-        chunk = vandq_u8(chunk, vdupq_n_u8(0xF));
+        let (len, chunk) = load_len_16(s);
 
         parse_simd_neon(len, chunk)
     }
@@ -336,14 +298,31 @@ pub(crate) fn parse_simd_16_noskip(s: &[u8]) -> Result<(u64, usize), AtoiSimdErr
 
 #[inline(always)]
 pub(crate) fn parse_simd_16(mut s: &[u8]) -> Result<(u64, usize), AtoiSimdError<'_>> {
-    unsafe {
-        let (len, skipped, mut chunk) = load_len_16(&mut s);
+    let mut skipped = 0;
+    loop {
+        unsafe {
+            let (len, chunk) = load_len_16(&mut s);
 
-        // only numbers
-        chunk = vandq_u8(chunk, vdupq_n_u8(0xF));
+            // if all numbers
+            if len == 16 {
+                crate::cold_path();
+                let zeros_chunk = vceqq_u8(chunk, vdupq_n_u8(0));
+                let zeros_chunk = vreinterpretq_u16_u8(zeros_chunk);
+                let zeros_chunk = vshrn_n_u16(zeros_chunk, 4);
+                let zeros_chunk = vreinterpret_u64_u8(zeros_chunk);
+                let zeros_res = vget_lane_u64(zeros_chunk, 0);
 
-        let res = parse_simd_neon(len, chunk);
-        process_skipped(res, skipped)
+                let zeros = zeros_res.trailing_ones() / 4;
+                if zeros > 0 {
+                    skipped += zeros;
+                    s = s.get_safe_unchecked((zeros as usize)..);
+                    continue;
+                }
+            }
+
+            let res = parse_simd_neon(len, chunk);
+            return process_skipped(res, skipped);
+        }
     }
 }
 
@@ -407,10 +386,7 @@ unsafe fn parse_simd_extra<'a>(
     chunk1: &mut uint8x16_t,
     chunk2: &mut uint8x16_t,
 ) -> Result<(u128, u32), AtoiSimdError<'a>> {
-    let (mut len, mut chunk3) = load_len_8_noskip(s);
-
-    // only numbers
-    chunk3 = vand_u8(chunk3, vdup_n_u8(0xF));
+    let (mut len, mut chunk3) = load_len_8(s);
 
     let mut chunk3_16 = vcombine_u8(chunk3, vdup_n_u8(0));
     chunk3_16 = match len {
@@ -480,12 +456,9 @@ pub(crate) fn parse_simd_u128<const LEN_LIMIT: u32>(
 ) -> Result<(u128, usize), AtoiSimdError<'_>> {
     const { assert!(LEN_LIMIT > 16, "use `parse_simd_16` instead") };
     const { assert!(LEN_LIMIT <= 39) };
+    let mut skipped = 0;
     unsafe {
-        let (mut len, skipped, mut chunk1) = load_len_16(&mut s);
-
-        // only numbers
-        let mult = vdupq_n_u8(0xF);
-        chunk1 = vandq_u8(chunk1, mult);
+        let (mut len, mut chunk1) = load_len_16(&mut s);
 
         if len < 16 || s.len() == 16 {
             let res = parse_simd_neon(len, chunk1);
@@ -493,14 +466,11 @@ pub(crate) fn parse_simd_u128<const LEN_LIMIT: u32>(
         };
 
         let mut chunk2;
-        (len, chunk2) = load_len_16_noskip(s.get_safe_unchecked(16..));
+        (len, chunk2) = load_len_16(s.get_safe_unchecked(16..));
         // note: only LEN_LIMIT <= 32 is checked
         if len > LEN_LIMIT - 16 {
             return Err(AtoiSimdError::Size(len as usize, s));
         }
-
-        // only numbers
-        chunk2 = vandq_u8(chunk2, mult);
 
         let mut extra = 0;
         match len {
@@ -617,7 +587,7 @@ mod test {
     use super::*;
 
     #[test]
-    fn test_load_len_8_noskip() {
+    fn test_load_len_8() {
         let data = [
             ([b'1', 0, 0, 0, 0, 0, 0, 0], 1),
             ([b'1', b'2', 0, 0, 0, 0, 0, 0], 2),
@@ -625,7 +595,7 @@ mod test {
         ];
 
         for (input, len) in data {
-            let (loaded_len, _) = unsafe { load_len_8_noskip(&input) };
+            let (loaded_len, _) = unsafe { load_len_8(&input) };
             assert_eq!(loaded_len, len, "input: {:X?}", input);
         }
     }
@@ -633,33 +603,26 @@ mod test {
     #[test]
     fn test_load_len_16() {
         let data = [
-            (
-                [b'1', b'2', b'3', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                3,
-                0,
-            ),
+            ([b'1', b'2', b'3', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 3),
             (
                 [
                     b'0', b'0', b'0', b'0', b'0', b'0', b'0', b'0', b'0', b'0', b'0', b'0', b'1',
                     b'2', b'3', 0,
                 ],
                 15,
-                0,
             ),
             (
                 [
                     b'0', b'0', b'0', b'0', b'0', b'0', b'0', b'0', b'0', b'0', b'0', b'0', b'0',
                     b'1', b'2', b'3',
                 ],
-                3,
-                13,
+                16,
             ),
         ];
 
-        for (input, len, skip) in data {
-            let (loaded_len, loaded_skip, _) = unsafe { load_len_16(&mut input.as_ref()) };
+        for (input, len) in data {
+            let (loaded_len, _) = unsafe { load_len_16(&mut input.as_ref()) };
             assert_eq!(loaded_len, len, "input: {:X?}", input);
-            assert_eq!(loaded_skip, skip, "input: {:X?}", input);
         }
     }
 }
