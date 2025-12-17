@@ -5,7 +5,7 @@ use crate::{short::parse_short_pos, AtoiSimdError};
 pub(crate) use super::parse_simd_u128;
 
 #[inline(always)]
-pub(crate) fn parse_simd_checked_u128<const LEN_LIMIT: u32>(
+pub(crate) fn parse_simd_checked_u128<const LEN_LIMIT: u32, const SKIP_ZEROES: bool>(
     s: &[u8],
 ) -> Result<u128, AtoiSimdError<'_>> {
     let s_len = s.len();
@@ -14,7 +14,7 @@ pub(crate) fn parse_simd_checked_u128<const LEN_LIMIT: u32>(
     } else if s_len < 17 {
         super::parse_simd_16_noskip(s).map(|(v, l)| (v as u128, l))?
     } else {
-        parse_simd_u128::<{ LEN_LIMIT }>(s)?
+        parse_simd_u128::<LEN_LIMIT, SKIP_ZEROES>(s)?
     };
     if len != s_len {
         return Err(AtoiSimdError::Invalid128(res, len, s));
@@ -23,8 +23,10 @@ pub(crate) fn parse_simd_checked_u128<const LEN_LIMIT: u32>(
 }
 
 #[inline(always)]
-pub(crate) fn parse_simd_i128(s: &[u8]) -> Result<(i128, usize), AtoiSimdError<'_>> {
-    let (res, len) = parse_simd_u128::<39>(s)?;
+pub(crate) fn parse_simd_i128<const SKIP_ZEROES: bool>(
+    s: &[u8],
+) -> Result<(i128, usize), AtoiSimdError<'_>> {
+    let (res, len) = parse_simd_u128::<39, SKIP_ZEROES>(s)?;
     if res > i128::MAX as u128 {
         Err(AtoiSimdError::Overflow(s))
     } else {
@@ -33,8 +35,10 @@ pub(crate) fn parse_simd_i128(s: &[u8]) -> Result<(i128, usize), AtoiSimdError<'
 }
 
 #[inline(always)]
-pub(crate) fn parse_simd_checked_i128(s: &[u8]) -> Result<i128, AtoiSimdError<'_>> {
-    let res = parse_simd_checked_u128::<39>(s)?;
+pub(crate) fn parse_simd_checked_i128<const SKIP_ZEROES: bool>(
+    s: &[u8],
+) -> Result<i128, AtoiSimdError<'_>> {
+    let res = parse_simd_checked_u128::<39, SKIP_ZEROES>(s)?;
     if res > i128::MAX as u128 {
         Err(AtoiSimdError::Overflow(s))
     } else {
@@ -43,8 +47,10 @@ pub(crate) fn parse_simd_checked_i128(s: &[u8]) -> Result<i128, AtoiSimdError<'_
 }
 
 #[inline(always)]
-pub(crate) fn parse_simd_u64(s: &[u8]) -> Result<(u64, usize), AtoiSimdError<'_>> {
-    let (res, len) = parse_simd_u128::<20>(s)?;
+pub(crate) fn parse_simd_u64<const SKIP_ZEROES: bool>(
+    s: &[u8],
+) -> Result<(u64, usize), AtoiSimdError<'_>> {
+    let (res, len) = parse_simd_u128::<20, SKIP_ZEROES>(s)?;
     if res > u64::MAX as u128 {
         crate::cold_path();
         Err(AtoiSimdError::Overflow(s))
@@ -54,8 +60,10 @@ pub(crate) fn parse_simd_u64(s: &[u8]) -> Result<(u64, usize), AtoiSimdError<'_>
 }
 
 #[inline(always)]
-pub(crate) fn parse_simd_checked_u64(s: &[u8]) -> Result<u64, AtoiSimdError<'_>> {
-    let res = parse_simd_checked_u128::<20>(s)?;
+pub(crate) fn parse_simd_checked_u64<const SKIP_ZEROES: bool>(
+    s: &[u8],
+) -> Result<u64, AtoiSimdError<'_>> {
+    let res = parse_simd_checked_u128::<20, SKIP_ZEROES>(s)?;
     if res > u64::MAX as u128 {
         crate::cold_path();
         Err(AtoiSimdError::Overflow(s))
@@ -65,8 +73,10 @@ pub(crate) fn parse_simd_checked_u64(s: &[u8]) -> Result<u64, AtoiSimdError<'_>>
 }
 
 #[inline(always)]
-pub(crate) fn parse_simd_i64(s: &[u8]) -> Result<(i64, usize), AtoiSimdError<'_>> {
-    let (res, len) = parse_simd_u128::<19>(s)?;
+pub(crate) fn parse_simd_i64<const SKIP_ZEROES: bool>(
+    s: &[u8],
+) -> Result<(i64, usize), AtoiSimdError<'_>> {
+    let (res, len) = parse_simd_u128::<19, SKIP_ZEROES>(s)?;
     if res > i64::MAX as u128 {
         crate::cold_path();
         Err(AtoiSimdError::Overflow(s))
@@ -76,8 +86,10 @@ pub(crate) fn parse_simd_i64(s: &[u8]) -> Result<(i64, usize), AtoiSimdError<'_>
 }
 
 #[inline(always)]
-pub(crate) fn parse_simd_checked_i64(s: &[u8]) -> Result<i64, AtoiSimdError<'_>> {
-    let res = parse_simd_checked_u128::<19>(s)?;
+pub(crate) fn parse_simd_checked_i64<const SKIP_ZEROES: bool>(
+    s: &[u8],
+) -> Result<i64, AtoiSimdError<'_>> {
+    let res = parse_simd_checked_u128::<19, SKIP_ZEROES>(s)?;
     if res > i64::MAX as u128 {
         crate::cold_path();
         Err(AtoiSimdError::Overflow(s))
@@ -87,8 +99,10 @@ pub(crate) fn parse_simd_checked_i64(s: &[u8]) -> Result<i64, AtoiSimdError<'_>>
 }
 
 #[inline(always)]
-pub(crate) fn parse_simd_i64_neg(s: &[u8]) -> Result<(i64, usize), AtoiSimdError<'_>> {
-    let (res, len) = parse_simd_u128::<19>(s)?;
+pub(crate) fn parse_simd_i64_neg<const SKIP_ZEROES: bool>(
+    s: &[u8],
+) -> Result<(i64, usize), AtoiSimdError<'_>> {
+    let (res, len) = parse_simd_u128::<19, SKIP_ZEROES>(s)?;
     const MAX: u128 = -(i64::MIN as i128) as u128;
     if res > MAX {
         Err(AtoiSimdError::Overflow(s))
@@ -100,8 +114,10 @@ pub(crate) fn parse_simd_i64_neg(s: &[u8]) -> Result<(i64, usize), AtoiSimdError
 }
 
 #[inline(always)]
-pub(crate) fn parse_simd_checked_i64_neg(s: &[u8]) -> Result<i64, AtoiSimdError<'_>> {
-    let res = parse_simd_checked_u128::<19>(s)?;
+pub(crate) fn parse_simd_checked_i64_neg<const SKIP_ZEROES: bool>(
+    s: &[u8],
+) -> Result<i64, AtoiSimdError<'_>> {
+    let res = parse_simd_checked_u128::<19, SKIP_ZEROES>(s)?;
     const MAX: u128 = -(i64::MIN as i128) as u128;
     if res > MAX {
         Err(AtoiSimdError::Overflow(s))
@@ -113,8 +129,10 @@ pub(crate) fn parse_simd_checked_i64_neg(s: &[u8]) -> Result<i64, AtoiSimdError<
 }
 
 #[inline(always)]
-pub(crate) fn parse_simd_i128_neg(s: &[u8]) -> Result<(i128, usize), AtoiSimdError<'_>> {
-    let (res, len) = parse_simd_u128::<39>(s)?;
+pub(crate) fn parse_simd_i128_neg<const SKIP_ZEROES: bool>(
+    s: &[u8],
+) -> Result<(i128, usize), AtoiSimdError<'_>> {
+    let (res, len) = parse_simd_u128::<39, SKIP_ZEROES>(s)?;
     const MAX: u128 = i128::MAX as u128 + 1;
     if res > MAX {
         Err(AtoiSimdError::Overflow(s))
@@ -126,8 +144,10 @@ pub(crate) fn parse_simd_i128_neg(s: &[u8]) -> Result<(i128, usize), AtoiSimdErr
 }
 
 #[inline(always)]
-pub(crate) fn parse_simd_checked_i128_neg(s: &[u8]) -> Result<i128, AtoiSimdError<'_>> {
-    let res = parse_simd_checked_u128::<39>(s)?;
+pub(crate) fn parse_simd_checked_i128_neg<const SKIP_ZEROES: bool>(
+    s: &[u8],
+) -> Result<i128, AtoiSimdError<'_>> {
+    let res = parse_simd_checked_u128::<39, SKIP_ZEROES>(s)?;
     const MAX: u128 = i128::MAX as u128 + 1;
     if res > MAX {
         Err(AtoiSimdError::Overflow(s))
@@ -145,17 +165,17 @@ mod test {
     #[test]
     fn test_corner_cases() {
         assert_eq!(
-            parse_simd_checked_u128::<32>(b"12345678901234567890123456789012").unwrap(),
+            parse_simd_checked_u128::<32, true>(b"12345678901234567890123456789012").unwrap(),
             12345678901234567890123456789012
         );
 
         assert_eq!(
-            parse_simd_u128::<32>(b"12345678901234567890123456789012s").unwrap(),
+            parse_simd_u128::<32, true>(b"12345678901234567890123456789012s").unwrap(),
             (12345678901234567890123456789012, 32)
         );
 
         assert_eq!(
-            parse_simd_checked_u128::<32>(b"123456789012345678901234567890123").unwrap(),
+            parse_simd_checked_u128::<32, true>(b"123456789012345678901234567890123").unwrap(),
             123456789012345678901234567890123
         );
     }

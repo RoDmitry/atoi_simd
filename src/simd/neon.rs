@@ -306,17 +306,17 @@ pub(crate) fn parse_simd_16(mut s: &[u8]) -> Result<(u64, usize), AtoiSimdError<
             // if all numbers
             if len == 16 {
                 crate::cold_path();
-                let zeros_chunk = vceqq_u8(chunk, vdupq_n_u8(0));
-                let zeros_chunk = vreinterpretq_u16_u8(zeros_chunk);
-                let zeros_chunk = vshrn_n_u16(zeros_chunk, 4);
-                let zeros_chunk = vreinterpret_u64_u8(zeros_chunk);
-                let zeros_res = vget_lane_u64(zeros_chunk, 0);
+                let zeroes_chunk = vceqq_u8(chunk, vdupq_n_u8(0));
+                let zeroes_chunk = vreinterpretq_u16_u8(zeroes_chunk);
+                let zeroes_chunk = vshrn_n_u16(zeroes_chunk, 4);
+                let zeroes_chunk = vreinterpret_u64_u8(zeroes_chunk);
+                let zeroes_res = vget_lane_u64(zeroes_chunk, 0);
 
-                let zeros = zeros_res.trailing_ones() / 4;
-                ::core::hint::assert_unchecked(zeros <= 16);
-                if zeros > 0 {
-                    skipped += zeros;
-                    s = s.get_safe_unchecked((zeros as usize)..);
+                let zeroes = zeroes_res.trailing_ones() / 4;
+                ::core::hint::assert_unchecked(zeroes <= 16);
+                if zeroes > 0 {
+                    skipped += zeroes;
+                    s = s.get_safe_unchecked((zeroes as usize)..);
                     continue;
                 }
             }
@@ -471,42 +471,42 @@ pub(crate) fn parse_simd_u128<const LEN_LIMIT: u32>(
                         }
 
                         if LEN_LIMIT < 32 || LEN_LIMIT >= 32 && len_extra > 7 {
-                            let zeros_chunk = vceqq_u8(chunk1, vdupq_n_u8(0));
-                            let zeros_chunk = vreinterpretq_u16_u8(zeros_chunk);
-                            let zeros_chunk = vshrn_n_u16(zeros_chunk, 4);
-                            let zeros_chunk = vreinterpret_u64_u8(zeros_chunk);
-                            let zeros_res = vget_lane_u64(zeros_chunk, 0);
+                            let zeroes_chunk = vceqq_u8(chunk1, vdupq_n_u8(0));
+                            let zeroes_chunk = vreinterpretq_u16_u8(zeroes_chunk);
+                            let zeroes_chunk = vshrn_n_u16(zeroes_chunk, 4);
+                            let zeroes_chunk = vreinterpret_u64_u8(zeroes_chunk);
+                            let zeroes_res = vget_lane_u64(zeroes_chunk, 0);
 
-                            let mut zeros = zeros_res.trailing_ones() / 4;
-                            ::core::hint::assert_unchecked(zeros <= 16);
-                            if zeros > 0 {
-                                if zeros == 16 {
+                            let mut zeroes = zeroes_res.trailing_ones() / 4;
+                            ::core::hint::assert_unchecked(zeroes <= 16);
+                            if zeroes > 0 {
+                                if zeroes == 16 {
                                     if LEN_LIMIT >= 32 {
                                         // same as AVX2
                                         crate::cold_path();
                                     }
-                                    let zeros_chunk = vceqq_u8(chunk2, vdupq_n_u8(0));
-                                    let zeros_chunk = vreinterpretq_u16_u8(zeros_chunk);
-                                    let zeros_chunk = vshrn_n_u16(zeros_chunk, 4);
-                                    let zeros_chunk = vreinterpret_u64_u8(zeros_chunk);
-                                    let zeros_res = vget_lane_u64(zeros_chunk, 0);
+                                    let zeroes_chunk = vceqq_u8(chunk2, vdupq_n_u8(0));
+                                    let zeroes_chunk = vreinterpretq_u16_u8(zeroes_chunk);
+                                    let zeroes_chunk = vshrn_n_u16(zeroes_chunk, 4);
+                                    let zeroes_chunk = vreinterpret_u64_u8(zeroes_chunk);
+                                    let zeroes_res = vget_lane_u64(zeroes_chunk, 0);
 
-                                    let zeros2 = zeros_res.trailing_ones() / 4;
-                                    ::core::hint::assert_unchecked(zeros2 <= 16);
-                                    if LEN_LIMIT >= 32 && zeros2 == 16 {
+                                    let zeroes2 = zeroes_res.trailing_ones() / 4;
+                                    ::core::hint::assert_unchecked(zeroes2 <= 16);
+                                    if LEN_LIMIT >= 32 && zeroes2 == 16 {
                                         crate::cold_path();
 
-                                        let zeros_chunk = vceq_u8(chunk3, vdup_n_u8(0));
-                                        let zeros_chunk = vreinterpret_u64_u8(zeros_chunk);
-                                        let zeros_res = vget_lane_u64(zeros_chunk, 0);
-                                        let zeros3 = zeros_res.trailing_ones() / 8;
+                                        let zeroes_chunk = vceq_u8(chunk3, vdup_n_u8(0));
+                                        let zeroes_chunk = vreinterpret_u64_u8(zeroes_chunk);
+                                        let zeroes_res = vget_lane_u64(zeroes_chunk, 0);
+                                        let zeroes3 = zeroes_res.trailing_ones() / 8;
 
-                                        zeros += zeros3.min(len_extra);
+                                        zeroes += zeroes3.min(len_extra);
                                     }
-                                    zeros += zeros2;
+                                    zeroes += zeroes2;
                                 }
-                                skipped += zeros;
-                                s = s.get_safe_unchecked((zeros as usize)..);
+                                skipped += zeroes;
+                                s = s.get_safe_unchecked((zeroes as usize)..);
                                 continue;
                             }
 
@@ -565,7 +565,7 @@ pub(crate) fn parse_simd_u128<const LEN_LIMIT: u32>(
                                 } else {
                                     return Err(AtoiSimdError::Size((len_extra + 32) as usize, s));
                                 }
-                            },
+                            }
                         };
                         chunk3 = vget_low_u8(chunk3_16);
                         len += len_extra;

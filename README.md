@@ -33,15 +33,17 @@ Got the idea from [here](https://rust-malaysia.github.io/code/2020/07/11/faster-
 ## Examples
 
 ```rust
-let val: u64 = atoi_simd::parse(b"1234").unwrap();
+// a drop-in replacement for `str::parse`
+assert_eq!(atoi_simd::parse::<u64, true, true>(b"+000000000000000000001234"), Ok(1234_u64));
+
+let val: u64 = atoi_simd::parse::<_, false, false>(b"1234").unwrap();
 assert_eq!(val, 1234_u64);
 
-assert_eq!(atoi_simd::parse::<i64>(b"-2345"), Ok(-2345_i64));
+assert_eq!(atoi_simd::parse::<i64, false, false>(b"-2345"), Ok(-2345_i64));
 
-assert_eq!(atoi_simd::parse_prefix::<u64>(b"123something_else"), Ok((123_u64, 3)));
+assert_eq!(atoi_simd::parse_neg::<i64, false>(b"2345"), Ok(-2345_i64));
 
-// a drop-in replacement for `str::parse`
-assert_eq!(atoi_simd::parse_skipped::<u64>(b"+000000000000000000001234"), Ok(1234_u64));
+assert_eq!(atoi_simd::parse_prefix::<u64, false, false>(b"123something_else"), Ok((123_u64, 3)));
 ```
 
 ## Benchmarks

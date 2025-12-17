@@ -25,15 +25,17 @@
 //! # Examples
 //!
 //! ```
-//! let val: u64 = atoi_simd::parse(b"1234").unwrap();
+//! // a drop-in replacement for `str::parse`
+//! assert_eq!(atoi_simd::parse::<u64, true, true>(b"+000000000000000000001234"), Ok(1234_u64));
+//!
+//! let val: u64 = atoi_simd::parse::<_, false, false>(b"1234").unwrap();
 //! assert_eq!(val, 1234_u64);
 //!
-//! assert_eq!(atoi_simd::parse::<i64>(b"-2345"), Ok(-2345_i64));
+//! assert_eq!(atoi_simd::parse::<i64, false, false>(b"-2345"), Ok(-2345_i64));
 //!
-//! assert_eq!(atoi_simd::parse_prefix::<u64>(b"123something_else"), Ok((123_u64, 3)));
+//! assert_eq!(atoi_simd::parse_neg::<i64, false>(b"2345"), Ok(-2345_i64));
 //!
-//! // a drop-in replacement for `str::parse`
-//! assert_eq!(atoi_simd::parse_skipped::<u64>(b"+000000000000000000001234"), Ok(1234_u64));
+//! assert_eq!(atoi_simd::parse_prefix::<u64, false, false>(b"123something_else"), Ok((123_u64, 3)));
 //! ```
 #![allow(clippy::comparison_chain)]
 #![cfg_attr(not(feature = "std"), no_std)]
@@ -95,68 +97,101 @@ pub use crate::{
 };
 
 /// Parses a slice of digits, and checks for the first '-' char for signed integers.
+///
+/// Can skip the '+' char (SKIP_PLUS) and extra zeroes (more than an integer's max length) at the beginning (SKIP_ZEROES),
+/// but it's a bit slower.
+/// Even without SKIP_ZEROES it parses zeroes at the beginning, but up to an integer's max length (even a bit more).
+/// SKIP_ZEROES makes it skip an infinite amount of zeroes.
 #[inline]
-pub fn parse<T: Parse>(s: &[u8]) -> Result<T, AtoiSimdError<'_>> {
-    T::atoi_simd_parse(s)
+pub fn parse<T: Parse, const SKIP_ZEROES: bool, const SKIP_PLUS: bool>(
+    s: &[u8],
+) -> Result<T, AtoiSimdError<'_>> {
+    T::atoi_simd_parse::<SKIP_ZEROES, SKIP_PLUS>(s)
 }
 
-/// Parses a positive integer.
+/// Parses a positive integer. Does not check any signs, so slice must not contain them.
+///
+/// Can skip extra zeroes (more than an integer's max length) at the beginning (SKIP_ZEROES), but it's a bit slower.
+/// Even without SKIP_ZEROES it parses zeroes at the beginning, but up to an integer's max length (even a bit more).
+/// SKIP_ZEROES makes it skip an infinite amount of zeroes.
 #[inline]
-pub fn parse_pos<T: Parse>(s: &[u8]) -> Result<T, AtoiSimdError<'_>> {
-    T::atoi_simd_parse_pos(s)
+pub fn parse_pos<T: Parse, const SKIP_ZEROES: bool>(s: &[u8]) -> Result<T, AtoiSimdError<'_>> {
+    T::atoi_simd_parse_pos::<SKIP_ZEROES>(s)
 }
 
-/// Parses a negative integer. Slice must not contain '-' sign.
+/// Parses a negative integer. Does not check any signs, so slice must not contain them (including '-' sign).
+///
+/// Can skip extra zeroes (more than an integer's max length) at the beginning (SKIP_ZEROES), but it's a bit slower.
+/// Even without SKIP_ZEROES it parses zeroes at the beginning, but up to an integer's max length (even a bit more).
+/// SKIP_ZEROES makes it skip an infinite amount of zeroes.
 #[inline]
-pub fn parse_neg<T: ParseNeg>(s: &[u8]) -> Result<T, AtoiSimdError<'_>> {
-    T::atoi_simd_parse_neg(s)
+pub fn parse_neg<T: ParseNeg, const SKIP_ZEROES: bool>(s: &[u8]) -> Result<T, AtoiSimdError<'_>> {
+    T::atoi_simd_parse_neg::<SKIP_ZEROES>(s)
 }
 
 /// Parses a slice of digits until it reaches an invalid character,
 /// and checks for the first '-' char for signed integers.
 /// Returns the parsed value and the parsed size of the slice.
+///
+/// Can skip the '+' char (SKIP_PLUS) and extra zeroes (more than an integer's max length) at the beginning (SKIP_ZEROES),
+/// but it's a bit slower.
+/// Even without SKIP_ZEROES it parses zeroes at the beginning, but up to an integer's max length (even a bit more).
+/// SKIP_ZEROES makes it skip an infinite amount of zeroes.
 #[inline]
-pub fn parse_prefix<T: Parse>(s: &[u8]) -> Result<(T, usize), AtoiSimdError<'_>> {
-    T::atoi_simd_parse_prefix(s)
+pub fn parse_prefix<T: Parse, const SKIP_ZEROES: bool, const SKIP_PLUS: bool>(
+    s: &[u8],
+) -> Result<(T, usize), AtoiSimdError<'_>> {
+    T::atoi_simd_parse_prefix::<SKIP_ZEROES, SKIP_PLUS>(s)
 }
 
 /// Parses a positive integer until it reaches an invalid character.
 /// Returns the parsed value and the parsed size of the slice.
+/// Does not check any signs, so slice must not contain them.
+///
+/// Can skip extra zeroes (more than an integer's max length) at the beginning (SKIP_ZEROES), but it's a bit slower.
+/// Even without SKIP_ZEROES it parses zeroes at the beginning, but up to an integer's max length (even a bit more).
+/// SKIP_ZEROES makes it skip an infinite amount of zeroes.
 #[inline]
-pub fn parse_prefix_pos<T: Parse>(s: &[u8]) -> Result<(T, usize), AtoiSimdError<'_>> {
-    T::atoi_simd_parse_prefix_pos(s)
+pub fn parse_prefix_pos<T: Parse, const SKIP_ZEROES: bool>(
+    s: &[u8],
+) -> Result<(T, usize), AtoiSimdError<'_>> {
+    T::atoi_simd_parse_prefix_pos::<SKIP_ZEROES>(s)
 }
 
-/// Parses a negative integer until it reaches an invalid character. Slice must not contain '-' sign.
+/// Parses a negative integer until it reaches an invalid character.
 /// Returns the parsed value and the parsed size of the slice.
+/// Does not check any signs, so slice must not contain them (including '-' sign).
+///
+/// Can skip extra zeroes (more than an integer's max length) at the beginning (SKIP_ZEROES), but it's a bit slower.
+/// Even without SKIP_ZEROES it parses zeroes at the beginning, but up to an integer's max length (even a bit more).
+/// SKIP_ZEROES makes it skip an infinite amount of zeroes.
 #[inline]
-pub fn parse_prefix_neg<T: ParseNeg>(s: &[u8]) -> Result<(T, usize), AtoiSimdError<'_>> {
-    T::atoi_simd_parse_prefix_neg(s)
+pub fn parse_prefix_neg<T: ParseNeg, const SKIP_ZEROES: bool>(
+    s: &[u8],
+) -> Result<(T, usize), AtoiSimdError<'_>> {
+    T::atoi_simd_parse_prefix_neg::<SKIP_ZEROES>(s)
 }
 
-/// Parses a slice of digits. Has been made to be used as a drop-in replacement for `str::parse`.
-/// Checks for the first '-' char for signed integers.
-/// Skips the '+' char and extra zeroes at the beginning.
-/// It's slower than `parse()`.
+#[deprecated(since = "0.18.0", note = "Use `parse::<_, true, true>` instead")]
 #[inline]
 pub fn parse_skipped<T: Parse>(s: &[u8]) -> Result<T, AtoiSimdError<'_>> {
-    T::atoi_simd_parse_skipped(s)
+    parse::<_, true, true>(s)
 }
 
 #[deprecated(since = "0.17.0", note = "Use `parse_prefix` instead")]
 #[inline]
 pub fn parse_any<T: Parse>(s: &[u8]) -> Result<(T, usize), AtoiSimdError<'_>> {
-    parse_prefix(s)
+    parse_prefix::<_, false, false>(s)
 }
 
 #[deprecated(since = "0.17.0", note = "Use `parse_prefix_pos` instead")]
 #[inline]
 pub fn parse_any_pos<T: Parse>(s: &[u8]) -> Result<(T, usize), AtoiSimdError<'_>> {
-    parse_prefix_pos(s)
+    parse_prefix_pos::<_, false>(s)
 }
 
 #[deprecated(since = "0.17.0", note = "Use `parse_prefix_neg` instead")]
 #[inline]
 pub fn parse_any_neg<T: ParseNeg>(s: &[u8]) -> Result<(T, usize), AtoiSimdError<'_>> {
-    parse_prefix_neg(s)
+    parse_prefix_neg::<_, false>(s)
 }

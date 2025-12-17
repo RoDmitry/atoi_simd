@@ -49,86 +49,92 @@ use debug_unsafe::slice::SliceGetter;
 
 /// Note: all of the provided methods are `#[inline(always)]`
 pub trait ParsePos: Sized {
-    fn atoi_simd_parse_pos(s: &[u8]) -> Result<Self, AtoiSimdError<'_>>;
-    fn atoi_simd_parse_prefix_pos(s: &[u8]) -> Result<(Self, usize), AtoiSimdError<'_>>;
+    fn atoi_simd_parse_pos<const SKIP_ZEROES: bool>(s: &[u8]) -> Result<Self, AtoiSimdError<'_>>;
+    fn atoi_simd_parse_prefix_pos<const SKIP_ZEROES: bool>(
+        s: &[u8],
+    ) -> Result<(Self, usize), AtoiSimdError<'_>>;
 }
 
 /// Note: all of the provided methods are `#[inline(always)]`
 pub trait ParseNeg: Sized {
-    fn atoi_simd_parse_neg(s: &[u8]) -> Result<Self, AtoiSimdError<'_>>;
-    fn atoi_simd_parse_prefix_neg(s: &[u8]) -> Result<(Self, usize), AtoiSimdError<'_>>;
+    fn atoi_simd_parse_neg<const SKIP_ZEROES: bool>(s: &[u8]) -> Result<Self, AtoiSimdError<'_>>;
+    fn atoi_simd_parse_prefix_neg<const SKIP_ZEROES: bool>(
+        s: &[u8],
+    ) -> Result<(Self, usize), AtoiSimdError<'_>>;
 }
 
 /// Note: all of the provided methods are `#[inline(always)]`
 pub trait Parse: ParsePos {
     #[inline(always)]
-    fn atoi_simd_parse(s: &[u8]) -> Result<Self, AtoiSimdError<'_>> {
-        Self::atoi_simd_parse_pos(s)
-    }
-
-    #[inline(always)]
-    fn atoi_simd_parse_prefix(s: &[u8]) -> Result<(Self, usize), AtoiSimdError<'_>> {
-        Self::atoi_simd_parse_prefix_pos(s)
-    }
-
-    #[inline(always)]
-    fn atoi_simd_parse_skipped(s: &[u8]) -> Result<Self, AtoiSimdError<'_>> {
-        let mut i = 0;
-        if *s.first().ok_or(AtoiSimdError::Empty)? == b'+' {
-            i = 1;
+    fn atoi_simd_parse<const SKIP_ZEROES: bool, const SKIP_PLUS: bool>(
+        mut s: &[u8],
+    ) -> Result<Self, AtoiSimdError<'_>> {
+        if SKIP_PLUS && *s.first().ok_or(AtoiSimdError::Empty)? == b'+' {
+            s = s.get_safe_unchecked(1..);
         }
-        /* let extra_len = s.len().saturating_sub(16);
-        while i < extra_len && *s.get_safe_unchecked(i) == b'0' {
-            i += 1;
-        } */
 
-        Self::atoi_simd_parse_pos(s.get_safe_unchecked(i..))
+        Self::atoi_simd_parse_pos::<SKIP_ZEROES>(s)
+    }
+
+    #[inline(always)]
+    fn atoi_simd_parse_prefix<const SKIP_ZEROES: bool, const SKIP_PLUS: bool>(
+        mut s: &[u8],
+    ) -> Result<(Self, usize), AtoiSimdError<'_>> {
+        if SKIP_PLUS && *s.first().ok_or(AtoiSimdError::Empty)? == b'+' {
+            s = s.get_safe_unchecked(1..);
+        }
+
+        Self::atoi_simd_parse_prefix_pos::<SKIP_ZEROES>(s)
     }
 }
 
 #[inline(always)]
-fn atoi_simd_parse_signed<T: ParsePos + ParseNeg>(s: &[u8]) -> Result<T, AtoiSimdError<'_>> {
-    if *s.first().ok_or(AtoiSimdError::Empty)? == b'-' {
-        T::atoi_simd_parse_neg(s.get_safe_unchecked(1..))
-    } else {
-        T::atoi_simd_parse_pos(s)
-    }
-}
-
-#[inline(always)]
-fn atoi_simd_parse_prefix_signed<T: ParsePos + ParseNeg>(
-    s: &[u8],
-) -> Result<(T, usize), AtoiSimdError<'_>> {
-    if *s.first().ok_or(AtoiSimdError::Empty)? == b'-' {
-        T::atoi_simd_parse_prefix_neg(s.get_safe_unchecked(1..)).map(|(v, i)| (v, i + 1))
-    } else {
-        T::atoi_simd_parse_prefix_pos(s)
-    }
-}
-
-#[inline(always)]
-fn atoi_simd_parse_skipped_signed<T: ParsePos + ParseNeg>(
-    s: &[u8],
+fn atoi_simd_parse_signed<T: ParsePos + ParseNeg, const SKIP_ZEROES: bool, const SKIP_PLUS: bool>(
+    mut s: &[u8],
 ) -> Result<T, AtoiSimdError<'_>> {
-    let mut neg = false;
-    let i = match *s.first().ok_or(AtoiSimdError::Empty)? {
-        b'+' => 1,
-        b'-' => {
-            neg = true;
-            1
+    let neg = match *s.first().ok_or(AtoiSimdError::Empty)? {
+        b'+' if SKIP_PLUS => {
+            s = s.get_safe_unchecked(1..);
+            false
         }
-        _ => 0,
+        b'-' => {
+            s = s.get_safe_unchecked(1..);
+            true
+        }
+        _ => false,
     };
-    // let extra_len = s.len().saturating_sub(16);
-    // while i < extra_len && *s.get_safe_unchecked(i) == b'0' {
-    //     i += 1;
-    // }
 
-    let input = s.get_safe_unchecked(i..);
     if neg {
-        T::atoi_simd_parse_neg(input)
+        T::atoi_simd_parse_neg::<SKIP_ZEROES>(s)
     } else {
-        T::atoi_simd_parse_pos(input)
+        T::atoi_simd_parse_pos::<SKIP_ZEROES>(s)
+    }
+}
+
+#[inline(always)]
+fn atoi_simd_parse_prefix_signed<
+    T: ParsePos + ParseNeg,
+    const SKIP_ZEROES: bool,
+    const SKIP_PLUS: bool,
+>(
+    mut s: &[u8],
+) -> Result<(T, usize), AtoiSimdError<'_>> {
+    let neg = match *s.first().ok_or(AtoiSimdError::Empty)? {
+        b'+' if SKIP_PLUS => {
+            s = s.get_safe_unchecked(1..);
+            false
+        }
+        b'-' => {
+            s = s.get_safe_unchecked(1..);
+            true
+        }
+        _ => false,
+    };
+
+    if neg {
+        T::atoi_simd_parse_prefix_neg::<SKIP_ZEROES>(s).map(|(v, l)| (v, l + 1))
+    } else {
+        T::atoi_simd_parse_prefix_pos::<SKIP_ZEROES>(s)
     }
 }
 
@@ -143,18 +149,13 @@ macro_rules! parse_impl_signed {
     ($($t:ty)*) => {$(
         impl Parse for $t {
             #[inline(always)]
-            fn atoi_simd_parse(s: &[u8]) -> Result<Self, AtoiSimdError<'_>> {
-                atoi_simd_parse_signed(s)
+            fn atoi_simd_parse<const SKIP_ZEROES: bool, const SKIP_PLUS: bool>(s: &[u8]) -> Result<Self, AtoiSimdError<'_>> {
+                atoi_simd_parse_signed::<_, SKIP_ZEROES, SKIP_PLUS>(s)
             }
 
             #[inline(always)]
-            fn atoi_simd_parse_prefix(s: &[u8]) -> Result<(Self, usize), AtoiSimdError<'_>> {
-                atoi_simd_parse_prefix_signed(s)
-            }
-
-            #[inline(always)]
-            fn atoi_simd_parse_skipped(s: &[u8]) -> Result<Self, AtoiSimdError<'_>> {
-                atoi_simd_parse_skipped_signed(s)
+            fn atoi_simd_parse_prefix<const SKIP_ZEROES: bool, const SKIP_PLUS: bool>(s: &[u8]) -> Result<(Self, usize), AtoiSimdError<'_>> {
+                atoi_simd_parse_prefix_signed::<_, SKIP_ZEROES, SKIP_PLUS>(s)
             }
         }
     )*};
