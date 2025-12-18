@@ -89,7 +89,11 @@ pub trait Parse: ParsePos {
 }
 
 #[inline(always)]
-fn atoi_simd_parse_signed<T: ParsePos + ParseNeg, const SKIP_ZEROES: bool, const SKIP_PLUS: bool>(
+fn atoi_simd_parse_signed<
+    T: ParsePos + ParseNeg,
+    const SKIP_ZEROES: bool,
+    const SKIP_PLUS: bool,
+>(
     mut s: &[u8],
 ) -> Result<T, AtoiSimdError<'_>> {
     let neg = match *s.first().ok_or(AtoiSimdError::Empty)? {

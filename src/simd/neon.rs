@@ -297,14 +297,16 @@ pub(crate) fn parse_simd_16_noskip(s: &[u8]) -> Result<(u64, usize), AtoiSimdErr
 }
 
 #[inline(always)]
-pub(crate) fn parse_simd_16(mut s: &[u8]) -> Result<(u64, usize), AtoiSimdError<'_>> {
+pub(crate) fn parse_simd_16<const SKIP_ZEROES: bool>(
+    mut s: &[u8],
+) -> Result<(u64, usize), AtoiSimdError<'_>> {
     let mut skipped = 0;
     loop {
         unsafe {
-            let (len, chunk) = load_len_16(&mut s);
+            let (len, chunk) = load_len_16(s);
 
             // if all numbers
-            if len == 16 {
+            if SKIP_ZEROES && len == 16 {
                 crate::cold_path();
                 let zeroes_chunk = vceqq_u8(chunk, vdupq_n_u8(0));
                 let zeroes_chunk = vreinterpretq_u16_u8(zeroes_chunk);
@@ -382,7 +384,7 @@ unsafe fn odd_even_small_32(chunk: uint16x4_t) -> (uint32x2_t, uint32x2_t) {
 } */
 
 #[inline(always)]
-pub(crate) fn parse_simd_u128<const LEN_LIMIT: u32>(
+pub(crate) fn parse_simd_u128<const LEN_LIMIT: u32, const SKIP_ZEROES: bool>(
     mut s: &[u8],
 ) -> Result<(u128, usize), AtoiSimdError<'_>> {
     const { assert!(LEN_LIMIT > 16, "use `parse_simd_16` instead") };
@@ -390,7 +392,7 @@ pub(crate) fn parse_simd_u128<const LEN_LIMIT: u32>(
     let mut skipped = 0;
     loop {
         unsafe {
-            let (mut len, mut chunk1) = load_len_16(&mut s);
+            let (mut len, mut chunk1) = load_len_16(s);
 
             if len < 16 || s.len() == 16 {
                 let res = parse_simd_neon(len, chunk1);
@@ -470,44 +472,46 @@ pub(crate) fn parse_simd_u128<const LEN_LIMIT: u32>(
                             (len_extra, chunk3) = load_len_8(s.get_safe_unchecked(32..));
                         }
 
-                        if LEN_LIMIT < 32 || LEN_LIMIT >= 32 && len_extra > 7 {
-                            let zeroes_chunk = vceqq_u8(chunk1, vdupq_n_u8(0));
-                            let zeroes_chunk = vreinterpretq_u16_u8(zeroes_chunk);
-                            let zeroes_chunk = vshrn_n_u16(zeroes_chunk, 4);
-                            let zeroes_chunk = vreinterpret_u64_u8(zeroes_chunk);
-                            let zeroes_res = vget_lane_u64(zeroes_chunk, 0);
+                        if LEN_LIMIT < 32 || len_extra > 7 {
+                            if SKIP_ZEROES {
+                                let zeroes_chunk = vceqq_u8(chunk1, vdupq_n_u8(0));
+                                let zeroes_chunk = vreinterpretq_u16_u8(zeroes_chunk);
+                                let zeroes_chunk = vshrn_n_u16(zeroes_chunk, 4);
+                                let zeroes_chunk = vreinterpret_u64_u8(zeroes_chunk);
+                                let zeroes_res = vget_lane_u64(zeroes_chunk, 0);
 
-                            let mut zeroes = zeroes_res.trailing_ones() / 4;
-                            ::core::hint::assert_unchecked(zeroes <= 16);
-                            if zeroes > 0 {
-                                if zeroes == 16 {
-                                    if LEN_LIMIT >= 32 {
-                                        // same as AVX2
-                                        crate::cold_path();
-                                    }
-                                    let zeroes_chunk = vceqq_u8(chunk2, vdupq_n_u8(0));
-                                    let zeroes_chunk = vreinterpretq_u16_u8(zeroes_chunk);
-                                    let zeroes_chunk = vshrn_n_u16(zeroes_chunk, 4);
-                                    let zeroes_chunk = vreinterpret_u64_u8(zeroes_chunk);
-                                    let zeroes_res = vget_lane_u64(zeroes_chunk, 0);
-
-                                    let zeroes2 = zeroes_res.trailing_ones() / 4;
-                                    ::core::hint::assert_unchecked(zeroes2 <= 16);
-                                    if LEN_LIMIT >= 32 && zeroes2 == 16 {
-                                        crate::cold_path();
-
-                                        let zeroes_chunk = vceq_u8(chunk3, vdup_n_u8(0));
+                                let mut zeroes = zeroes_res.trailing_ones() / 4;
+                                ::core::hint::assert_unchecked(zeroes <= 16);
+                                if zeroes > 0 {
+                                    if zeroes == 16 {
+                                        if LEN_LIMIT >= 32 {
+                                            // same as AVX2
+                                            crate::cold_path();
+                                        }
+                                        let zeroes_chunk = vceqq_u8(chunk2, vdupq_n_u8(0));
+                                        let zeroes_chunk = vreinterpretq_u16_u8(zeroes_chunk);
+                                        let zeroes_chunk = vshrn_n_u16(zeroes_chunk, 4);
                                         let zeroes_chunk = vreinterpret_u64_u8(zeroes_chunk);
                                         let zeroes_res = vget_lane_u64(zeroes_chunk, 0);
-                                        let zeroes3 = zeroes_res.trailing_ones() / 8;
 
-                                        zeroes += zeroes3.min(len_extra);
+                                        let zeroes2 = zeroes_res.trailing_ones() / 4;
+                                        ::core::hint::assert_unchecked(zeroes2 <= 16);
+                                        if LEN_LIMIT >= 32 && zeroes2 == 16 {
+                                            crate::cold_path();
+
+                                            let zeroes_chunk = vceq_u8(chunk3, vdup_n_u8(0));
+                                            let zeroes_chunk = vreinterpret_u64_u8(zeroes_chunk);
+                                            let zeroes_res = vget_lane_u64(zeroes_chunk, 0);
+                                            let zeroes3 = zeroes_res.trailing_ones() / 8;
+
+                                            zeroes += zeroes3.min(len_extra);
+                                        }
+                                        zeroes += zeroes2;
                                     }
-                                    zeroes += zeroes2;
+                                    skipped += zeroes;
+                                    s = s.get_safe_unchecked((zeroes as usize)..);
+                                    continue;
                                 }
-                                skipped += zeroes;
-                                s = s.get_safe_unchecked((zeroes as usize)..);
-                                continue;
                             }
 
                             return Err(AtoiSimdError::Size((len_extra + 32) as usize, s));

@@ -630,6 +630,7 @@ unsafe fn parse_simd_sse(
 pub(crate) fn parse_simd_16_noskip(s: &[u8]) -> Result<(u64, usize), AtoiSimdError<'_>> {
     unsafe {
         let (len, chunk) = load_len(s);
+
         parse_simd_sse(len, chunk)
     }
 }
@@ -707,7 +708,7 @@ pub(crate) fn parse_simd_u128<const LEN_LIMIT: u32, const SKIP_ZEROES: bool>(
                             (len_extra, chunk_extra) = load_len(s.get_safe_unchecked(32..));
                         }
 
-                        if LEN_LIMIT < 32 || /* LEN_LIMIT >= 32 && */ len_extra > 7 {
+                        if LEN_LIMIT < 32 || len_extra > 7 {
                             if SKIP_ZEROES {
                                 if LEN_LIMIT >= 32 {
                                     // somehow `parse_prefix u64` works better without it
