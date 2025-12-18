@@ -3,9 +3,9 @@
 use libfuzzer_sys::fuzz_target;
 
 fuzz_target!(|data: &[u8]| {
-    let result = atoi_simd::parse::<u64>(data);
-    if let Some(first_digit) = data.get(0) {
-        // atoi_simd doesn't support leading zeroes or + sign
+    let result = atoi_simd::parse::<u64, false, false>(data);
+    if let Some(first_digit) = data.first() {
+        // avoid leading zeroes and + sign
         if *first_digit != b'0' && *first_digit != b'+' {
             // std only supports converting from &str, not &[u8]
             if let Ok(string) = ::core::str::from_utf8(data) {
