@@ -6,10 +6,17 @@ description = "Fast `&[u8]` to integer parser benchmark"
 edition = "2021"
 publish = false
 
+[features]
+full = []
+
 [dependencies]
 atoi_simd = { path = ".." }
-criterion = { version = "0.7", features = ["html_reports"] }
+criterion = { version = "0.8", features = ["html_reports"] }
 
 [[bench]]
 name = "benchmark"
 harness = false
+
+[profile.bench]
+lto = "fat"
+codegen-units = 1

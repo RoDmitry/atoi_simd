@@ -2,13 +2,13 @@ name: Rust
 
 on:
   push:
-    branches:
-      - master
-    paths:
-     - 'src/**'
+    paths-ignore:
+      - '**/*.md'
   pull_request:
     branches:
       - master
+    paths-ignore:
+      - '**/*.md'
 
 env:
   CARGO_TERM_COLOR: always
@@ -17,7 +17,7 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
 
       - name: Format
         run: cargo fmt -- --check
@@ -33,7 +33,7 @@ jobs:
     env:
       RUSTFLAGS: ${{ matrix.rustflags }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
 
       - name: Prepare
         # gcc-multilib is needed for i686
@@ -72,7 +72,7 @@ jobs:
     env:
       RUSTFLAGS: '-C target-feature=+neon'
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
       - name: Prepare
         run: rm -f .cargo/config.toml
 

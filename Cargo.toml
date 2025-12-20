@@ -17,6 +17,10 @@ rust-version = "1.59"
 name = "atoi_simd"
 path = "src/lib.rs"
 
+[features]
+default = ["std"]
+std = []
+
 [dependencies]
 debug_unsafe = "0.1"
 
@@ -24,6 +28,6 @@ debug_unsafe = "0.1"
 arrayvec = "0.7"
 numtoa = "0.3"
 
-[features]
-default = ["std"]
-std = ["arrayvec/std"]
+[profile.release]
+lto = "fat"
+codegen-units = 1
