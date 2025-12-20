@@ -19,7 +19,7 @@ path = "src/lib.rs"
 
 [features]
 default = ["std"]
-std = ["arrayvec/std"]
+std = []
 
 [dependencies]
 debug_unsafe = "0.1"
