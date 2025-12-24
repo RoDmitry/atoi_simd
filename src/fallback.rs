@@ -53,7 +53,9 @@ fn check_len_8(val: u64) -> usize {
     let high = (val.wrapping_add(0x0606_0606_0606_0606) & 0xF0F0_F0F0_F0F0_F0F0) >> 4;
     let low = val & 0xF0F0_F0F0_F0F0_F0F0;
     let res = (high | low) ^ 0x3333_3333_3333_3333;
-    (res.trailing_zeros() / 8) as usize
+    let len = (res.trailing_zeros() / 8) as usize;
+    unsafe { crate::assert_unchecked(len <= 8) }
+    len
 }
 
 /* #[inline(always)]
@@ -132,6 +134,18 @@ enum EarlyReturn<T, E> {
     Ret(T),
 }
 
+#[inline(always)]
+fn len_zeroes(val: u64) -> u32 {
+    let xor = val ^ 0x30303030_30303030;
+    xor.trailing_zeros() / 8
+}
+
+#[inline(always)]
+fn len_zeroes_128(val: u128) -> u32 {
+    let xor = val ^ 0x30303030_30303030_30303030_30303030;
+    xor.trailing_zeros() / 8
+}
+
 /// len must be <= 8
 #[inline(always)]
 fn parse_16_by_8(s: &[u8]) -> EarlyReturn<(u64, usize), AtoiSimdError<'_>> {
@@ -162,6 +176,8 @@ fn parse_16_by_8(s: &[u8]) -> EarlyReturn<(u64, usize), AtoiSimdError<'_>> {
 
 #[inline(always)]
 pub(crate) fn parse_fb_pos<const MAX: u64>(s: &[u8]) -> Result<(u64, usize), AtoiSimdError<'_>> {
+    const { assert!(MAX < i64::MAX as u64) };
+
     let (val, len) = match parse_16_by_8(s) {
         EarlyReturn::Ok(v) | EarlyReturn::Ret(v) => v,
         EarlyReturn::Err(e) => return Err(e),
@@ -175,6 +191,7 @@ pub(crate) fn parse_fb_pos<const MAX: u64>(s: &[u8]) -> Result<(u64, usize), Ato
 
 #[inline(always)]
 pub(crate) fn parse_fb_neg<const MIN: i64>(s: &[u8]) -> Result<(i64, usize), AtoiSimdError<'_>> {
+    const { assert!(MIN > i64::MIN) };
     const { assert!(MIN < 0) }
     let (val, len) = match parse_16_by_8(s) {
         EarlyReturn::Ok((v, l)) | EarlyReturn::Ret((v, l)) => (-(v as i64), l),
@@ -191,9 +208,11 @@ pub(crate) fn parse_fb_neg<const MIN: i64>(s: &[u8]) -> Result<(i64, usize), Ato
 pub(crate) fn parse_fb_64_pos<const MAX: u64, const LEN_MORE: usize>(
     s: &[u8],
 ) -> Result<(u64, usize), AtoiSimdError<'_>> {
-    if s.len() < 10 {
+    const { assert!(MAX >= i64::MAX as u64) };
+
+    /* if s.len() < 10 {
         return parse_short_pos::<MAX>(s);
-    }
+    } */
 
     let (val, len) = match parse_16_by_8(s) {
         EarlyReturn::Ok(v) => v,
@@ -232,9 +251,11 @@ pub(crate) fn parse_fb_64_neg(s: &[u8]) -> Result<(i64, usize), AtoiSimdError<'_
 pub(crate) fn parse_fb_128_pos<const MAX: u128>(
     s: &[u8],
 ) -> Result<(u128, usize), AtoiSimdError<'_>> {
-    if s.len() < 5 {
+    const { assert!(MAX >= i128::MAX as u128) };
+
+    /* if s.len() < 5 {
         return parse_short_pos::<{ u64::MAX }>(s).map(|(v, l)| (v as u128, l));
-    }
+    } */
 
     let (mut val, len) = match parse_16_by_8(s) {
         EarlyReturn::Ok((v, l)) => (v as u128, l),
