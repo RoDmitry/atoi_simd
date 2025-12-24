@@ -175,7 +175,9 @@ fn parse_16_by_8(s: &[u8]) -> EarlyReturn<(u64, usize), AtoiSimdError<'_>> {
 }
 
 #[inline(always)]
-pub(crate) fn parse_fb_pos<const MAX: u64>(s: &[u8]) -> Result<(u64, usize), AtoiSimdError<'_>> {
+pub(crate) fn parse_fb_pos<const MAX: u64, const SKIP_ZEROES: bool>(
+    s: &[u8],
+) -> Result<(u64, usize), AtoiSimdError<'_>> {
     const { assert!(MAX < i64::MAX as u64) };
 
     let (val, len) = match parse_16_by_8(s) {
@@ -190,7 +192,9 @@ pub(crate) fn parse_fb_pos<const MAX: u64>(s: &[u8]) -> Result<(u64, usize), Ato
 }
 
 #[inline(always)]
-pub(crate) fn parse_fb_neg<const MIN: i64>(s: &[u8]) -> Result<(i64, usize), AtoiSimdError<'_>> {
+pub(crate) fn parse_fb_neg<const MIN: i64, const SKIP_ZEROES: bool>(
+    s: &[u8],
+) -> Result<(i64, usize), AtoiSimdError<'_>> {
     const { assert!(MIN > i64::MIN) };
     const { assert!(MIN < 0) }
     let (val, len) = match parse_16_by_8(s) {
@@ -205,7 +209,7 @@ pub(crate) fn parse_fb_neg<const MIN: i64>(s: &[u8]) -> Result<(i64, usize), Ato
 }
 
 #[inline(always)]
-pub(crate) fn parse_fb_64_pos<const MAX: u64, const LEN_MORE: usize>(
+pub(crate) fn parse_fb_64_pos<const MAX: u64, const LEN_MORE: usize, const SKIP_ZEROES: bool>(
     s: &[u8],
 ) -> Result<(u64, usize), AtoiSimdError<'_>> {
     const { assert!(MAX >= i64::MAX as u64) };
@@ -238,8 +242,10 @@ pub(crate) fn parse_fb_64_pos<const MAX: u64, const LEN_MORE: usize>(
 }
 
 #[inline(always)]
-pub(crate) fn parse_fb_64_neg(s: &[u8]) -> Result<(i64, usize), AtoiSimdError<'_>> {
-    let (val, len) = parse_fb_64_pos::<{ i64::MAX as u64 + 1 }, 3>(s)?;
+pub(crate) fn parse_fb_64_neg<const SKIP_ZEROES: bool>(
+    s: &[u8],
+) -> Result<(i64, usize), AtoiSimdError<'_>> {
+    let (val, len) = parse_fb_64_pos::<{ i64::MAX as u64 + 1 }, 3, SKIP_ZEROES>(s)?;
     if val > i64::MAX as u64 {
         return Ok((i64::MIN, len));
     }
@@ -248,7 +254,7 @@ pub(crate) fn parse_fb_64_neg(s: &[u8]) -> Result<(i64, usize), AtoiSimdError<'_
 }
 
 #[inline(always)]
-pub(crate) fn parse_fb_128_pos<const MAX: u128>(
+pub(crate) fn parse_fb_128_pos<const MAX: u128, const SKIP_ZEROES: bool>(
     s: &[u8],
 ) -> Result<(u128, usize), AtoiSimdError<'_>> {
     const { assert!(MAX >= i128::MAX as u128) };
@@ -289,8 +295,10 @@ pub(crate) fn parse_fb_128_pos<const MAX: u128>(
 }
 
 #[inline(always)]
-pub(crate) fn parse_fb_128_neg(s: &[u8]) -> Result<(i128, usize), AtoiSimdError<'_>> {
-    let (val, len) = parse_fb_128_pos::<{ i128::MAX as u128 + 1 }>(s)?;
+pub(crate) fn parse_fb_128_neg<const SKIP_ZEROES: bool>(
+    s: &[u8],
+) -> Result<(i128, usize), AtoiSimdError<'_>> {
+    let (val, len) = parse_fb_128_pos::<{ i128::MAX as u128 + 1 }, SKIP_ZEROES>(s)?;
     if val > i128::MAX as u128 {
         return Ok((i128::MIN, len));
     }
@@ -299,29 +307,10 @@ pub(crate) fn parse_fb_128_neg(s: &[u8]) -> Result<(i128, usize), AtoiSimdError<
 }
 
 #[inline(always)]
-pub(crate) fn parse_fb_checked_pos<const MAX: u64>(s: &[u8]) -> Result<u64, AtoiSimdError<'_>> {
-    let (res, len) = parse_fb_pos::<MAX>(s)?;
-    if len != s.len() {
-        return Err(AtoiSimdError::Invalid64(res, len, s));
-    }
-    Ok(res)
-}
-
-#[inline(always)]
-pub(crate) fn parse_fb_checked_neg<const MIN: i64>(s: &[u8]) -> Result<i64, AtoiSimdError<'_>> {
-    const { assert!(MIN < 0) }
-    let (res, len) = parse_fb_neg::<MIN>(s)?;
-    if len != s.len() {
-        return Err(AtoiSimdError::Invalid64(-res as u64, len, s));
-    }
-    Ok(res)
-}
-
-#[inline(always)]
-pub(crate) fn parse_fb_checked_64_pos<const MAX: u64, const LEN_MORE: usize>(
+pub(crate) fn parse_fb_checked_pos<const MAX: u64, const SKIP_ZEROES: bool>(
     s: &[u8],
 ) -> Result<u64, AtoiSimdError<'_>> {
-    let (res, len) = parse_fb_64_pos::<MAX, LEN_MORE>(s)?;
+    let (res, len) = parse_fb_pos::<MAX, SKIP_ZEROES>(s)?;
     if len != s.len() {
         return Err(AtoiSimdError::Invalid64(res, len, s));
     }
@@ -329,8 +318,11 @@ pub(crate) fn parse_fb_checked_64_pos<const MAX: u64, const LEN_MORE: usize>(
 }
 
 #[inline(always)]
-pub(crate) fn parse_fb_checked_64_neg(s: &[u8]) -> Result<i64, AtoiSimdError<'_>> {
-    let (res, len) = parse_fb_64_neg(s)?;
+pub(crate) fn parse_fb_checked_neg<const MIN: i64, const SKIP_ZEROES: bool>(
+    s: &[u8],
+) -> Result<i64, AtoiSimdError<'_>> {
+    const { assert!(MIN < 0) }
+    let (res, len) = parse_fb_neg::<MIN, SKIP_ZEROES>(s)?;
     if len != s.len() {
         return Err(AtoiSimdError::Invalid64(-res as u64, len, s));
     }
@@ -338,10 +330,36 @@ pub(crate) fn parse_fb_checked_64_neg(s: &[u8]) -> Result<i64, AtoiSimdError<'_>
 }
 
 #[inline(always)]
-pub(crate) fn parse_fb_checked_128_pos<const MAX: u128>(
+pub(crate) fn parse_fb_checked_64_pos<
+    const MAX: u64,
+    const LEN_MORE: usize,
+    const SKIP_ZEROES: bool,
+>(
+    s: &[u8],
+) -> Result<u64, AtoiSimdError<'_>> {
+    let (res, len) = parse_fb_64_pos::<MAX, LEN_MORE, SKIP_ZEROES>(s)?;
+    if len != s.len() {
+        return Err(AtoiSimdError::Invalid64(res, len, s));
+    }
+    Ok(res)
+}
+
+#[inline(always)]
+pub(crate) fn parse_fb_checked_64_neg<const SKIP_ZEROES: bool>(
+    s: &[u8],
+) -> Result<i64, AtoiSimdError<'_>> {
+    let (res, len) = parse_fb_64_neg::<SKIP_ZEROES>(s)?;
+    if len != s.len() {
+        return Err(AtoiSimdError::Invalid64(-res as u64, len, s));
+    }
+    Ok(res)
+}
+
+#[inline(always)]
+pub(crate) fn parse_fb_checked_128_pos<const MAX: u128, const SKIP_ZEROES: bool>(
     s: &[u8],
 ) -> Result<u128, AtoiSimdError<'_>> {
-    let (res, len) = parse_fb_128_pos::<MAX>(s)?;
+    let (res, len) = parse_fb_128_pos::<MAX, SKIP_ZEROES>(s)?;
     if len != s.len() {
         return Err(AtoiSimdError::Invalid128(res, len, s));
     }
@@ -349,8 +367,10 @@ pub(crate) fn parse_fb_checked_128_pos<const MAX: u128>(
 }
 
 #[inline(always)]
-pub(crate) fn parse_fb_checked_128_neg(s: &[u8]) -> Result<i128, AtoiSimdError<'_>> {
-    let (res, len) = parse_fb_128_neg(s)?;
+pub(crate) fn parse_fb_checked_128_neg<const SKIP_ZEROES: bool>(
+    s: &[u8],
+) -> Result<i128, AtoiSimdError<'_>> {
+    let (res, len) = parse_fb_128_neg::<SKIP_ZEROES>(s)?;
     if len != s.len() {
         return Err(AtoiSimdError::Invalid128(-res as u128, len, s));
     }
