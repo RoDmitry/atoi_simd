@@ -48,6 +48,18 @@ pub(crate) fn cold_path() {}
 
 #[allow(unused)]
 #[inline(always)]
+#[rustversion::since(1.81.0)]
+pub(crate) const unsafe fn assert_unchecked(cond: bool) {
+    unsafe { ::core::hint::assert_unchecked(cond) }
+}
+
+#[allow(unused)]
+#[inline(always)]
+#[rustversion::before(1.81.0)]
+pub(crate) const unsafe fn assert_unchecked(cond: bool) {}
+
+#[allow(unused)]
+#[inline(always)]
 pub(crate) fn skip_zeroes(s: &mut &[u8]) -> u32 {
     use debug_unsafe::slice::SliceGetter;
 

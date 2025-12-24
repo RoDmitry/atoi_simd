@@ -23,6 +23,7 @@ std = []
 
 [dependencies]
 debug_unsafe = "0.1"
+rustversion = "1"
 
 [dev-dependencies]
 arrayvec = "0.7"

@@ -191,7 +191,7 @@ unsafe fn load_len_8(s: &[u8]) -> (u32, uint8x8_t) {
     let res = vget_lane_u64(check_chunk, 0);
 
     let len = res.trailing_zeros() / 8;
-    ::core::hint::assert_unchecked(len <= 8);
+    crate::assert_unchecked(len <= 8);
 
     // only numbers
     chunk = vand_u8(chunk, vdup_n_u8(0xF));
@@ -216,7 +216,7 @@ unsafe fn load_len_16(s: &[u8]) -> (u32, uint8x16_t) {
     let res = vget_lane_u64(check_chunk, 0);
 
     let len = res.trailing_zeros() / 4;
-    ::core::hint::assert_unchecked(len <= 16);
+    crate::assert_unchecked(len <= 16);
 
     // only numbers
     chunk = vandq_u8(chunk, vdupq_n_u8(0xF));
@@ -315,7 +315,7 @@ pub(crate) fn parse_simd_16<const SKIP_ZEROES: bool>(
                 let zeroes_res = vget_lane_u64(zeroes_chunk, 0);
 
                 let zeroes = zeroes_res.trailing_ones() / 4;
-                ::core::hint::assert_unchecked(zeroes <= 16);
+                crate::assert_unchecked(zeroes <= 16);
                 if zeroes > 0 {
                     skipped += zeroes;
                     s = s.get_safe_unchecked((zeroes as usize)..);
@@ -481,7 +481,7 @@ pub(crate) fn parse_simd_u128<const LEN_LIMIT: u32, const SKIP_ZEROES: bool>(
                                 let zeroes_res = vget_lane_u64(zeroes_chunk, 0);
 
                                 let mut zeroes = zeroes_res.trailing_ones() / 4;
-                                ::core::hint::assert_unchecked(zeroes <= 16);
+                                crate::assert_unchecked(zeroes <= 16);
                                 if zeroes > 0 {
                                     if zeroes == 16 {
                                         if LEN_LIMIT >= 32 {
@@ -495,7 +495,7 @@ pub(crate) fn parse_simd_u128<const LEN_LIMIT: u32, const SKIP_ZEROES: bool>(
                                         let zeroes_res = vget_lane_u64(zeroes_chunk, 0);
 
                                         let zeroes2 = zeroes_res.trailing_ones() / 4;
-                                        ::core::hint::assert_unchecked(zeroes2 <= 16);
+                                        crate::assert_unchecked(zeroes2 <= 16);
                                         if LEN_LIMIT >= 32 && zeroes2 == 16 {
                                             crate::cold_path();
 
