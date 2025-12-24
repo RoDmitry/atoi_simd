@@ -119,13 +119,13 @@ fn len_zeroes_128(val: u128) -> u32 {
 }
 
 #[inline(always)]
-fn parse_8<const CHECK_ZEROES: bool>(s: &[u8]) -> Result<(u64, u32, u32), AtoiSimdError<'_>> {
+fn parse_8<const COUNT_ZEROES: bool>(s: &[u8]) -> Result<(u64, u32, u32), AtoiSimdError<'_>> {
     let val = load_8(s);
     let len = check_len_8(val);
     if len == 0 {
         return Err(AtoiSimdError::Empty);
     }
-    let zeroes = if CHECK_ZEROES && len == 8 {
+    let zeroes = if COUNT_ZEROES && len == 8 {
         len_zeroes(val)
     } else {
         0
@@ -154,7 +154,7 @@ enum EarlyReturn<T, E> {
 
 /// len must be <= 8
 #[inline(always)]
-fn parse_16_by_8<const CHECK_ZEROES: bool>(
+fn parse_16_by_8<const COUNT_ZEROES: bool>(
     s: &[u8],
 ) -> EarlyReturn<(u64, u32, u32), AtoiSimdError<'_>> {
     let mut val = load_8(s);
@@ -167,17 +167,20 @@ fn parse_16_by_8<const CHECK_ZEROES: bool>(
             let val_h = load_8(s.get_safe_unchecked(8..));
             len += check_len_8(val_h);
             let val_128 = ((val_h as u128) << 64) | val as u128;
-            let zeroes = if CHECK_ZEROES && len == 16 {
-                len_zeroes_128(val_128)
-            } else {
-                0
-            };
-
             val = process_16(val_128, len);
-            if len < 16 {
-                return EarlyReturn::Ret((val, len, zeroes));
+
+            // works better than `len < 16`
+            if len == 16 {
+                let zeroes = if COUNT_ZEROES {
+                    len_zeroes_128(val_128)
+                } else {
+                    0
+                };
+                EarlyReturn::Ok((val, len, zeroes))
+            } else {
+                debug_assert!(len < 16);
+                EarlyReturn::Ret((val, len, 0))
             }
-            EarlyReturn::Ok((val, len, zeroes))
         }
         _ => {
             if cfg!(debug_assertions) {
@@ -343,7 +346,7 @@ pub(crate) fn parse_fb_128_pos<const MAX: u128, const SKIP_ZEROES: bool>(
             match parse_16_by_8::<SKIP_ZEROES>(s.get_safe_unchecked(16..)) {
                 EarlyReturn::Ok(v) | EarlyReturn::Ret(v) => v,
                 EarlyReturn::Err(AtoiSimdError::Empty) => {
-                    return Ok((val, (len + skipped) as usize))
+                    return Ok((val, (len + skipped) as usize));
                 }
                 EarlyReturn::Err(e) => return Err(e),
             };
