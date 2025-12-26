@@ -519,7 +519,7 @@ pub(crate) fn parse_simd_u128<const LEN_LIMIT: u32, const SKIP_ZEROES: bool>(
 
                         let mut chunk3_16 = vcombine_u8(chunk3, vdup_n_u8(0));
                         chunk3_16 = match len_extra {
-                            0 => vdupq_n_u8(0), // maybe shift? //return Ok((0, 16)), is slower
+                            0 => vdupq_n_u8(0), //return Ok((0, 16)), is slower
                             1 => {
                                 let tmp = vextq_u8(vdupq_n_u8(0), chunk1, 9);
                                 chunk1 = vextq_u8(chunk1, chunk2, 1);
