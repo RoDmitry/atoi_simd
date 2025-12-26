@@ -1,8 +1,13 @@
 #![allow(dead_code)]
 
-use crate::{short::parse_short_pos, AtoiSimdError};
+use crate::{
+    short::{parse_short_neg, parse_short_pos},
+    AtoiSimdError,
+};
 use ::core::convert::TryInto;
 use debug_unsafe::slice::SliceGetter;
+
+const SHORT: usize = 5;
 
 macro_rules! overflow {
     ($curr:ident, $shift:expr, $more:ident, $max:expr) => {
@@ -264,10 +269,6 @@ pub(crate) fn parse_fb_64_pos<const MAX: u64, const LEN_MORE: u32, const SKIP_ZE
 ) -> Result<(u64, usize), AtoiSimdError<'_>> {
     const { assert!(MAX >= i64::MAX as u64) };
 
-    /* if s.len() < 10 {
-        return parse_short_pos::<MAX>(s);
-    } */
-
     let mut skipped = 0;
     loop {
         let (val, len, zeroes) = match parse_16_by_8::<SKIP_ZEROES>(s) {
@@ -326,10 +327,6 @@ pub(crate) fn parse_fb_128_pos<const MAX: u128, const SKIP_ZEROES: bool>(
     mut s: &[u8],
 ) -> Result<(u128, usize), AtoiSimdError<'_>> {
     const { assert!(MAX >= i128::MAX as u128) };
-
-    /* if s.len() < 5 {
-        return parse_short_pos::<{ u64::MAX }>(s).map(|(v, l)| (v as u128, l));
-    } */
 
     let mut skipped = 0;
     loop {
@@ -402,7 +399,7 @@ pub(crate) fn parse_fb_128_neg<const SKIP_ZEROES: bool>(
 pub(crate) fn parse_fb_checked_pos<const MAX: u64, const SKIP_ZEROES: bool>(
     s: &[u8],
 ) -> Result<u64, AtoiSimdError<'_>> {
-    let (res, len) = parse_fb_pos::<MAX, SKIP_ZEROES>(s)?;
+    let (res, len) = parse_short_pos::<MAX>(s)?;
     if len != s.len() {
         return Err(AtoiSimdError::Invalid64(res, len, s));
     }
@@ -414,7 +411,8 @@ pub(crate) fn parse_fb_checked_neg<const MIN: i64, const SKIP_ZEROES: bool>(
     s: &[u8],
 ) -> Result<i64, AtoiSimdError<'_>> {
     const { assert!(MIN < 0) }
-    let (res, len) = parse_fb_neg::<MIN, SKIP_ZEROES>(s)?;
+
+    let (res, len) = parse_short_neg::<MIN>(s)?;
     if len != s.len() {
         return Err(AtoiSimdError::Invalid64(-res as u64, len, s));
     }
@@ -429,8 +427,13 @@ pub(crate) fn parse_fb_checked_64_pos<
 >(
     s: &[u8],
 ) -> Result<u64, AtoiSimdError<'_>> {
-    let (res, len) = parse_fb_64_pos::<MAX, LEN_MORE, SKIP_ZEROES>(s)?;
-    if len != s.len() {
+    let s_len = s.len();
+    let (res, len) = if s_len < SHORT {
+        parse_short_pos::<MAX>(s)?
+    } else {
+        parse_fb_64_pos::<MAX, LEN_MORE, SKIP_ZEROES>(s)?
+    };
+    if len != s_len {
         return Err(AtoiSimdError::Invalid64(res, len, s));
     }
     Ok(res)
@@ -440,8 +443,13 @@ pub(crate) fn parse_fb_checked_64_pos<
 pub(crate) fn parse_fb_checked_64_neg<const SKIP_ZEROES: bool>(
     s: &[u8],
 ) -> Result<i64, AtoiSimdError<'_>> {
-    let (res, len) = parse_fb_64_neg::<SKIP_ZEROES>(s)?;
-    if len != s.len() {
+    let s_len = s.len();
+    let (res, len) = if s_len < SHORT {
+        parse_short_neg::<{ i64::MIN }>(s)?
+    } else {
+        parse_fb_64_neg::<SKIP_ZEROES>(s)?
+    };
+    if len != s_len {
         return Err(AtoiSimdError::Invalid64(-res as u64, len, s));
     }
     Ok(res)
@@ -451,8 +459,13 @@ pub(crate) fn parse_fb_checked_64_neg<const SKIP_ZEROES: bool>(
 pub(crate) fn parse_fb_checked_128_pos<const MAX: u128, const SKIP_ZEROES: bool>(
     s: &[u8],
 ) -> Result<u128, AtoiSimdError<'_>> {
-    let (res, len) = parse_fb_128_pos::<MAX, SKIP_ZEROES>(s)?;
-    if len != s.len() {
+    let s_len = s.len();
+    let (res, len) = if s_len < SHORT {
+        parse_short_pos::<{ u64::MAX }>(s).map(|(v, l)| (v as u128, l))?
+    } else {
+        parse_fb_128_pos::<MAX, SKIP_ZEROES>(s)?
+    };
+    if len != s_len {
         return Err(AtoiSimdError::Invalid128(res, len, s));
     }
     Ok(res)
@@ -462,8 +475,13 @@ pub(crate) fn parse_fb_checked_128_pos<const MAX: u128, const SKIP_ZEROES: bool>
 pub(crate) fn parse_fb_checked_128_neg<const SKIP_ZEROES: bool>(
     s: &[u8],
 ) -> Result<i128, AtoiSimdError<'_>> {
-    let (res, len) = parse_fb_128_neg::<SKIP_ZEROES>(s)?;
-    if len != s.len() {
+    let s_len = s.len();
+    let (res, len) = if s_len < SHORT {
+        parse_short_neg::<{ i64::MIN }>(s).map(|(v, l)| (v as i128, l))?
+    } else {
+        parse_fb_128_neg::<SKIP_ZEROES>(s)?
+    };
+    if len != s_len {
         return Err(AtoiSimdError::Invalid128(-res as u128, len, s));
     }
     Ok(res)
