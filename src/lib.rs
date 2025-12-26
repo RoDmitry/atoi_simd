@@ -58,25 +58,6 @@ pub(crate) const unsafe fn assert_unchecked(cond: bool) {
 #[rustversion::before(1.81.0)]
 pub(crate) const unsafe fn assert_unchecked(cond: bool) {}
 
-#[allow(unused)]
-#[inline(always)]
-pub(crate) fn skip_zeroes(s: &mut &[u8]) -> u32 {
-    use debug_unsafe::slice::SliceGetter;
-
-    let mut skipped = 0;
-    while s.len() > 16 {
-        let data = u32::from_le_bytes(s[0..4].try_into().unwrap());
-        let xor = data ^ 0x30303030;
-        let zeroes_len = xor.trailing_zeros() / 8;
-        if zeroes_len == 0 {
-            break;
-        }
-        skipped += zeroes_len;
-        *s = s.get_safe_unchecked((zeroes_len as usize)..);
-    }
-    skipped
-}
-
 mod error;
 #[cfg(not(any(
     all(target_arch = "aarch64", target_feature = "neon"),
