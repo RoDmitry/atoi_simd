@@ -121,23 +121,25 @@ fn bench_64(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
         });
     }
 
-    let zero = "0".to_owned() + str;
-    let zero_strs = [zero.clone() + "2", zero.clone() + "1"];
-    bench_group.bench_with_input(
-        BenchmarkId::new("parse zero u64", zero.len()),
-        &zero_strs,
-        |b, val| {
-            b.iter(|| {
-                parse::<u64, true, false>(val[0].as_bytes()).unwrap()
-                    - parse::<u64, true, false>(val[1].as_bytes()).unwrap()
-            })
-        },
-    );
+    if str.len() == 19 {
+        let zero = "0".to_owned() + str;
+        let zero_strs = [zero.clone() + "2", zero.clone() + "1"];
+        bench_group.bench_with_input(
+            BenchmarkId::new("parse zero u64", zero.len() + 1),
+            &zero_strs,
+            |b, val| {
+                b.iter(|| {
+                    parse::<u64, true, false>(val[0].as_bytes()).unwrap()
+                        - parse::<u64, true, false>(val[1].as_bytes()).unwrap()
+                })
+            },
+        );
+    }
 
     let zeroes_16 = "0000000000000000".to_owned() + str;
     let zeroes_16_strs = [zeroes_16.clone() + "2", zeroes_16.clone() + "1"];
     bench_group.bench_with_input(
-        BenchmarkId::new("parse zeroes_16 u64", zeroes_16.len()),
+        BenchmarkId::new("parse zeroes_16 u64", zeroes_16.len() + 1),
         &zeroes_16_strs,
         |b, val| {
             b.iter(|| {
@@ -147,7 +149,7 @@ fn bench_64(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
         },
     );
     bench_group.bench_with_input(
-        BenchmarkId::new("str zeroes_16 u64", zeroes_16.len()),
+        BenchmarkId::new("str zeroes_16 u64", zeroes_16.len() + 1),
         &zeroes_16_strs,
         |b, val| b.iter(|| val[0].parse::<u64>().unwrap() - val[1].parse::<u64>().unwrap()),
     );
@@ -204,23 +206,25 @@ fn bench_128(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
         |b, val| b.iter(|| val[0].parse::<i128>().unwrap() - val[1].parse::<i128>().unwrap()),
     );
 
-    let zero = "0".to_owned() + str;
-    let zero_strs = [zero.clone() + "2", zero.clone() + "1"];
-    bench_group.bench_with_input(
-        BenchmarkId::new("parse zero u128", zero.len()),
-        &zero_strs,
-        |b, val| {
-            b.iter(|| {
-                parse::<u128, true, false>(val[0].as_bytes()).unwrap()
-                    - parse::<u128, true, false>(val[1].as_bytes()).unwrap()
-            })
-        },
-    );
+    if str.len() == 38 {
+        let zero = "0".to_owned() + str;
+        let zero_strs = [zero.clone() + "2", zero.clone() + "1"];
+        bench_group.bench_with_input(
+            BenchmarkId::new("parse zero u128", zero.len() + 1),
+            &zero_strs,
+            |b, val| {
+                b.iter(|| {
+                    parse::<u128, true, false>(val[0].as_bytes()).unwrap()
+                        - parse::<u128, true, false>(val[1].as_bytes()).unwrap()
+                })
+            },
+        );
+    }
 
     let zeroes_32 = "00000000000000000000000000000000".to_owned() + str;
     let zeroes_32_strs = [zeroes_32.clone() + "2", zeroes_32.clone() + "1"];
     bench_group.bench_with_input(
-        BenchmarkId::new("parse zeroes_32 u128", zeroes_32.len()),
+        BenchmarkId::new("parse zeroes_32 u128", zeroes_32.len() + 1),
         &zeroes_32_strs,
         |b, val| {
             b.iter(|| {
@@ -230,7 +234,7 @@ fn bench_128(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
         },
     );
     bench_group.bench_with_input(
-        BenchmarkId::new("str zeroes_32 u128", zeroes_32.len()),
+        BenchmarkId::new("str zeroes_32 u128", zeroes_32.len() + 1),
         &zeroes_32_strs,
         |b, val| b.iter(|| val[0].parse::<u128>().unwrap() - val[1].parse::<u128>().unwrap()),
     );
