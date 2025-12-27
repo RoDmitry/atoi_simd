@@ -725,34 +725,52 @@ pub(crate) fn parse_simd_u128<const LEN_LIMIT: u32, const SKIP_ZEROES: bool>(
                             let zeroes_res = _mm256_movemask_epi8(zeroes_chunk);
                             let mut zeroes = zeroes_res.trailing_ones();
                             if zeroes > 0 {
-                                if LEN_LIMIT >= 32 && zeroes == 32 {
-                                    crate::cold_path();
-                                    let zeroes_chunk =
-                                        _mm_cmpeq_epi8(chunk_extra, _mm_set1_epi8(0));
-                                    let zeroes_res = _mm_movemask_epi8(zeroes_chunk);
-                                    zeroes += zeroes_res.trailing_ones().min(len_extra);
-                                }
                                 skipped += zeroes;
-                                let s_len_last = s.len().saturating_sub(32);
-                                while skipped < s_len_last as u32 {
+                                let len_last = s.len().saturating_sub(32);
+                                let len_last_u32 = len_last as u32;
+                                if zeroes == 32 {
+                                    crate::cold_path();
+                                    if LEN_LIMIT >= 32 {
+                                        // crate::cold_path();
+                                        let zeroes_chunk =
+                                            _mm_cmpeq_epi8(chunk_extra, _mm_set1_epi8(0));
+                                        let zeroes_res = _mm_movemask_epi8(zeroes_chunk);
+                                        skipped += zeroes_res.trailing_ones().min(len_extra);
+                                    }
+
+                                    while skipped < len_last_u32 {
+                                        chunk = _mm256_loadu_si256(::core::mem::transmute_copy(
+                                            &s.get_safe_unchecked((skipped as usize)..),
+                                        ));
+                                        let zeroes_chunk =
+                                            _mm256_cmpeq_epi8(chunk, _mm256_set1_epi8(0x30));
+                                        let zeroes_res = _mm256_movemask_epi8(zeroes_chunk);
+                                        zeroes = zeroes_res.trailing_ones();
+                                        skipped += zeroes;
+                                        if zeroes == 0 {
+                                            break;
+                                        }
+                                    }
+
+                                    // loads new chunk if `skipped` has been changed
+                                    if zeroes > 0 {
+                                        skipped = len_last_u32;
+                                        chunk = _mm256_loadu_si256(::core::mem::transmute_copy(
+                                            &s.get_safe_unchecked(len_last..),
+                                        ));
+                                        if LEN_LIMIT >= 32 {
+                                            len_extra = 0;
+                                        }
+                                    }
+                                } else {
+                                    if len_last_u32 < skipped {
+                                        skipped = len_last_u32;
+                                    } else {
+                                        zeroes = 0;
+                                    }
                                     chunk = _mm256_loadu_si256(::core::mem::transmute_copy(
                                         &s.get_safe_unchecked((skipped as usize)..),
                                     ));
-                                    let zeroes_chunk =
-                                        _mm256_cmpeq_epi8(chunk, _mm256_set1_epi8(0x30));
-                                    let zeroes_res = _mm256_movemask_epi8(zeroes_chunk);
-                                    zeroes = zeroes_res.trailing_ones();
-                                    skipped += zeroes;
-                                    if zeroes == 0 {
-                                        break;
-                                    }
-                                }
-
-                                if zeroes > 0 {
-                                    chunk = _mm256_loadu_si256(::core::mem::transmute_copy(
-                                        &s.get_safe_unchecked(s_len_last..),
-                                    ));
-                                    skipped = s_len_last as u32;
                                     if LEN_LIMIT >= 32 {
                                         len_extra = 0;
                                     }
