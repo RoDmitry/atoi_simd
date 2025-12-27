@@ -713,51 +713,37 @@ pub(crate) fn parse_simd_u128<const LEN_LIMIT: u32, const SKIP_ZEROES: bool>(
                             (len_extra, chunk_extra) = load_len(s.get_safe_unchecked(32..));
                         }
 
-                        if SKIP_ZEROES && skipped == 0 && (LEN_LIMIT < 32 || len_extra > 7) {
-                            /* if LEN_LIMIT >= 32 {
+                        if SKIP_ZEROES && (LEN_LIMIT < 32 || len_extra > 7) {
+                            if LEN_LIMIT >= 32 {
                                 // somehow `parse_prefix u64` works better without it
                                 crate::cold_path();
-                            } */
+                            }
 
                             let zeroes_chunk = _mm256_cmpeq_epi8(chunk, _mm256_set1_epi8(0));
                             let zeroes_res = _mm256_movemask_epi8(zeroes_chunk);
                             let mut zeroes = zeroes_res.trailing_ones();
-                            if zeroes == 0 {
-                                return Err(AtoiSimdError::Size((len_extra + 32) as usize, s));
-                            }
 
-                            skipped += zeroes;
-                            let len_last = s.len().saturating_sub(32);
-                            let len_last_u32 = len_last as u32;
-                            if zeroes == 32 {
-                                crate::cold_path();
-                                if LEN_LIMIT >= 32 {
+                            if zeroes > 0 {
+                                if LEN_LIMIT >= 32 && zeroes == 32 {
+                                    crate::cold_path();
                                     let zeroes_chunk =
                                         _mm_cmpeq_epi8(chunk_extra, _mm_set1_epi8(0));
                                     let zeroes_res = _mm_movemask_epi8(zeroes_chunk);
-                                    skipped += zeroes_res.trailing_ones().min(len_extra);
+                                    zeroes += zeroes_res.trailing_ones().min(len_extra);
                                 }
 
-                                while zeroes == 32 && skipped < len_last_u32 {
-                                    chunk_loaded = _mm256_loadu_si256(::core::mem::transmute_copy(
-                                        &s.get_safe_unchecked((skipped as usize)..),
-                                    ));
-                                    let zeroes_chunk =
-                                        _mm256_cmpeq_epi8(chunk_loaded, _mm256_set1_epi8(0x30));
-                                    let zeroes_res = _mm256_movemask_epi8(zeroes_chunk);
-                                    zeroes = zeroes_res.trailing_ones();
-                                    skipped += zeroes;
+                                // `s.len() > 32` is checked above
+                                let len_last = (s.len() - 32) as u32;
+                                if len_last < zeroes {
+                                    zeroes = len_last;
                                 }
-                            }
+                                skipped += zeroes;
+                                // SAFETY: `zeroes` is reset to `len_last`
+                                s = s.get_safe_unchecked((zeroes as usize)..);
+                                chunk_loaded = _mm256_loadu_si256(::core::mem::transmute_copy(&s));
 
-                            if len_last_u32 < skipped {
-                                skipped = len_last_u32;
+                                continue;
                             }
-                            // SAFETY: `skipped` is reset to `len_last_u32`
-                            s = s.get_safe_unchecked((skipped as usize)..);
-                            chunk_loaded = _mm256_loadu_si256(::core::mem::transmute_copy(&s));
-
-                            continue;
                         }
                     }
                     chunk
