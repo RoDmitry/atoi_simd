@@ -580,10 +580,7 @@ unsafe fn to_u32x4(chunk: __m128i) -> [u32; 4] {
 
 /// len must be <= 16
 #[inline(always)]
-unsafe fn parse_simd_sse(
-    len: u32,
-    chunk: __m128i,
-) -> Result<(u64, usize), AtoiSimdError<'static>> {
+unsafe fn parse_simd_sse(len: u32, chunk: __m128i) -> Result<(u64, usize), AtoiSimdError<'static>> {
     let chunk = match len {
         0 => return Err(AtoiSimdError::Empty),
         1 => return Ok(((_mm_cvtsi128_si32(chunk) & 0xFF) as u64, 1)),
@@ -758,9 +755,6 @@ pub(crate) fn parse_simd_u128<const LEN_LIMIT: u32, const SKIP_ZEROES: bool>(
                                         chunk = _mm256_loadu_si256(::core::mem::transmute_copy(
                                             &s.get_safe_unchecked(len_last..),
                                         ));
-                                        if LEN_LIMIT >= 32 {
-                                            len_extra = 0;
-                                        }
                                     }
                                 } else {
                                     if len_last_u32 < skipped {
@@ -771,11 +765,11 @@ pub(crate) fn parse_simd_u128<const LEN_LIMIT: u32, const SKIP_ZEROES: bool>(
                                     chunk = _mm256_loadu_si256(::core::mem::transmute_copy(
                                         &s.get_safe_unchecked((skipped as usize)..),
                                     ));
-                                    if LEN_LIMIT >= 32 {
-                                        len_extra = 0;
-                                    }
                                 }
 
+                                if LEN_LIMIT >= 32 {
+                                    len_extra = 0;
+                                }
                                 len = check_avx_len(chunk);
                                 chunk = to_numbers_avx(chunk);
 
@@ -794,6 +788,8 @@ pub(crate) fn parse_simd_u128<const LEN_LIMIT: u32, const SKIP_ZEROES: bool>(
                                         return Err(AtoiSimdError::Size(32, s));
                                     }
                                 }
+                            } else {
+                                return Err(AtoiSimdError::Size((len_extra + 32) as usize, s));
                             }
                         } else {
                             return Err(AtoiSimdError::Size((len_extra + 32) as usize, s));
@@ -887,7 +883,8 @@ unsafe fn process_avx(
             chunk_extra,
             _mm_set_epi8(1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10),
         );
-        let chunk_extra = _mm_madd_epi16(chunk_extra, _mm_set_epi16(1, 100, 1, 100, 1, 100, 1, 100));
+        let chunk_extra =
+            _mm_madd_epi16(chunk_extra, _mm_set_epi16(1, 100, 1, 100, 1, 100, 1, 100));
 
         let chunk_extra = _mm_packus_epi32(chunk_extra, chunk_extra);
 
