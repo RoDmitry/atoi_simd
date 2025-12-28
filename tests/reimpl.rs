@@ -6,50 +6,50 @@ pub fn parse_skipped<T: Parse>(s: &[u8]) -> Result<T, AtoiSimdError<'_>> {
 }
 
 pub fn parse<T: Parse + PartialEq>(s: &[u8]) -> Result<T, AtoiSimdError<'_>> {
-    let res = atoi_simd::parse::<_, false, false>(s)?;
-    let skipped = atoi_simd::parse::<_, true, true>(s)?;
+    let res = atoi_simd::parse::<_, false, false>(s);
+    let skipped = atoi_simd::parse::<_, true, true>(s);
     if res == skipped {
-        Ok(res)
+        res
     } else {
         panic!("mismatch");
     }
 }
 
 pub fn parse_pos<T: Parse + PartialEq>(s: &[u8]) -> Result<T, AtoiSimdError<'_>> {
-    let res = atoi_simd::parse_pos::<_, false>(s)?;
-    let skipped = atoi_simd::parse_pos::<_, true>(s)?;
+    let res = atoi_simd::parse_pos::<_, false>(s);
+    let skipped = atoi_simd::parse_pos::<_, true>(s);
     if res == skipped {
-        Ok(res)
+        res
     } else {
         panic!("mismatch");
     }
 }
 
 pub fn parse_neg<T: Parse + ParseNeg + PartialEq>(s: &[u8]) -> Result<T, AtoiSimdError<'_>> {
-    let res = atoi_simd::parse_neg::<_, false>(s)?;
-    let skipped = atoi_simd::parse_neg::<_, true>(s)?;
+    let res = atoi_simd::parse_neg::<_, false>(s);
+    let skipped = atoi_simd::parse_neg::<_, true>(s);
     if res == skipped {
-        Ok(res)
+        res
     } else {
         panic!("mismatch");
     }
 }
 
 pub fn parse_prefix<T: Parse + PartialEq>(s: &[u8]) -> Result<(T, usize), AtoiSimdError<'_>> {
-    let res = atoi_simd::parse_prefix::<_, false, false>(s)?;
-    let skipped = atoi_simd::parse_prefix::<_, true, true>(s)?;
+    let res = atoi_simd::parse_prefix::<_, false, false>(s);
+    let skipped = atoi_simd::parse_prefix::<_, true, true>(s);
     if res == skipped {
-        Ok(res)
+        res
     } else {
         panic!("mismatch");
     }
 }
 
 pub fn parse_prefix_pos<T: Parse + PartialEq>(s: &[u8]) -> Result<(T, usize), AtoiSimdError<'_>> {
-    let res = atoi_simd::parse_prefix_pos::<_, false>(s)?;
-    let skipped = atoi_simd::parse_prefix_pos::<_, true>(s)?;
+    let res = atoi_simd::parse_prefix_pos::<_, false>(s);
+    let skipped = atoi_simd::parse_prefix_pos::<_, true>(s);
     if res == skipped {
-        Ok(res)
+        res
     } else {
         panic!("mismatch");
     }
@@ -58,10 +58,10 @@ pub fn parse_prefix_pos<T: Parse + PartialEq>(s: &[u8]) -> Result<(T, usize), At
 pub fn parse_prefix_neg<T: Parse + ParseNeg + PartialEq>(
     s: &[u8],
 ) -> Result<(T, usize), AtoiSimdError<'_>> {
-    let res = atoi_simd::parse_prefix_neg::<_, false>(s)?;
-    let skipped = atoi_simd::parse_prefix_neg::<_, true>(s)?;
+    let res = atoi_simd::parse_prefix_neg::<_, false>(s);
+    let skipped = atoi_simd::parse_prefix_neg::<_, true>(s);
     if res == skipped {
-        Ok(res)
+        res
     } else {
         panic!("mismatch");
     }
