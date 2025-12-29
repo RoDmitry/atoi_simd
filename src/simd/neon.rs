@@ -24,41 +24,41 @@ const CHAR_MIN: u8 = b'0';
 
 #[inline(always)]
 unsafe fn load_8(s: &[u8]) -> uint8x8_t {
-    let mut data = vdup_n_u32(0);
+    let data = vdup_n_u32(0);
 
     match s.len() {
         8.. => vld1_u8(s.as_ptr()),
         7 => {
-            data = vset_lane_u32(u32::from_le_bytes(s[0..4].try_into().unwrap()), data, 0);
-            let mut data = vreinterpret_u16_u32(data);
-            data = vset_lane_u16(u16::from_le_bytes(s[4..6].try_into().unwrap()), data, 2);
+            let data = vset_lane_u32(u32::from_le_bytes(s[0..4].try_into().unwrap()), data, 0);
+            let data = vreinterpret_u16_u32(data);
+            let data = vset_lane_u16(u16::from_le_bytes(s[4..6].try_into().unwrap()), data, 2);
             let data = vreinterpret_u8_u16(data);
             vset_lane_u8(s[6], data, 6)
         }
         6 => {
-            data = vset_lane_u32(u32::from_le_bytes(s[0..4].try_into().unwrap()), data, 0);
-            let mut data = vreinterpret_u16_u32(data);
-            data = vset_lane_u16(u16::from_le_bytes(s[4..6].try_into().unwrap()), data, 2);
+            let data = vset_lane_u32(u32::from_le_bytes(s[0..4].try_into().unwrap()), data, 0);
+            let data = vreinterpret_u16_u32(data);
+            let data = vset_lane_u16(u16::from_le_bytes(s[4..6].try_into().unwrap()), data, 2);
             vreinterpret_u8_u16(data)
         }
         5 => {
-            data = vset_lane_u32(u32::from_le_bytes(s[0..4].try_into().unwrap()), data, 0);
+            let data = vset_lane_u32(u32::from_le_bytes(s[0..4].try_into().unwrap()), data, 0);
             let data = vreinterpret_u8_u32(data);
             vset_lane_u8(s[4], data, 4)
         }
         4 => {
-            data = vset_lane_u32(u32::from_le_bytes(s[0..4].try_into().unwrap()), data, 0);
+            let data = vset_lane_u32(u32::from_le_bytes(s[0..4].try_into().unwrap()), data, 0);
             vreinterpret_u8_u32(data)
         }
         3 => {
-            let mut data = vreinterpret_u16_u32(data);
-            data = vset_lane_u16(u16::from_le_bytes(s[0..2].try_into().unwrap()), data, 0);
+            let data = vreinterpret_u16_u32(data);
+            let data = vset_lane_u16(u16::from_le_bytes(s[0..2].try_into().unwrap()), data, 0);
             let data = vreinterpret_u8_u16(data);
             vset_lane_u8(s[2], data, 2)
         }
         2 => {
-            let mut data = vreinterpret_u16_u32(data);
-            data = vset_lane_u16(u16::from_le_bytes(s[0..2].try_into().unwrap()), data, 0);
+            let data = vreinterpret_u16_u32(data);
+            let data = vset_lane_u16(u16::from_le_bytes(s[0..2].try_into().unwrap()), data, 0);
             vreinterpret_u8_u16(data)
         }
         1 => {
@@ -73,97 +73,97 @@ unsafe fn load_8(s: &[u8]) -> uint8x8_t {
 
 #[inline(always)]
 unsafe fn load_16(s: &[u8]) -> uint8x16_t {
-    let mut data = vdupq_n_u64(0);
+    let data = vdupq_n_u64(0);
 
     match s.len() {
         16.. => vld1q_u8(s.as_ptr()),
         15 => {
-            data = vsetq_lane_u64(u64::from_le_bytes(s[0..8].try_into().unwrap()), data, 0);
-            let mut data = vreinterpretq_u32_u64(data);
-            data = vsetq_lane_u32(u32::from_le_bytes(s[8..12].try_into().unwrap()), data, 2);
-            let mut data = vreinterpretq_u16_u32(data);
-            data = vsetq_lane_u16(u16::from_le_bytes(s[12..14].try_into().unwrap()), data, 6);
+            let data = vsetq_lane_u64(u64::from_le_bytes(s[0..8].try_into().unwrap()), data, 0);
+            let data = vreinterpretq_u32_u64(data);
+            let data = vsetq_lane_u32(u32::from_le_bytes(s[8..12].try_into().unwrap()), data, 2);
+            let data = vreinterpretq_u16_u32(data);
+            let data = vsetq_lane_u16(u16::from_le_bytes(s[12..14].try_into().unwrap()), data, 6);
             let data = vreinterpretq_u8_u16(data);
             vsetq_lane_u8(s[14], data, 14)
         }
         14 => {
-            data = vsetq_lane_u64(u64::from_le_bytes(s[0..8].try_into().unwrap()), data, 0);
-            let mut data = vreinterpretq_u32_u64(data);
-            data = vsetq_lane_u32(u32::from_le_bytes(s[8..12].try_into().unwrap()), data, 2);
-            let mut data = vreinterpretq_u16_u32(data);
-            data = vsetq_lane_u16(u16::from_le_bytes(s[12..14].try_into().unwrap()), data, 6);
+            let data = vsetq_lane_u64(u64::from_le_bytes(s[0..8].try_into().unwrap()), data, 0);
+            let data = vreinterpretq_u32_u64(data);
+            let data = vsetq_lane_u32(u32::from_le_bytes(s[8..12].try_into().unwrap()), data, 2);
+            let data = vreinterpretq_u16_u32(data);
+            let data = vsetq_lane_u16(u16::from_le_bytes(s[12..14].try_into().unwrap()), data, 6);
             vreinterpretq_u8_u16(data)
         }
         13 => {
-            data = vsetq_lane_u64(u64::from_le_bytes(s[0..8].try_into().unwrap()), data, 0);
-            let mut data = vreinterpretq_u32_u64(data);
-            data = vsetq_lane_u32(u32::from_le_bytes(s[8..12].try_into().unwrap()), data, 2);
+            let data = vsetq_lane_u64(u64::from_le_bytes(s[0..8].try_into().unwrap()), data, 0);
+            let data = vreinterpretq_u32_u64(data);
+            let data = vsetq_lane_u32(u32::from_le_bytes(s[8..12].try_into().unwrap()), data, 2);
             let data = vreinterpretq_u8_u32(data);
             vsetq_lane_u8(s[12], data, 12)
         }
         12 => {
-            data = vsetq_lane_u64(u64::from_le_bytes(s[0..8].try_into().unwrap()), data, 0);
-            let mut data = vreinterpretq_u32_u64(data);
-            data = vsetq_lane_u32(u32::from_le_bytes(s[8..12].try_into().unwrap()), data, 2);
+            let data = vsetq_lane_u64(u64::from_le_bytes(s[0..8].try_into().unwrap()), data, 0);
+            let data = vreinterpretq_u32_u64(data);
+            let data = vsetq_lane_u32(u32::from_le_bytes(s[8..12].try_into().unwrap()), data, 2);
             vreinterpretq_u8_u32(data)
         }
         11 => {
-            data = vsetq_lane_u64(u64::from_le_bytes(s[0..8].try_into().unwrap()), data, 0);
-            let mut data = vreinterpretq_u16_u64(data);
-            data = vsetq_lane_u16(u16::from_le_bytes(s[8..10].try_into().unwrap()), data, 4);
+            let data = vsetq_lane_u64(u64::from_le_bytes(s[0..8].try_into().unwrap()), data, 0);
+            let data = vreinterpretq_u16_u64(data);
+            let data = vsetq_lane_u16(u16::from_le_bytes(s[8..10].try_into().unwrap()), data, 4);
             let data = vreinterpretq_u8_u16(data);
             vsetq_lane_u8(s[10], data, 10)
         }
         10 => {
-            data = vsetq_lane_u64(u64::from_le_bytes(s[0..8].try_into().unwrap()), data, 0);
-            let mut data = vreinterpretq_u16_u64(data);
-            data = vsetq_lane_u16(u16::from_le_bytes(s[8..10].try_into().unwrap()), data, 4);
+            let data = vsetq_lane_u64(u64::from_le_bytes(s[0..8].try_into().unwrap()), data, 0);
+            let data = vreinterpretq_u16_u64(data);
+            let data = vsetq_lane_u16(u16::from_le_bytes(s[8..10].try_into().unwrap()), data, 4);
             vreinterpretq_u8_u16(data)
         }
         9 => {
-            data = vsetq_lane_u64(u64::from_le_bytes(s[0..8].try_into().unwrap()), data, 0);
+            let data = vsetq_lane_u64(u64::from_le_bytes(s[0..8].try_into().unwrap()), data, 0);
             let data = vreinterpretq_u8_u64(data);
             vsetq_lane_u8(s[8], data, 8)
         }
         8 => {
-            data = vsetq_lane_u64(u64::from_le_bytes(s[0..8].try_into().unwrap()), data, 0);
+            let data = vsetq_lane_u64(u64::from_le_bytes(s[0..8].try_into().unwrap()), data, 0);
             vreinterpretq_u8_u64(data)
         }
         7 => {
-            let mut data = vreinterpretq_u32_u64(data);
-            data = vsetq_lane_u32(u32::from_le_bytes(s[0..4].try_into().unwrap()), data, 0);
-            let mut data = vreinterpretq_u16_u32(data);
-            data = vsetq_lane_u16(u16::from_le_bytes(s[4..6].try_into().unwrap()), data, 2);
+            let data = vreinterpretq_u32_u64(data);
+            let data = vsetq_lane_u32(u32::from_le_bytes(s[0..4].try_into().unwrap()), data, 0);
+            let data = vreinterpretq_u16_u32(data);
+            let data = vsetq_lane_u16(u16::from_le_bytes(s[4..6].try_into().unwrap()), data, 2);
             let data = vreinterpretq_u8_u16(data);
             vsetq_lane_u8(s[6], data, 6)
         }
         6 => {
-            let mut data = vreinterpretq_u32_u64(data);
-            data = vsetq_lane_u32(u32::from_le_bytes(s[0..4].try_into().unwrap()), data, 0);
-            let mut data = vreinterpretq_u16_u32(data);
-            data = vsetq_lane_u16(u16::from_le_bytes(s[4..6].try_into().unwrap()), data, 2);
+            let data = vreinterpretq_u32_u64(data);
+            let data = vsetq_lane_u32(u32::from_le_bytes(s[0..4].try_into().unwrap()), data, 0);
+            let data = vreinterpretq_u16_u32(data);
+            let data = vsetq_lane_u16(u16::from_le_bytes(s[4..6].try_into().unwrap()), data, 2);
             vreinterpretq_u8_u16(data)
         }
         5 => {
-            let mut data = vreinterpretq_u32_u64(data);
-            data = vsetq_lane_u32(u32::from_le_bytes(s[0..4].try_into().unwrap()), data, 0);
+            let data = vreinterpretq_u32_u64(data);
+            let data = vsetq_lane_u32(u32::from_le_bytes(s[0..4].try_into().unwrap()), data, 0);
             let data = vreinterpretq_u8_u32(data);
             vsetq_lane_u8(s[4], data, 4)
         }
         4 => {
-            let mut data = vreinterpretq_u32_u64(data);
-            data = vsetq_lane_u32(u32::from_le_bytes(s[0..4].try_into().unwrap()), data, 0);
+            let data = vreinterpretq_u32_u64(data);
+            let data = vsetq_lane_u32(u32::from_le_bytes(s[0..4].try_into().unwrap()), data, 0);
             vreinterpretq_u8_u32(data)
         }
         3 => {
-            let mut data = vreinterpretq_u16_u64(data);
-            data = vsetq_lane_u16(u16::from_le_bytes(s[0..2].try_into().unwrap()), data, 0);
+            let data = vreinterpretq_u16_u64(data);
+            let data = vsetq_lane_u16(u16::from_le_bytes(s[0..2].try_into().unwrap()), data, 0);
             let data = vreinterpretq_u8_u16(data);
             vsetq_lane_u8(s[2], data, 2)
         }
         2 => {
-            let mut data = vreinterpretq_u16_u64(data);
-            data = vsetq_lane_u16(u16::from_le_bytes(s[0..2].try_into().unwrap()), data, 0);
+            let data = vreinterpretq_u16_u64(data);
+            let data = vsetq_lane_u16(u16::from_le_bytes(s[0..2].try_into().unwrap()), data, 0);
             vreinterpretq_u8_u16(data)
         }
         1 => {
@@ -178,7 +178,7 @@ unsafe fn load_16(s: &[u8]) -> uint8x16_t {
 
 #[inline(always)]
 unsafe fn load_len_8(s: &[u8]) -> (u32, uint8x8_t) {
-    let mut chunk = load_8(s);
+    let chunk = load_8(s);
     let cmp_high = vld1_dup_u8(&CHAR_MAX);
     let cmp_low = vld1_dup_u8(&CHAR_MIN);
     let check_high = vcgt_u8(chunk, cmp_high);
@@ -194,14 +194,14 @@ unsafe fn load_len_8(s: &[u8]) -> (u32, uint8x8_t) {
     crate::assert_unchecked(len <= 8);
 
     // only numbers
-    chunk = vand_u8(chunk, vdup_n_u8(0xF));
+    let chunk = vand_u8(chunk, vdup_n_u8(0xF));
 
     (len, chunk)
 }
 
 #[inline(always)]
 unsafe fn load_len_16(s: &[u8]) -> (u32, uint8x16_t) {
-    let mut chunk = load_16(s);
+    let chunk = load_16(s);
     let cmp_high = vld1q_dup_u8(&CHAR_MAX);
     let cmp_low = vld1q_dup_u8(&CHAR_MIN);
     let check_high = vcgtq_u8(chunk, cmp_high);
@@ -219,7 +219,7 @@ unsafe fn load_len_16(s: &[u8]) -> (u32, uint8x16_t) {
     crate::assert_unchecked(len <= 16);
 
     // only numbers
-    chunk = vandq_u8(chunk, vdupq_n_u8(0xF));
+    let chunk = vandq_u8(chunk, vdupq_n_u8(0xF));
 
     (len, chunk)
 }
@@ -228,9 +228,9 @@ unsafe fn load_len_16(s: &[u8]) -> (u32, uint8x16_t) {
 #[inline(always)]
 unsafe fn parse_simd_neon(
     len: u32,
-    mut chunk: uint8x16_t,
+    chunk: uint8x16_t,
 ) -> Result<(u64, usize), AtoiSimdError<'static>> {
-    chunk = match len {
+    let chunk = match len {
         0 => return Err(AtoiSimdError::Empty),
         1 => return Ok((vgetq_lane_u8(chunk, 0) as u64, 1)),
         2 => vextq_u8(vdupq_n_u8(0), chunk, 2),
@@ -270,7 +270,7 @@ unsafe fn parse_simd_neon(
     let mult = vdup_n_u32(10000);
     let chunk = vmla_u32(sum, chunk, mult);*/
 
-    chunk = vmulq_u8(
+    let chunk = vmulq_u8(
         chunk,
         vld1q_u8([10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1].as_ptr()),
     );
@@ -472,53 +472,49 @@ pub(crate) fn parse_simd_u128<const LEN_LIMIT: u32, const SKIP_ZEROES: bool>(
                             (len_extra, chunk3) = load_len_8(s.get_safe_unchecked(32..));
                         }
 
-                        if LEN_LIMIT < 32 || len_extra > 7 {
-                            if SKIP_ZEROES {
-                                let zeroes_chunk = vceqq_u8(chunk1, vdupq_n_u8(0));
-                                let zeroes_chunk = vreinterpretq_u16_u8(zeroes_chunk);
-                                let zeroes_chunk = vshrn_n_u16(zeroes_chunk, 4);
-                                let zeroes_chunk = vreinterpret_u64_u8(zeroes_chunk);
-                                let zeroes_res = vget_lane_u64(zeroes_chunk, 0);
+                        if SKIP_ZEROES && (LEN_LIMIT < 32 || len_extra > 7) {
+                            let zeroes_chunk = vceqq_u8(chunk1, vdupq_n_u8(0));
+                            let zeroes_chunk = vreinterpretq_u16_u8(zeroes_chunk);
+                            let zeroes_chunk = vshrn_n_u16(zeroes_chunk, 4);
+                            let zeroes_chunk = vreinterpret_u64_u8(zeroes_chunk);
+                            let zeroes_res = vget_lane_u64(zeroes_chunk, 0);
 
-                                let mut zeroes = zeroes_res.trailing_ones() / 4;
-                                crate::assert_unchecked(zeroes <= 16);
-                                if zeroes > 0 {
-                                    if zeroes == 16 {
-                                        if LEN_LIMIT >= 32 {
-                                            // same as AVX2
-                                            crate::cold_path();
-                                        }
-                                        let zeroes_chunk = vceqq_u8(chunk2, vdupq_n_u8(0));
-                                        let zeroes_chunk = vreinterpretq_u16_u8(zeroes_chunk);
-                                        let zeroes_chunk = vshrn_n_u16(zeroes_chunk, 4);
+                            let mut zeroes = zeroes_res.trailing_ones() / 4;
+                            crate::assert_unchecked(zeroes <= 16);
+                            if zeroes > 0 {
+                                if zeroes == 16 {
+                                    if LEN_LIMIT >= 32 {
+                                        // same as AVX2
+                                        crate::cold_path();
+                                    }
+                                    let zeroes_chunk = vceqq_u8(chunk2, vdupq_n_u8(0));
+                                    let zeroes_chunk = vreinterpretq_u16_u8(zeroes_chunk);
+                                    let zeroes_chunk = vshrn_n_u16(zeroes_chunk, 4);
+                                    let zeroes_chunk = vreinterpret_u64_u8(zeroes_chunk);
+                                    let zeroes_res = vget_lane_u64(zeroes_chunk, 0);
+
+                                    let zeroes2 = zeroes_res.trailing_ones() / 4;
+                                    crate::assert_unchecked(zeroes2 <= 16);
+                                    if LEN_LIMIT >= 32 && zeroes2 == 16 {
+                                        crate::cold_path();
+
+                                        let zeroes_chunk = vceq_u8(chunk3, vdup_n_u8(0));
                                         let zeroes_chunk = vreinterpret_u64_u8(zeroes_chunk);
                                         let zeroes_res = vget_lane_u64(zeroes_chunk, 0);
+                                        let zeroes3 = zeroes_res.trailing_ones() / 8;
 
-                                        let zeroes2 = zeroes_res.trailing_ones() / 4;
-                                        crate::assert_unchecked(zeroes2 <= 16);
-                                        if LEN_LIMIT >= 32 && zeroes2 == 16 {
-                                            crate::cold_path();
-
-                                            let zeroes_chunk = vceq_u8(chunk3, vdup_n_u8(0));
-                                            let zeroes_chunk = vreinterpret_u64_u8(zeroes_chunk);
-                                            let zeroes_res = vget_lane_u64(zeroes_chunk, 0);
-                                            let zeroes3 = zeroes_res.trailing_ones() / 8;
-
-                                            zeroes += zeroes3.min(len_extra);
-                                        }
-                                        zeroes += zeroes2;
+                                        zeroes += zeroes3.min(len_extra);
                                     }
-                                    skipped += zeroes;
-                                    s = s.get_safe_unchecked((zeroes as usize)..);
-                                    continue;
+                                    zeroes += zeroes2;
                                 }
+                                skipped += zeroes;
+                                s = s.get_safe_unchecked((zeroes as usize)..);
+                                continue;
                             }
-
-                            return Err(AtoiSimdError::Size((len_extra + 32) as usize, s));
                         }
 
-                        let mut chunk3_16 = vcombine_u8(chunk3, vdup_n_u8(0));
-                        chunk3_16 = match len_extra {
+                        let chunk3_16 = vcombine_u8(chunk3, vdup_n_u8(0));
+                        let chunk3_16 = match len_extra {
                             0 => vdupq_n_u8(0), //return Ok((0, 16)), is slower
                             1 => {
                                 let tmp = vextq_u8(vdupq_n_u8(0), chunk1, 9);
@@ -564,11 +560,7 @@ pub(crate) fn parse_simd_u128<const LEN_LIMIT: u32, const SKIP_ZEROES: bool>(
                             }
                             len_extra => {
                                 crate::cold_path();
-                                if cfg!(debug_assertions) {
-                                    unreachable!("parse_simd_u128: wrong len_extra {}", len_extra);
-                                } else {
-                                    return Err(AtoiSimdError::Size((len_extra + 32) as usize, s));
-                                }
+                                return Err(AtoiSimdError::Size((len_extra + 32) as usize, s));
                             }
                         };
                         chunk3 = vget_low_u8(chunk3_16);
