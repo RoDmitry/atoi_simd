@@ -405,7 +405,10 @@ pub(crate) fn parse_simd_u128<const LEN_LIMIT: u32, const SKIP_ZEROES: bool>(
             let mut chunk3 = vdup_n_u8(0);
             let mut len_extra = 0;
             match len {
-                0 => return parse_simd_neon(16, chunk1).map(|(v, l)| (v as u128, l)),
+                0 => {
+                    return parse_simd_neon(16, chunk1)
+                        .map(|(v, l)| (v as u128, l + skipped as usize))
+                }
                 1 => {
                     chunk2 = vextq_u8(chunk1, chunk2, 1);
                     chunk1 = vextq_u8(vdupq_n_u8(0), chunk1, 1);
