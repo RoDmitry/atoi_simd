@@ -327,6 +327,7 @@ fn test_parse_u64() {
     assert!(parse::<u64>(b"18446744073709551616").is_err());
     assert!(parse::<u64>(b"99999999999999999999").is_err());
     assert!(parse::<u64>(b"1234567890123456789012345").is_err());
+    assert!(parse::<u64>(b"340282366920938463463374607431768211455").is_err());
 }
 
 #[test]
@@ -353,6 +354,7 @@ fn test_parse_prefix_u64() {
     assert!(parse_prefix::<u64>(b"99999999999999999999").is_err());
     assert!(parse_prefix::<u64>(b"99999999999999999999s").is_err());
     assert!(parse_prefix::<u64>(b"1234567890123456789012345").is_err());
+    assert!(parse_prefix::<u64>(b"340282366920938463463374607431768211455").is_err());
 }
 
 #[test]

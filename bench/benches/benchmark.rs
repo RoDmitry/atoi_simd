@@ -242,7 +242,7 @@ fn bench_128(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
 
 fn bench_prefix_32(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
     let len = str.len() + 1;
-    let postfix = "s1111111111111111111";
+    let postfix = "s111111111111111111111111111111111111111";
     let strs = [
         str.to_owned() + "2" + postfix,
         str.to_owned() + "1" + postfix,
@@ -313,7 +313,7 @@ fn bench_prefix_32(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
 
 fn bench_prefix_64(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
     let len = str.len() + 1;
-    let postfix = "s1111111111111111111";
+    let postfix = "s111111111111111111111111111111111111111";
     let strs = [
         str.to_owned() + "2" + postfix,
         str.to_owned() + "1" + postfix,

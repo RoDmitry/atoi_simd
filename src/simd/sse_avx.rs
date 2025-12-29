@@ -730,7 +730,12 @@ pub(crate) fn parse_simd_u128<const LEN_LIMIT: u32, const SKIP_ZEROES: bool>(
                                 continue;
                             }
                         }
+
+                        if LEN_LIMIT < 32 {
+                            return Err(AtoiSimdError::Size(32, s));
+                        }
                     }
+
                     chunk
                 }
                 s_len => {
