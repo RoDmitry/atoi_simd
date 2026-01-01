@@ -1,4 +1,4 @@
-use atoi_simd::{parse, parse_prefix, parse_skipped};
+use atoi_simd::{parse, parse_prefix};
 use criterion::{
     criterion_group, criterion_main, measurement::WallTime, BenchmarkGroup, BenchmarkId, Criterion,
 };
@@ -11,7 +11,8 @@ fn bench_32(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
 
     bench_group.bench_with_input(BenchmarkId::new("parse u32", len), &strs, |b, val| {
         b.iter(|| {
-            parse::<u32>(val[0].as_bytes()).unwrap() - parse::<u32>(val[1].as_bytes()).unwrap()
+            parse::<u32, false, false>(val[0].as_bytes()).unwrap()
+                - parse::<u32, false, false>(val[1].as_bytes()).unwrap()
         })
     });
     bench_group.bench_with_input(
@@ -19,14 +20,15 @@ fn bench_32(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
         &strs,
         |b, val| {
             b.iter(|| {
-                parse_skipped::<u32>(val[0].as_bytes()).unwrap()
-                    - parse_skipped::<u32>(val[1].as_bytes()).unwrap()
+                parse::<u32, true, false>(val[0].as_bytes()).unwrap()
+                    - parse::<u32, true, false>(val[1].as_bytes()).unwrap()
             })
         },
     );
     bench_group.bench_with_input(BenchmarkId::new("parse i32", len), &strs, |b, val| {
         b.iter(|| {
-            parse::<i32>(val[0].as_bytes()).unwrap() - parse::<i32>(val[1].as_bytes()).unwrap()
+            parse::<i32, false, false>(val[0].as_bytes()).unwrap()
+                - parse::<i32, false, false>(val[1].as_bytes()).unwrap()
         })
     });
     bench_group.bench_with_input(
@@ -34,7 +36,8 @@ fn bench_32(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
         &strs_neg,
         |b, val| {
             b.iter(|| {
-                parse::<i32>(val[0].as_bytes()).unwrap() - parse::<i32>(val[1].as_bytes()).unwrap()
+                parse::<i32, false, false>(val[0].as_bytes()).unwrap()
+                    - parse::<i32, false, false>(val[1].as_bytes()).unwrap()
             })
         },
     );
@@ -58,7 +61,8 @@ fn bench_64(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
 
     bench_group.bench_with_input(BenchmarkId::new("parse u64", len), &strs, |b, val| {
         b.iter(|| {
-            parse::<u64>(val[0].as_bytes()).unwrap() - parse::<u64>(val[1].as_bytes()).unwrap()
+            parse::<u64, false, false>(val[0].as_bytes()).unwrap()
+                - parse::<u64, false, false>(val[1].as_bytes()).unwrap()
         })
     });
     bench_group.bench_with_input(
@@ -66,8 +70,8 @@ fn bench_64(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
         &strs,
         |b, val| {
             b.iter(|| {
-                parse_skipped::<u64>(val[0].as_bytes()).unwrap()
-                    - parse_skipped::<u64>(val[1].as_bytes()).unwrap()
+                parse::<u64, true, false>(val[0].as_bytes()).unwrap()
+                    - parse::<u64, true, false>(val[1].as_bytes()).unwrap()
             })
         },
     );
@@ -79,7 +83,8 @@ fn bench_64(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
     if len < 20 {
         bench_group.bench_with_input(BenchmarkId::new("parse i64", len), &strs, |b, val| {
             b.iter(|| {
-                parse::<i64>(val[0].as_bytes()).unwrap() - parse::<i64>(val[1].as_bytes()).unwrap()
+                parse::<i64, false, false>(val[0].as_bytes()).unwrap()
+                    - parse::<i64, false, false>(val[1].as_bytes()).unwrap()
             })
         });
         /* bench_group.bench_with_input(
@@ -92,8 +97,8 @@ fn bench_64(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
             &strs_neg,
             |b, val| {
                 b.iter(|| {
-                    parse::<i64>(val[0].as_bytes()).unwrap()
-                        - parse::<i64>(val[1].as_bytes()).unwrap()
+                    parse::<i64, false, false>(val[0].as_bytes()).unwrap()
+                        - parse::<i64, false, false>(val[1].as_bytes()).unwrap()
                 })
             },
         );
@@ -124,8 +129,8 @@ fn bench_64(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
             &zero_strs,
             |b, val| {
                 b.iter(|| {
-                    parse_skipped::<u64>(val[0].as_bytes()).unwrap()
-                        - parse_skipped::<u64>(val[1].as_bytes()).unwrap()
+                    parse::<u64, true, false>(val[0].as_bytes()).unwrap()
+                        - parse::<u64, true, false>(val[1].as_bytes()).unwrap()
                 })
             },
         );
@@ -138,8 +143,8 @@ fn bench_64(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
         &zeroes_16_strs,
         |b, val| {
             b.iter(|| {
-                parse_skipped::<u64>(val[0].as_bytes()).unwrap()
-                    - parse_skipped::<u64>(val[1].as_bytes()).unwrap()
+                parse::<u64, true, false>(val[0].as_bytes()).unwrap()
+                    - parse::<u64, true, false>(val[1].as_bytes()).unwrap()
             })
         },
     );
@@ -158,7 +163,8 @@ fn bench_128(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
 
     bench_group.bench_with_input(BenchmarkId::new("parse u128", len), &strs, |b, val| {
         b.iter(|| {
-            parse::<u128>(val[0].as_bytes()).unwrap() - parse::<u128>(val[1].as_bytes()).unwrap()
+            parse::<u128, false, false>(val[0].as_bytes()).unwrap()
+                - parse::<u128, false, false>(val[1].as_bytes()).unwrap()
         })
     });
     bench_group.bench_with_input(
@@ -166,14 +172,15 @@ fn bench_128(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
         &strs,
         |b, val| {
             b.iter(|| {
-                parse_skipped::<u128>(val[0].as_bytes()).unwrap()
-                    - parse_skipped::<u128>(val[1].as_bytes()).unwrap()
+                parse::<u128, true, false>(val[0].as_bytes()).unwrap()
+                    - parse::<u128, true, false>(val[1].as_bytes()).unwrap()
             })
         },
     );
     bench_group.bench_with_input(BenchmarkId::new("parse i128", len), &strs, |b, val| {
         b.iter(|| {
-            parse::<i128>(val[0].as_bytes()).unwrap() - parse::<i128>(val[1].as_bytes()).unwrap()
+            parse::<i128, false, false>(val[0].as_bytes()).unwrap()
+                - parse::<i128, false, false>(val[1].as_bytes()).unwrap()
         })
     });
     bench_group.bench_with_input(
@@ -181,8 +188,8 @@ fn bench_128(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
         &strs_neg,
         |b, val| {
             b.iter(|| {
-                parse::<i128>(val[0].as_bytes()).unwrap()
-                    - parse::<i128>(val[1].as_bytes()).unwrap()
+                parse::<i128, false, false>(val[0].as_bytes()).unwrap()
+                    - parse::<i128, false, false>(val[1].as_bytes()).unwrap()
             })
         },
     );
@@ -207,8 +214,8 @@ fn bench_128(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
             &zero_strs,
             |b, val| {
                 b.iter(|| {
-                    parse_skipped::<u128>(val[0].as_bytes()).unwrap()
-                        - parse_skipped::<u128>(val[1].as_bytes()).unwrap()
+                    parse::<u128, true, false>(val[0].as_bytes()).unwrap()
+                        - parse::<u128, true, false>(val[1].as_bytes()).unwrap()
                 })
             },
         );
@@ -221,8 +228,8 @@ fn bench_128(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
         &zeroes_32_strs,
         |b, val| {
             b.iter(|| {
-                parse_skipped::<u128>(val[0].as_bytes()).unwrap()
-                    - parse_skipped::<u128>(val[1].as_bytes()).unwrap()
+                parse::<u128, true, false>(val[0].as_bytes()).unwrap()
+                    - parse::<u128, true, false>(val[1].as_bytes()).unwrap()
             })
         },
     );
@@ -235,7 +242,7 @@ fn bench_128(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
 
 fn bench_prefix_32(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
     let len = str.len() + 1;
-    let postfix = "s1111111111111111111";
+    let postfix = "s111111111111111111111111111111111111111";
     let strs = [
         str.to_owned() + "2" + postfix,
         str.to_owned() + "1" + postfix,
@@ -251,8 +258,26 @@ fn bench_prefix_32(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
         &strs,
         |b, val| {
             b.iter(|| {
-                parse_prefix::<u32>(val[0].as_bytes()).unwrap().0
-                    - parse_prefix::<u32>(val[1].as_bytes()).unwrap().0
+                parse_prefix::<u32, false, false>(val[0].as_bytes())
+                    .unwrap()
+                    .0
+                    - parse_prefix::<u32, false, false>(val[1].as_bytes())
+                        .unwrap()
+                        .0
+            })
+        },
+    );
+    bench_group.bench_with_input(
+        BenchmarkId::new("parse_prefix u32 SKIP_ZEROES", len),
+        &strs,
+        |b, val| {
+            b.iter(|| {
+                parse_prefix::<u32, true, false>(val[0].as_bytes())
+                    .unwrap()
+                    .0
+                    - parse_prefix::<u32, true, false>(val[1].as_bytes())
+                        .unwrap()
+                        .0
             })
         },
     );
@@ -261,8 +286,12 @@ fn bench_prefix_32(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
         &strs,
         |b, val| {
             b.iter(|| {
-                parse_prefix::<i32>(val[0].as_bytes()).unwrap().0
-                    - parse_prefix::<i32>(val[1].as_bytes()).unwrap().0
+                parse_prefix::<i32, false, false>(val[0].as_bytes())
+                    .unwrap()
+                    .0
+                    - parse_prefix::<i32, false, false>(val[1].as_bytes())
+                        .unwrap()
+                        .0
             })
         },
     );
@@ -271,8 +300,12 @@ fn bench_prefix_32(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
         &strs_neg,
         |b, val| {
             b.iter(|| {
-                parse_prefix::<i32>(val[0].as_bytes()).unwrap().0
-                    - parse_prefix::<i32>(val[1].as_bytes()).unwrap().0
+                parse_prefix::<i32, false, false>(val[0].as_bytes())
+                    .unwrap()
+                    .0
+                    - parse_prefix::<i32, false, false>(val[1].as_bytes())
+                        .unwrap()
+                        .0
             })
         },
     );
@@ -280,7 +313,7 @@ fn bench_prefix_32(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
 
 fn bench_prefix_64(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
     let len = str.len() + 1;
-    let postfix = "s1111111111111111111";
+    let postfix = "s111111111111111111111111111111111111111";
     let strs = [
         str.to_owned() + "2" + postfix,
         str.to_owned() + "1" + postfix,
@@ -296,8 +329,26 @@ fn bench_prefix_64(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
         &strs,
         |b, val| {
             b.iter(|| {
-                parse_prefix::<u64>(val[0].as_bytes()).unwrap().0
-                    - parse_prefix::<u64>(val[1].as_bytes()).unwrap().0
+                parse_prefix::<u64, false, false>(val[0].as_bytes())
+                    .unwrap()
+                    .0
+                    - parse_prefix::<u64, false, false>(val[1].as_bytes())
+                        .unwrap()
+                        .0
+            })
+        },
+    );
+    bench_group.bench_with_input(
+        BenchmarkId::new("parse_prefix u64 SKIP_ZEROES", len),
+        &strs,
+        |b, val| {
+            b.iter(|| {
+                parse_prefix::<u64, true, false>(val[0].as_bytes())
+                    .unwrap()
+                    .0
+                    - parse_prefix::<u64, true, false>(val[1].as_bytes())
+                        .unwrap()
+                        .0
             })
         },
     );
@@ -307,8 +358,12 @@ fn bench_prefix_64(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
             &strs,
             |b, val| {
                 b.iter(|| {
-                    parse_prefix::<i64>(val[0].as_bytes()).unwrap().0
-                        - parse_prefix::<i64>(val[1].as_bytes()).unwrap().0
+                    parse_prefix::<i64, false, false>(val[0].as_bytes())
+                        .unwrap()
+                        .0
+                        - parse_prefix::<i64, false, false>(val[1].as_bytes())
+                            .unwrap()
+                            .0
                 })
             },
         );
@@ -317,8 +372,12 @@ fn bench_prefix_64(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
             &strs_neg,
             |b, val| {
                 b.iter(|| {
-                    parse_prefix::<i64>(val[0].as_bytes()).unwrap().0
-                        - parse_prefix::<i64>(val[1].as_bytes()).unwrap().0
+                    parse_prefix::<i64, false, false>(val[0].as_bytes())
+                        .unwrap()
+                        .0
+                        - parse_prefix::<i64, false, false>(val[1].as_bytes())
+                            .unwrap()
+                            .0
                 })
             },
         );
@@ -343,8 +402,26 @@ fn bench_prefix_128(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
         &strs,
         |b, val| {
             b.iter(|| {
-                parse_prefix::<u128>(val[0].as_bytes()).unwrap().0
-                    - parse_prefix::<u128>(val[1].as_bytes()).unwrap().0
+                parse_prefix::<u128, false, false>(val[0].as_bytes())
+                    .unwrap()
+                    .0
+                    - parse_prefix::<u128, false, false>(val[1].as_bytes())
+                        .unwrap()
+                        .0
+            })
+        },
+    );
+    bench_group.bench_with_input(
+        BenchmarkId::new("parse_prefix u128 SKIP_ZEROES", len),
+        &strs,
+        |b, val| {
+            b.iter(|| {
+                parse_prefix::<u128, true, false>(val[0].as_bytes())
+                    .unwrap()
+                    .0
+                    - parse_prefix::<u128, true, false>(val[1].as_bytes())
+                        .unwrap()
+                        .0
             })
         },
     );
@@ -353,8 +430,12 @@ fn bench_prefix_128(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
         &strs,
         |b, val| {
             b.iter(|| {
-                parse_prefix::<i128>(val[0].as_bytes()).unwrap().0
-                    - parse_prefix::<i128>(val[1].as_bytes()).unwrap().0
+                parse_prefix::<i128, false, false>(val[0].as_bytes())
+                    .unwrap()
+                    .0
+                    - parse_prefix::<i128, false, false>(val[1].as_bytes())
+                        .unwrap()
+                        .0
             })
         },
     );
@@ -363,8 +444,12 @@ fn bench_prefix_128(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
         &strs_neg,
         |b, val| {
             b.iter(|| {
-                parse_prefix::<i128>(val[0].as_bytes()).unwrap().0
-                    - parse_prefix::<i128>(val[1].as_bytes()).unwrap().0
+                parse_prefix::<i128, false, false>(val[0].as_bytes())
+                    .unwrap()
+                    .0
+                    - parse_prefix::<i128, false, false>(val[1].as_bytes())
+                        .unwrap()
+                        .0
             })
         },
     );

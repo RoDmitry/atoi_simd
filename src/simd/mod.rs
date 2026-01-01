@@ -20,3 +20,21 @@ pub(crate) use sse_avx::*;
 
 pub(crate) mod shared_32;
 pub(crate) mod shared_64;
+
+use crate::AtoiSimdError;
+
+#[inline(always)]
+pub(crate) fn process_skipped(
+    res: Result<(u64, usize), AtoiSimdError<'_>>,
+    skipped: u32,
+) -> Result<(u64, usize), AtoiSimdError<'_>> {
+    if skipped > 0 {
+        if matches!(res, Err(AtoiSimdError::Empty)) {
+            Ok((0, skipped as usize))
+        } else {
+            res.map(|(v, l)| (v, l + skipped as usize))
+        }
+    } else {
+        res
+    }
+}

@@ -1,16 +1,17 @@
 #![allow(dead_code)] // used when you don't have avx
 
 use self::arch::{
-    __m128i, __m256i, _mm256_add_epi64, _mm256_alignr_epi8, _mm256_and_si256, _mm256_cmpgt_epi8,
-    _mm256_cvtsi256_si32, _mm256_extracti128_si256, _mm256_loadu_si256, _mm256_madd_epi16,
-    _mm256_maddubs_epi16, _mm256_movemask_epi8, _mm256_mul_epu32, _mm256_or_si256,
-    _mm256_packus_epi32, _mm256_permute2x128_si256, _mm256_permute4x64_epi64, _mm256_set1_epi8,
-    _mm256_set_epi16, _mm256_set_epi32, _mm256_set_epi8, _mm256_set_m128i, _mm256_setzero_si256,
-    _mm256_srli_epi64, _mm_add_epi64, _mm_and_si128, _mm_bslli_si128, _mm_cmpgt_epi8,
-    _mm_cvtsi128_si32, _mm_loadu_si128, _mm_madd_epi16, _mm_maddubs_epi16, _mm_movemask_epi8,
-    _mm_mul_epu32, _mm_or_si128, _mm_packus_epi32, _mm_set1_epi8, _mm_set_epi16, _mm_set_epi32,
-    _mm_set_epi8, _mm_setzero_si128, _mm_srli_epi64,
+    __m128i, __m256i, _mm256_add_epi64, _mm256_alignr_epi8, _mm256_and_si256, _mm256_cmpeq_epi8,
+    _mm256_cmpgt_epi8, _mm256_cvtsi256_si32, _mm256_extracti128_si256, _mm256_loadu_si256,
+    _mm256_madd_epi16, _mm256_maddubs_epi16, _mm256_movemask_epi8, _mm256_mul_epu32,
+    _mm256_or_si256, _mm256_packus_epi32, _mm256_permute2x128_si256, _mm256_permute4x64_epi64,
+    _mm256_set1_epi8, _mm256_set_epi16, _mm256_set_epi32, _mm256_set_epi8, _mm256_set_m128i,
+    _mm256_setzero_si256, _mm256_srli_epi64, _mm_add_epi64, _mm_and_si128, _mm_bslli_si128,
+    _mm_cmpeq_epi8, _mm_cmpgt_epi8, _mm_cvtsi128_si32, _mm_loadu_si128, _mm_madd_epi16,
+    _mm_maddubs_epi16, _mm_movemask_epi8, _mm_mul_epu32, _mm_or_si128, _mm_packus_epi32,
+    _mm_set1_epi8, _mm_set_epi16, _mm_set_epi32, _mm_set_epi8, _mm_setzero_si128, _mm_srli_epi64,
 };
+use super::process_skipped;
 use crate::AtoiSimdError;
 #[cfg(target_arch = "x86")]
 use ::core::arch::x86 as arch;
@@ -505,9 +506,12 @@ unsafe fn load_avx(s: &[u8]) -> __m256i {
 /// to numbers      [ 0x06050403020100090807060504030201 ]
 #[inline(always)]
 unsafe fn to_numbers(chunk: __m128i) -> __m128i {
-    let mult = _mm_set1_epi8(0xF);
+    _mm_and_si128(chunk, _mm_set1_epi8(0xF))
+}
 
-    _mm_and_si128(chunk, mult)
+#[inline(always)]
+unsafe fn to_numbers_avx(chunk: __m256i) -> __m256i {
+    _mm256_and_si256(chunk, _mm256_set1_epi8(0xF))
 }
 
 #[inline(always)]
@@ -521,27 +525,39 @@ unsafe fn process_avx_gt(cmp_left: __m256i, cmp_right: __m256i) -> __m256i {
 }
 
 #[inline(always)]
-unsafe fn check_len(mut chunk: __m128i) -> u32 {
-    let cmp_high = _mm_set1_epi8(CHAR_MAX);
-    let cmp_low = _mm_set1_epi8(CHAR_MIN);
-    let check_high = process_gt(chunk, cmp_high);
-    let check_low = process_gt(cmp_low, chunk);
+unsafe fn load_len(s: &[u8]) -> (u32, __m128i) {
+    let chunk = load(s);
 
-    chunk = _mm_or_si128(check_high, check_low);
-    let res = _mm_movemask_epi8(chunk) as u16;
-    res.trailing_zeros()
+    let cmp_max = _mm_set1_epi8(CHAR_MAX);
+    let cmp_min = _mm_set1_epi8(CHAR_MIN);
+    let check_high = process_gt(chunk, cmp_max);
+    let check_low = process_gt(cmp_min, chunk);
+
+    let check_chunk = _mm_or_si128(check_high, check_low);
+    let res = _mm_movemask_epi8(check_chunk) as u16;
+    let len = res.trailing_zeros();
+
+    let chunk = to_numbers(chunk);
+
+    (len, chunk)
 }
 
 #[inline(always)]
-unsafe fn check_len_avx(mut chunk: __m256i) -> u32 {
+unsafe fn load_avx_len(s: &[u8]) -> (u32, __m256i) {
+    let chunk = load_avx(s);
+
     let cmp_max = _mm256_set1_epi8(CHAR_MAX);
     let cmp_min = _mm256_set1_epi8(CHAR_MIN);
     let check_high = process_avx_gt(chunk, cmp_max);
     let check_low = process_avx_gt(cmp_min, chunk);
 
-    chunk = _mm256_or_si256(check_high, check_low);
-    let res = _mm256_movemask_epi8(chunk);
-    res.trailing_zeros()
+    let check_chunk = _mm256_or_si256(check_high, check_low);
+    let res = _mm256_movemask_epi8(check_chunk);
+    let len = res.trailing_zeros();
+
+    let chunk = to_numbers_avx(chunk);
+
+    (len, chunk)
 }
 
 /* #[cfg(target_arch = "x86")]
@@ -562,14 +578,11 @@ unsafe fn to_u32x4(chunk: __m128i) -> [u32; 4] {
 }
 
 /// len must be <= 16
-#[inline]
-unsafe fn parse_simd_sse(
-    len: u32,
-    mut chunk: __m128i,
-) -> Result<(u64, usize), AtoiSimdError<'static>> {
-    chunk = match len {
+#[inline(always)]
+unsafe fn parse_simd_sse(len: u32, chunk: __m128i) -> Result<(u64, usize), AtoiSimdError<'static>> {
+    let chunk = match len {
         0 => return Err(AtoiSimdError::Empty),
-        1 => return Ok(((_mm_cvtsi128_si32(chunk) & 0xFF) as u64, len as usize)),
+        1 => return Ok(((_mm_cvtsi128_si32(chunk) & 0xFF) as u64, 1)),
         2 => _mm_bslli_si128(chunk, 14),
         3 => _mm_bslli_si128(chunk, 13),
         4 => _mm_bslli_si128(chunk, 12),
@@ -587,7 +600,7 @@ unsafe fn parse_simd_sse(
         16 => chunk,
         _ => {
             if cfg!(debug_assertions) {
-                panic!("parse_simd_sse: wrong size {}", len);
+                unreachable!("parse_simd_sse: wrong len {}", len);
             } else {
                 ::core::hint::unreachable_unchecked()
             }
@@ -595,18 +608,18 @@ unsafe fn parse_simd_sse(
     };
 
     // combine numbers [ 0x0038 | 0x0022 | 0x000c | 0x005a | 0x004e | 0x0038 | 0x0022 | 0x000c ( 56 | 34 | 12 | 90 | 78 | 56 | 34 | 12 ) ]
-    chunk = _mm_maddubs_epi16(
+    let chunk = _mm_maddubs_epi16(
         chunk,
         _mm_set_epi8(1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10),
     );
 
     // combine again   [ 0x0000 | 0x0d80 | 0x0000 | 0x2334 | 0x0000 | 0x162e | 0x0000 | 0x04d2 ( 0 | 3456 | 0 | 9012 | 0 | 5678 | 0 | 1234) ]
-    chunk = _mm_madd_epi16(chunk, _mm_set_epi16(1, 100, 1, 100, 1, 100, 1, 100));
+    let chunk = _mm_madd_epi16(chunk, _mm_set_epi16(1, 100, 1, 100, 1, 100, 1, 100));
     // remove extra bytes [ (64 bits, same as the right ) | 0x0d80 | 0x2334 | 0x162e | 0x04d2 ( 3456 | 9012 | 5678 | 1234) ]
-    chunk = _mm_packus_epi32(chunk, chunk);
+    let chunk = _mm_packus_epi32(chunk, chunk);
 
     // combine again [ (64 bits, zeroes) | 0x055f2cc0 | 0x00bc614e ( 90123456 | 12345678 ) ]
-    chunk = _mm_madd_epi16(chunk, _mm_set_epi16(0, 0, 0, 0, 1, 10000, 1, 10000));
+    let chunk = _mm_madd_epi16(chunk, _mm_set_epi16(0, 0, 0, 0, 1, 10000, 1, 10000));
 
     let arr = to_u32x4(chunk);
     let res = arr[0] as u64 * 100_000_000 + arr[1] as u64;
@@ -614,21 +627,125 @@ unsafe fn parse_simd_sse(
     Ok((res, len as usize))
 }
 
-#[inline]
-unsafe fn simd_sse_len(s: &[u8]) -> (u32, __m128i) {
-    let mut chunk = load(s);
-    let len = check_len(chunk);
+#[inline(always)]
+pub(crate) fn parse_simd_16_noskip(s: &[u8]) -> Result<(u64, usize), AtoiSimdError<'_>> {
+    unsafe {
+        let (len, chunk) = load_len(s);
 
-    chunk = to_numbers(chunk);
-
-    (len, chunk)
+        parse_simd_sse(len, chunk)
+    }
 }
 
-#[inline]
-pub(crate) fn parse_simd_16(s: &[u8]) -> Result<(u64, usize), AtoiSimdError<'_>> {
-    unsafe {
-        let (len, chunk) = simd_sse_len(s);
-        parse_simd_sse(len, chunk)
+#[inline(always)]
+pub(crate) fn parse_simd_16<const SKIP_ZEROES: bool>(
+    mut s: &[u8],
+) -> Result<(u64, usize), AtoiSimdError<'_>> {
+    let mut skipped = 0;
+    loop {
+        unsafe {
+            let (len, chunk) = load_len(s);
+
+            // if all numbers
+            if SKIP_ZEROES && len == 16 {
+                crate::cold_path();
+                let zeroes_chunk = _mm_cmpeq_epi8(chunk, _mm_set1_epi8(0));
+                let res = _mm_movemask_epi8(zeroes_chunk);
+                let zeroes = res.trailing_ones();
+                if zeroes > 0 {
+                    skipped += zeroes;
+                    s = s.get_safe_unchecked((zeroes as usize)..);
+                    continue;
+                }
+            }
+
+            let res = parse_simd_sse(len, chunk);
+            return process_skipped(res, skipped);
+        }
+    }
+}
+
+/// Uses AVX/AVX2 intrinsics
+#[inline(always)]
+pub(crate) fn parse_simd_u128<const LEN_LIMIT: u32, const SKIP_ZEROES: bool>(
+    mut s: &[u8],
+) -> Result<(u128, usize), AtoiSimdError<'_>> {
+    const { assert!(LEN_LIMIT > 16, "use `parse_simd_16` instead") };
+    const { assert!(LEN_LIMIT <= 39) };
+    let mut skipped = 0;
+    loop {
+        unsafe {
+            let (len, chunk) = load_avx_len(s);
+
+            let chunk_sh = _mm256_permute2x128_si256(chunk, chunk, 0x28);
+            let mut chunk_extra = _mm_set1_epi8(0);
+            let mut len_extra = 0;
+            let chunk = match len {
+                0 if skipped == 0 => return Err(AtoiSimdError::Empty),
+                0 => return Ok((0, skipped as usize)),
+                1 => {
+                    return Ok((
+                        (_mm256_cvtsi256_si32(chunk) & 0xFF) as u128,
+                        (len + skipped) as usize,
+                    ))
+                }
+                17 => _mm256_alignr_epi8(chunk, chunk_sh, 1),
+                18 => _mm256_alignr_epi8(chunk, chunk_sh, 2),
+                19 => _mm256_alignr_epi8(chunk, chunk_sh, 3),
+                20 => _mm256_alignr_epi8(chunk, chunk_sh, 4),
+                21 => _mm256_alignr_epi8(chunk, chunk_sh, 5),
+                22 => _mm256_alignr_epi8(chunk, chunk_sh, 6),
+                23 => _mm256_alignr_epi8(chunk, chunk_sh, 7),
+                24 => _mm256_alignr_epi8(chunk, chunk_sh, 8),
+                25 => _mm256_alignr_epi8(chunk, chunk_sh, 9),
+                26 => _mm256_alignr_epi8(chunk, chunk_sh, 10),
+                27 => _mm256_alignr_epi8(chunk, chunk_sh, 11),
+                28 => _mm256_alignr_epi8(chunk, chunk_sh, 12),
+                29 => _mm256_alignr_epi8(chunk, chunk_sh, 13),
+                30 => _mm256_alignr_epi8(chunk, chunk_sh, 14),
+                31 => _mm256_alignr_epi8(chunk, chunk_sh, 15),
+                32 => {
+                    if s.len() > 32 {
+                        if LEN_LIMIT >= 32 {
+                            (len_extra, chunk_extra) = load_len(s.get_safe_unchecked(32..));
+                        }
+
+                        if SKIP_ZEROES && (LEN_LIMIT < 32 || len_extra > 7) {
+                            if LEN_LIMIT >= 32 {
+                                // `parse_prefix u64` works better without it
+                                crate::cold_path();
+                            }
+                            let zeroes_chunk = _mm256_cmpeq_epi8(chunk, _mm256_set1_epi8(0));
+                            let zeroes_res = _mm256_movemask_epi8(zeroes_chunk);
+                            let mut zeroes = zeroes_res.trailing_ones();
+                            if zeroes > 0 {
+                                if LEN_LIMIT >= 32 && zeroes == 32 {
+                                    crate::cold_path();
+                                    let zeroes_chunk =
+                                        _mm_cmpeq_epi8(chunk_extra, _mm_set1_epi8(0));
+                                    let zeroes_res = _mm_movemask_epi8(zeroes_chunk);
+                                    zeroes += zeroes_res.trailing_ones().min(len_extra);
+                                }
+                                skipped += zeroes;
+                                s = s.get_safe_unchecked((zeroes as usize)..);
+                                continue;
+                            }
+                        }
+
+                        if LEN_LIMIT < 32 {
+                            return Err(AtoiSimdError::Size(32, s));
+                        }
+                    }
+
+                    chunk
+                }
+                s_len => {
+                    let res = parse_simd_sse(s_len, ::core::mem::transmute_copy(&chunk));
+                    return process_skipped(res, skipped).map(|(v, l)| (v as u128, l));
+                }
+            };
+
+            return process_avx(s, chunk, len + skipped, chunk_extra, len_extra);
+        }
     }
 }
 
@@ -637,45 +754,45 @@ pub(crate) fn parse_simd_16(s: &[u8]) -> Result<(u64, usize), AtoiSimdError<'_>>
 #[inline(always)]
 unsafe fn process_avx(
     s: &[u8],
-    mut chunk: __m256i,
+    chunk: __m256i,
     len: u32,
     chunk_extra: __m128i,
     len_extra: u32,
 ) -> Result<(u128, usize), AtoiSimdError<'_>> {
-    let mut mult = _mm256_set_epi8(
+    let mult = _mm256_set_epi8(
         1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10,
         1, 10, 1, 10, 1, 10,
     );
     // mult 1 char
-    chunk = _mm256_maddubs_epi16(chunk, mult);
+    let chunk = _mm256_maddubs_epi16(chunk, mult);
 
-    mult = _mm256_set_epi16(
+    let mult = _mm256_set_epi16(
         1, 100, 1, 100, 1, 100, 1, 100, 1, 100, 1, 100, 1, 100, 1, 100,
     );
     // mult 2
-    chunk = _mm256_madd_epi16(chunk, mult);
+    let chunk = _mm256_madd_epi16(chunk, mult);
     // remove extra bytes
-    chunk = _mm256_packus_epi32(chunk, chunk);
+    let chunk = _mm256_packus_epi32(chunk, chunk);
 
     // move by 64 bits ( unused | unused | third [191:128] | first [63:0] )
     // compiled assembly is different, and faster
-    chunk = _mm256_permute4x64_epi64(chunk, 8);
-    let mut chunk_sse = _mm256_extracti128_si256(chunk, 0);
+    let chunk = _mm256_permute4x64_epi64(chunk, 8);
+    let chunk_sse = _mm256_extracti128_si256(chunk, 0);
 
     if len_extra == 0 {
-        let mut mult = _mm_set_epi16(1, 10000, 1, 10000, 1, 10000, 1, 10000);
+        let mult = _mm_set_epi16(1, 10000, 1, 10000, 1, 10000, 1, 10000);
         // mult 4
-        chunk_sse = _mm_madd_epi16(chunk_sse, mult);
+        let chunk_sse = _mm_madd_epi16(chunk_sse, mult);
 
-        mult = _mm_set_epi32(0, 100_000_000, 0, 100_000_000);
+        let mult = _mm_set_epi32(0, 100_000_000, 0, 100_000_000);
         // requires avx512ifma,avx512vl and nightly only
         // chunk_sse = _mm_madd52lo_epu64(_mm_srli_epi64(chunk_sse, 32), chunk_sse, mult);
 
         // mult 8
-        mult = _mm_mul_epu32(chunk_sse, mult);
+        let mult = _mm_mul_epu32(chunk_sse, mult);
         // add higher 32 bits of old 64 to mult
-        chunk_sse = _mm_srli_epi64(chunk_sse, 32);
-        chunk_sse = _mm_add_epi64(chunk_sse, mult);
+        let chunk_sse = _mm_srli_epi64(chunk_sse, 32);
+        let chunk_sse = _mm_add_epi64(chunk_sse, mult);
 
         let arr = ::core::mem::transmute::<__m128i, [u64; 2]>(chunk_sse);
 
@@ -685,7 +802,7 @@ unsafe fn process_avx(
             len as usize,
         ))
     } else {
-        let (mut chunk_extra, mult16) = match len_extra {
+        let (chunk_extra, mult16) = match len_extra {
             1 => (_mm_bslli_si128(chunk_extra, 15), 10),
             2 => (_mm_bslli_si128(chunk_extra, 14), 100),
             3 => (_mm_bslli_si128(chunk_extra, 13), 1_000),
@@ -693,31 +810,35 @@ unsafe fn process_avx(
             5 => (_mm_bslli_si128(chunk_extra, 11), 100_000),
             6 => (_mm_bslli_si128(chunk_extra, 10), 1_000_000),
             7 => (_mm_bslli_si128(chunk_extra, 9), 10_000_000),
-            s_len => return Err(AtoiSimdError::Size(s_len as usize, s)),
+            s_len => {
+                crate::cold_path();
+                return Err(AtoiSimdError::Size((len + s_len) as usize, s));
+            }
         };
 
-        chunk_extra = _mm_maddubs_epi16(
+        let chunk_extra = _mm_maddubs_epi16(
             chunk_extra,
             _mm_set_epi8(1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10),
         );
-        chunk_extra = _mm_madd_epi16(chunk_extra, _mm_set_epi16(1, 100, 1, 100, 1, 100, 1, 100));
+        let chunk_extra =
+            _mm_madd_epi16(chunk_extra, _mm_set_epi16(1, 100, 1, 100, 1, 100, 1, 100));
 
-        chunk_extra = _mm_packus_epi32(chunk_extra, chunk_extra);
+        let chunk_extra = _mm_packus_epi32(chunk_extra, chunk_extra);
 
-        chunk = _mm256_set_m128i(chunk_extra, chunk_sse);
+        let chunk = _mm256_set_m128i(chunk_extra, chunk_sse);
 
-        mult = _mm256_set_epi16(
+        let mult = _mm256_set_epi16(
             1, 10000, 1, 10000, 1, 10000, 1, 10000, 1, 10000, 1, 10000, 1, 10000, 1, 10000,
         );
         // mult 4
-        chunk = _mm256_madd_epi16(chunk, mult);
+        let chunk = _mm256_madd_epi16(chunk, mult);
 
-        mult = _mm256_set_epi32(0, 0, 0, 0, 0, 100_000_000, 0, 100_000_000);
+        let mult = _mm256_set_epi32(0, 0, 0, 0, 0, 100_000_000, 0, 100_000_000);
         // mult 8
-        mult = _mm256_mul_epu32(chunk, mult);
+        let mult = _mm256_mul_epu32(chunk, mult);
 
-        chunk = _mm256_srli_epi64(chunk, 32);
-        chunk = _mm256_add_epi64(chunk, mult);
+        let chunk = _mm256_srli_epi64(chunk, 32);
+        let chunk = _mm256_add_epi64(chunk, mult);
 
         let arr = ::core::mem::transmute::<__m256i, [u64; 4]>(chunk);
 
@@ -729,51 +850,5 @@ unsafe fn process_avx(
                 .ok_or(AtoiSimdError::Overflow(s))?,
             (len + len_extra) as usize,
         ))
-    }
-}
-
-/// Uses AVX/AVX2 intrinsics
-#[inline(always)]
-pub(crate) fn parse_simd_u128(s: &[u8]) -> Result<(u128, usize), AtoiSimdError<'_>> {
-    unsafe {
-        let mut chunk = load_avx(s);
-        let len = check_len_avx(chunk);
-
-        // to numbers
-        chunk = _mm256_and_si256(chunk, _mm256_set1_epi8(0xF));
-        let chunk_sh = _mm256_permute2x128_si256(chunk, chunk, 0x28);
-        let mut chunk_extra = _mm_set1_epi8(0);
-        let mut len_extra = 0;
-        chunk = match len {
-            0 => return Err(AtoiSimdError::Empty),
-            1 => return Ok(((_mm256_cvtsi256_si32(chunk) & 0xFF) as u128, len as usize)),
-            17 => _mm256_alignr_epi8(chunk, chunk_sh, 1),
-            18 => _mm256_alignr_epi8(chunk, chunk_sh, 2),
-            19 => _mm256_alignr_epi8(chunk, chunk_sh, 3),
-            20 => _mm256_alignr_epi8(chunk, chunk_sh, 4),
-            21 => _mm256_alignr_epi8(chunk, chunk_sh, 5),
-            22 => _mm256_alignr_epi8(chunk, chunk_sh, 6),
-            23 => _mm256_alignr_epi8(chunk, chunk_sh, 7),
-            24 => _mm256_alignr_epi8(chunk, chunk_sh, 8),
-            25 => _mm256_alignr_epi8(chunk, chunk_sh, 9),
-            26 => _mm256_alignr_epi8(chunk, chunk_sh, 10),
-            27 => _mm256_alignr_epi8(chunk, chunk_sh, 11),
-            28 => _mm256_alignr_epi8(chunk, chunk_sh, 12),
-            29 => _mm256_alignr_epi8(chunk, chunk_sh, 13),
-            30 => _mm256_alignr_epi8(chunk, chunk_sh, 14),
-            31 => _mm256_alignr_epi8(chunk, chunk_sh, 15),
-            32 => {
-                if s.len() > 32 {
-                    (len_extra, chunk_extra) = simd_sse_len(s.get_safe_unchecked(32..));
-                }
-                chunk
-            }
-            s_len => {
-                return parse_simd_sse(s_len, ::core::mem::transmute_copy(&chunk))
-                    .map(|(v, l)| (v as u128, l))
-            }
-        };
-
-        process_avx(s, chunk, len, chunk_extra, len_extra)
     }
 }

@@ -1,4 +1,7 @@
-use atoi_simd::*;
+mod reimpl;
+#[allow(unused_imports)]
+use reimpl::*;
+
 use numtoa::NumToA;
 
 #[test]
