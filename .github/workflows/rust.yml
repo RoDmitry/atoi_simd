@@ -10,6 +10,9 @@ on:
     paths-ignore:
       - '**/*.md'
 
+permissions:
+  contents: read
+
 env:
   CARGO_TERM_COLOR: always
 
@@ -22,34 +25,61 @@ jobs:
       - name: Format
         run: cargo fmt -- --check
 
-  x86:
+  tests:
     strategy:
+      fail-fast: false
       matrix:
-        rustflags:
-          - ''
-          - '-C target-feature=+sse2,+sse3,+sse4.1,+ssse3'
-          - '-C target-feature=+sse2,+sse3,+sse4.1,+ssse3,+avx,+avx2'
-    runs-on: ubuntu-latest
+        include:
+          - name: 'x86_64'
+            runs-on: ubuntu-latest
+            arch: x86_64
+            rustflags:
+          - name: 'x86_64 SSE'
+            runs-on: ubuntu-latest
+            arch: x86_64
+            rustflags: '-C target-feature=+sse2,+sse3,+sse4.1,+ssse3'
+          - name: 'x86_64 AVX'
+            runs-on: ubuntu-latest
+            arch: x86_64
+            rustflags: '-C target-feature=+sse2,+sse3,+sse4.1,+ssse3,+avx,+avx2'
+
+          - name: 'AArch64 Neon'
+            runs-on: ubuntu-24.04-arm
+            arch: aarch64
+            rustflags: '-C target-feature=+neon'
+
+    runs-on: ${{matrix.runs-on}}
     env:
-      RUSTFLAGS: ${{ matrix.rustflags }}
+      RUSTFLAGS: -Dwarnings ${{matrix.rustflags}}
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v6
-
-      - name: Prepare
-        # gcc-multilib is needed for i686
-        run: sudo apt-get update && sudo apt-get install -y gcc-multilib && rm -f .cargo/config.toml
 
       - name: Rust Version
         run: rustc -V
 
-      - name: Server AVX2 compatibility
+      - name: Prepare x86
+        if: matrix.arch == 'x86_64'
+        # gcc-multilib is needed for i686
+        run: sudo apt-get update && sudo apt-get install -y gcc-multilib && rm -f .cargo/config.toml
+
+      - name: Prepare
+        if: matrix.arch != 'x86_64'
+        run: rm -f .cargo/config.toml
+
+      - name: Check AVX2 compatibility
+        if: matrix.arch == 'x86_64'
         run: rustc --print=cfg -C target-cpu=native | grep avx2 || exit 1
+
+      - name: Check Neon compatibility
+        if: matrix.arch == 'aarch64'
+        run: rustc --print=cfg -C target-cpu=native | grep neon || exit 1
 
       - name: Cargo check
         run: cargo check --verbose
 
       - name: Clippy
-        run: cargo clippy --verbose -- -Dwarnings
+        run: cargo clippy --verbose -- -Dwarnings -Dclippy::all
 
       - name: Std
         run: cargo test --verbose
@@ -57,35 +87,95 @@ jobs:
       - name: No Std
         run: cargo test --no-default-features --verbose
 
+      - name: Std release
+        run: cargo test --release --verbose
+
+      - name: No Std release
+        run: cargo test --release --no-default-features --verbose
+
+      - name: Std Nightly
+        run: RUSTFLAGS=${RUSTFLAGS}\ -Zrandomize-layout cargo +nightly test --verbose
+
+      - name: No Std Nightly
+        run: RUSTFLAGS=${RUSTFLAGS}\ -Zrandomize-layout cargo +nightly test --no-default-features --verbose
+
+      - name: Std Nightly release
+        run: RUSTFLAGS=${RUSTFLAGS}\ -Zrandomize-layout cargo +nightly test --release --verbose
+
+      - name: No Std Nightly release
+        run: RUSTFLAGS=${RUSTFLAGS}\ -Zrandomize-layout cargo +nightly test --release --no-default-features --verbose
+
       # - uses: actions-rs/toolchain@v1
       #   with:
       #     toolchain: stable
       #     target: i686-unknown-linux-gnu
       #     override: true
       - name: Install i686 target
+        if: matrix.arch == 'x86_64'
         run: rustup target add i686-unknown-linux-gnu
-      - name: i686 (32 bits)
+
+      - name: i686 (32 bits) Std
+        if: matrix.arch == 'x86_64'
         run: cargo test --target=i686-unknown-linux-gnu --verbose
 
-  arm:
+      - name: i686 (32 bits) No Std
+        if: matrix.arch == 'x86_64'
+        run: cargo test --target=i686-unknown-linux-gnu --no-default-features --verbose
+
+      - name: Cargo MSRV check
+        run: cargo +1.61.0 check --verbose
+
+  # arm:
+    # runs-on: ubuntu-latest
+    # env:
+    #   RUSTFLAGS: '-C target-feature=+neon'
+    # steps:
+    #   - uses: actions/checkout@v6
+    #   - name: Prepare
+    #     run: rm -f .cargo/config.toml
+
+    #   - uses: pguyot/arm-runner-action@v2
+    #     with:
+    #       cpu: cortex-a53
+    #       cpu_info: cpuinfo/raspberrypi_zero2_w_arm64
+    #       base_image: raspios_lite_arm64:latest
+    #       image_additional_mb: 1024
+    #       commands: |
+    #         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --profile=minimal -y
+    #         . "$HOME/.cargo/env"
+    #         rustc --print=cfg -C target-cpu=native | grep neon || exit 1
+    #         cargo check --verbose
+    #         cargo test --verbose
+    #         cargo test --no-default-features --verbose
+
+  docs:
+    name: Documentation
     runs-on: ubuntu-latest
     env:
-      RUSTFLAGS: '-C target-feature=+neon'
+      RUSTDOCFLAGS: -Dwarnings
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v6
-      - name: Prepare
-        run: rm -f .cargo/config.toml
+      - uses: dtolnay/rust-toolchain@nightly
+      - uses: dtolnay/install@cargo-docs-rs
+      - run: cargo docs-rs
 
-      - uses: pguyot/arm-runner-action@v2
-        with:
-          cpu: cortex-a53
-          cpu_info: cpuinfo/raspberrypi_zero2_w_arm64
-          base_image: raspios_lite_arm64:latest
-          image_additional_mb: 1024
-          commands: |
-            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --profile=minimal -y
-            . "$HOME/.cargo/env"
-            rustc --print=cfg -C target-cpu=native | grep neon || exit 1
-            cargo check --verbose
-            cargo test --verbose
-            cargo test --no-default-features --verbose
+  # miri:
+  #   name: Miri (${{matrix.name}})
+  #   runs-on: ubuntu-latest
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       include:
+  #         - name: x86_64
+  #           target: x86_64-unknown-linux-gnu
+  #         - name: x86
+  #           target: i686-unknown-linux-gnu
+  #   timeout-minutes: 45
+  #   steps:
+  #     - uses: actions/checkout@v6
+  #     - uses: dtolnay/rust-toolchain@miri
+  #     - run: cargo miri setup
+  #     - run: cargo miri test --target ${{matrix.target}}
+  #       env:
+  #         MIRIFLAGS: -Zmiri-strict-provenance
