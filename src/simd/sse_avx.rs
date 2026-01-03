@@ -669,8 +669,8 @@ pub(crate) fn parse_simd_16<const SKIP_ZEROES: bool>(
 pub(crate) fn parse_simd_u128<const LEN_LIMIT: u32, const SKIP_ZEROES: bool>(
     mut s: &[u8],
 ) -> Result<(u128, usize), AtoiSimdError<'_>> {
-    const { assert!(LEN_LIMIT > 16, "use `parse_simd_16` instead") };
-    const { assert!(LEN_LIMIT <= 39) };
+    debug_assert!(LEN_LIMIT > 16, "use `parse_simd_16` instead");
+    debug_assert!(LEN_LIMIT <= 39);
     let mut skipped = 0;
     loop {
         unsafe {

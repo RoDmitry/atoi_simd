@@ -57,7 +57,7 @@ pub(crate) fn parse_simd_checked<const MAX: u64, const SKIP_ZEROES: bool>(
 pub(crate) fn parse_simd_neg<const MIN: i64, const SKIP_ZEROES: bool>(
     s: &[u8],
 ) -> Result<(i64, usize), AtoiSimdError<'_>> {
-    const { assert!(MIN < 0) }
+    debug_assert!(MIN < 0);
     let (res, len) = super::parse_simd_16::<SKIP_ZEROES>(s)?;
     let min = -MIN as u64;
     if res > min {
@@ -73,7 +73,7 @@ pub(crate) fn parse_simd_neg<const MIN: i64, const SKIP_ZEROES: bool>(
 pub(crate) fn parse_simd_checked_neg<const MIN: i64, const SKIP_ZEROES: bool>(
     s: &[u8],
 ) -> Result<i64, AtoiSimdError<'_>> {
-    const { assert!(MIN < 0) }
+    debug_assert!(MIN < 0);
     let res = parse_simd_checked_pre_neg::<SKIP_ZEROES>(s)?;
     if res < MIN {
         Err(AtoiSimdError::Overflow(s))
