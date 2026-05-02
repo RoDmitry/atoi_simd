@@ -27,7 +27,7 @@ rustversion = "1"
 
 [dev-dependencies]
 arrayvec = "0.7"
-numtoa = "0.3"
+numtoa = "1"
 
 [profile.release]
 lto = "fat"

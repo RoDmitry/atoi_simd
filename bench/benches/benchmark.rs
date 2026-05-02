@@ -42,6 +42,26 @@ fn bench_32(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
         },
     );
 
+    if len <= 6 {
+        bench_group.bench_with_input(BenchmarkId::new("str u32", len), &strs, |b, val| {
+            b.iter(|| val[0].parse::<u32>().unwrap() - val[1].parse::<u32>().unwrap())
+        });
+    }
+}
+
+fn bench_32_std(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
+    let len = str.len() + 1;
+    let strs = [str.to_owned() + "2", str.to_owned() + "1"];
+    let str_neg = "-".to_owned() + str;
+    let strs_neg = [str_neg.clone() + "2", str_neg.clone() + "1"];
+
+    bench_group.bench_with_input(BenchmarkId::new("parse u32", len), &strs, |b, val| {
+        b.iter(|| {
+            parse::<u32, false, false>(val[0].as_bytes()).unwrap()
+                - parse::<u32, false, false>(val[1].as_bytes()).unwrap()
+        })
+    });
+
     bench_group.bench_with_input(BenchmarkId::new("str u32", len), &strs, |b, val| {
         b.iter(|| val[0].parse::<u32>().unwrap() - val[1].parse::<u32>().unwrap())
     });
@@ -109,15 +129,9 @@ fn bench_64(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
         ); */
     }
 
-    bench_group.bench_with_input(BenchmarkId::new("str u64", len), &strs, |b, val| {
-        b.iter(|| val[0].parse::<u64>().unwrap() - val[1].parse::<u64>().unwrap())
-    });
-    if len < 20 {
-        bench_group.bench_with_input(BenchmarkId::new("str i64", len), &strs, |b, val| {
-            b.iter(|| val[0].parse::<i64>().unwrap() - val[1].parse::<i64>().unwrap())
-        });
-        bench_group.bench_with_input(BenchmarkId::new("str neg i64", len), &strs_neg, |b, val| {
-            b.iter(|| val[0].parse::<i64>().unwrap() - val[1].parse::<i64>().unwrap())
+    if len <= 7 {
+        bench_group.bench_with_input(BenchmarkId::new("str u64", len), &strs, |b, val| {
+            b.iter(|| val[0].parse::<u64>().unwrap() - val[1].parse::<u64>().unwrap())
         });
     }
 
@@ -136,6 +150,46 @@ fn bench_64(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
         );
     }
 
+    let zeroes_16 = "0000000000000000".to_owned() + str;
+    let zeroes_16_strs = [zeroes_16.clone() + "2", zeroes_16.clone() + "1"];
+    bench_group.bench_with_input(
+        BenchmarkId::new("parse zeroes_16 u64", zeroes_16.len() + 1),
+        &zeroes_16_strs,
+        |b, val| {
+            b.iter(|| {
+                parse::<u64, true, false>(val[0].as_bytes()).unwrap()
+                    - parse::<u64, true, false>(val[1].as_bytes()).unwrap()
+            })
+        },
+    );
+}
+
+fn bench_64_std(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
+    let len = str.len() + 1;
+    let strs = [str.to_owned() + "2", str.to_owned() + "1"];
+    let str_neg = "-".to_owned() + str;
+    let strs_neg = [str_neg.clone() + "2", str_neg.clone() + "1"];
+
+    bench_group.bench_with_input(BenchmarkId::new("parse u64", len), &strs, |b, val| {
+        b.iter(|| {
+            parse::<u64, false, false>(val[0].as_bytes()).unwrap()
+                - parse::<u64, false, false>(val[1].as_bytes()).unwrap()
+        })
+    });
+
+    bench_group.bench_with_input(BenchmarkId::new("str u64", len), &strs, |b, val| {
+        b.iter(|| val[0].parse::<u64>().unwrap() - val[1].parse::<u64>().unwrap())
+    });
+    if len < 20 {
+        bench_group.bench_with_input(BenchmarkId::new("str i64", len), &strs, |b, val| {
+            b.iter(|| val[0].parse::<i64>().unwrap() - val[1].parse::<i64>().unwrap())
+        });
+        bench_group.bench_with_input(BenchmarkId::new("str neg i64", len), &strs_neg, |b, val| {
+            b.iter(|| val[0].parse::<i64>().unwrap() - val[1].parse::<i64>().unwrap())
+        });
+    }
+
+    // duplicated code
     let zeroes_16 = "0000000000000000".to_owned() + str;
     let zeroes_16_strs = [zeroes_16.clone() + "2", zeroes_16.clone() + "1"];
     bench_group.bench_with_input(
@@ -194,17 +248,11 @@ fn bench_128(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
         },
     );
 
-    bench_group.bench_with_input(BenchmarkId::new("str u128", len), &strs, |b, val| {
-        b.iter(|| val[0].parse::<u128>().unwrap() - val[1].parse::<u128>().unwrap())
-    });
-    bench_group.bench_with_input(BenchmarkId::new("str i128", len), &strs, |b, val| {
-        b.iter(|| val[0].parse::<i128>().unwrap() - val[1].parse::<i128>().unwrap())
-    });
-    bench_group.bench_with_input(
-        BenchmarkId::new("str neg i128", len),
-        &strs_neg,
-        |b, val| b.iter(|| val[0].parse::<i128>().unwrap() - val[1].parse::<i128>().unwrap()),
-    );
+    if len <= 6 {
+        bench_group.bench_with_input(BenchmarkId::new("str u128", len), &strs, |b, val| {
+            b.iter(|| val[0].parse::<u128>().unwrap() - val[1].parse::<u128>().unwrap())
+        });
+    }
 
     if str.len() == 38 {
         let zero = "0".to_owned() + str;
@@ -221,6 +269,46 @@ fn bench_128(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
         );
     }
 
+    let zeroes_32 = "00000000000000000000000000000000".to_owned() + str;
+    let zeroes_32_strs = [zeroes_32.clone() + "2", zeroes_32.clone() + "1"];
+    bench_group.bench_with_input(
+        BenchmarkId::new("parse zeroes_32 u128", zeroes_32.len() + 1),
+        &zeroes_32_strs,
+        |b, val| {
+            b.iter(|| {
+                parse::<u128, true, false>(val[0].as_bytes()).unwrap()
+                    - parse::<u128, true, false>(val[1].as_bytes()).unwrap()
+            })
+        },
+    );
+}
+
+fn bench_128_std(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
+    let len = str.len() + 1;
+    let strs = [str.to_owned() + "2", str.to_owned() + "1"];
+    let str_neg = "-".to_owned() + str;
+    let strs_neg = [str_neg.clone() + "2", str_neg.clone() + "1"];
+
+    bench_group.bench_with_input(BenchmarkId::new("parse u128", len), &strs, |b, val| {
+        b.iter(|| {
+            parse::<u128, false, false>(val[0].as_bytes()).unwrap()
+                - parse::<u128, false, false>(val[1].as_bytes()).unwrap()
+        })
+    });
+
+    bench_group.bench_with_input(BenchmarkId::new("str u128", len), &strs, |b, val| {
+        b.iter(|| val[0].parse::<u128>().unwrap() - val[1].parse::<u128>().unwrap())
+    });
+    bench_group.bench_with_input(BenchmarkId::new("str i128", len), &strs, |b, val| {
+        b.iter(|| val[0].parse::<i128>().unwrap() - val[1].parse::<i128>().unwrap())
+    });
+    bench_group.bench_with_input(
+        BenchmarkId::new("str neg i128", len),
+        &strs_neg,
+        |b, val| b.iter(|| val[0].parse::<i128>().unwrap() - val[1].parse::<i128>().unwrap()),
+    );
+
+    // duplicated code
     let zeroes_32 = "00000000000000000000000000000000".to_owned() + str;
     let zeroes_32_strs = [zeroes_32.clone() + "2", zeroes_32.clone() + "1"];
     bench_group.bench_with_input(
@@ -457,7 +545,7 @@ fn bench_prefix_128(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
 
 fn benchmark_group_max_10(
     bench_group: &mut BenchmarkGroup<WallTime>,
-    func: fn(bench_group: &mut BenchmarkGroup<WallTime>, str: &str),
+    func: fn(&mut BenchmarkGroup<WallTime>, &str),
 ) {
     let mut str = String::new();
     func(bench_group, &str);
@@ -470,7 +558,7 @@ fn benchmark_group_max_10(
 
 fn benchmark_group_max_20(
     bench_group: &mut BenchmarkGroup<WallTime>,
-    func: fn(bench_group: &mut BenchmarkGroup<WallTime>, str: &str),
+    func: fn(&mut BenchmarkGroup<WallTime>, &str),
 ) {
     let mut str = String::new();
     func(bench_group, &str);
@@ -507,64 +595,60 @@ fn benchmark_group_max_20(
 
 fn benchmark(c: &mut Criterion) {
     {
-        let mut bench_group = c.benchmark_group("benchmark 32");
+        let mut bench_group = c.benchmark_group("atoi_simd 32");
         benchmark_group_max_10(&mut bench_group, bench_32);
         benchmark_group_max_10(&mut bench_group, bench_prefix_32);
         bench_group.finish();
     }
     {
-        let mut bench_group = c.benchmark_group("benchmark 64");
+        let mut bench_group = c.benchmark_group("std 32");
+        benchmark_group_max_10(&mut bench_group, bench_32_std);
+        bench_group.finish();
+    }
+
+    {
+        let mut bench_group = c.benchmark_group("atoi_simd 64");
         benchmark_group_max_20(&mut bench_group, bench_64);
         benchmark_group_max_20(&mut bench_group, bench_prefix_64);
         bench_group.finish();
     }
+    {
+        let mut bench_group = c.benchmark_group("std 64");
+        benchmark_group_max_20(&mut bench_group, bench_64_std);
+        bench_group.finish();
+    }
 
-    let mut bench_group = c.benchmark_group("benchmark 128");
+    let length = [20, 24, 29, 30, 31, 32, 33, 35, 37, 38];
+    let pattern = "1234567890";
+    let iter = pattern.chars().cycle();
 
-    benchmark_group_max_20(&mut bench_group, bench_128);
-    benchmark_group_max_20(&mut bench_group, bench_prefix_128);
+    {
+        let mut bench_group = c.benchmark_group("atoi_simd 128");
 
-    let mut str = "12345678901234567890".to_owned();
-    bench_128(&mut bench_group, &str);
-    bench_prefix_128(&mut bench_group, &str);
+        benchmark_group_max_20(&mut bench_group, bench_128);
+        benchmark_group_max_20(&mut bench_group, bench_prefix_128);
 
-    str = "123456789012345678901234".to_owned();
-    bench_128(&mut bench_group, &str);
-    bench_prefix_128(&mut bench_group, &str);
+        for len in length {
+            let to_parse: String = iter.clone().take(len).collect();
+            bench_128(&mut bench_group, &to_parse);
+            bench_prefix_128(&mut bench_group, &to_parse);
+        }
 
-    str = "12345678901234567890123456789".to_owned();
-    bench_128(&mut bench_group, &str);
-    bench_prefix_128(&mut bench_group, &str);
+        bench_group.finish();
+    }
 
-    str = "123456789012345678901234567890".to_owned();
-    bench_128(&mut bench_group, &str);
-    bench_prefix_128(&mut bench_group, &str);
+    {
+        let mut bench_group = c.benchmark_group("std 128");
 
-    str = "1234567890123456789012345678901".to_owned();
-    bench_128(&mut bench_group, &str);
-    bench_prefix_128(&mut bench_group, &str);
+        benchmark_group_max_20(&mut bench_group, bench_128_std);
 
-    str = "12345678901234567890123456789012".to_owned();
-    bench_128(&mut bench_group, &str);
-    bench_prefix_128(&mut bench_group, &str);
+        for len in length {
+            let to_parse: String = iter.clone().take(len).collect();
+            bench_128_std(&mut bench_group, &to_parse);
+        }
 
-    str = "123456789012345678901234567890123".to_owned();
-    bench_128(&mut bench_group, &str);
-    bench_prefix_128(&mut bench_group, &str);
-
-    str = "12345678901234567890123456789012345".to_owned();
-    bench_128(&mut bench_group, &str);
-    bench_prefix_128(&mut bench_group, &str);
-
-    str = "1234567890123456789012345678901234567".to_owned();
-    bench_128(&mut bench_group, &str);
-    bench_prefix_128(&mut bench_group, &str);
-
-    str = "12345678901234567890123456789012345678".to_owned();
-    bench_128(&mut bench_group, &str);
-    bench_prefix_128(&mut bench_group, &str);
-
-    bench_group.finish();
+        bench_group.finish();
+    }
 }
 
 criterion_group!(benches, benchmark);

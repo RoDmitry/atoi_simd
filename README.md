@@ -3,7 +3,7 @@
 [![Crate](https://img.shields.io/crates/v/atoi_simd.svg)](https://crates.io/crates/atoi_simd)
 [![API](https://docs.rs/atoi_simd/badge.svg)](https://docs.rs/atoi_simd)
 
-SIMD (fast) parsing is supported on x86_64 (SSE4.1, AVX2) and on Arm64 (aarch64, Neon), but this library works even if you don't have a SIMD supported cpu (and it will be still faster than str::parse).
+SIMD (fast) parsing is supported on x86_64 (SSE4.1, AVX2) and on ARM64 (aarch64, Neon), but this library works even if you don't have a SIMD supported cpu (and it will be still faster than str::parse).
 
 Supports negative values and validates the input.
 
@@ -16,7 +16,7 @@ You can copy the `./.cargo/config.toml` to your project, or use one of the follo
 
 -   `RUSTFLAGS="-C target-feature=+sse2,+sse3,+sse4.1,+ssse3,+avx,+avx2"` for x86_64;
 
--   `RUSTFLAGS="-C target-feature=+neon"` for Arm64;
+-   `RUSTFLAGS="-C target-feature=+neon"` for ARM64;
 
 -   `RUSTFLAGS="-C target-cpu=native"` will optimize for your current cpu.
 
@@ -48,13 +48,65 @@ assert_eq!(atoi_simd::parse_prefix::<u64, false, false>(b"123something_else"), O
 
 ## Benchmarks
 
-You can run `cargo bench` from `bench` folder on your machine (or individually with `cargo bench -- "parse u64"`)
+You can run `cargo bench --features full` from `bench` folder on your machine (or individually with `cargo bench -- "parse u64"`).
+
+Use `-- --quick` for quick plots preview.
 
 ### Results
 
 More information you can find [here](https://rodmitry.github.io/atoi_simd_benchmark).
 
-<details open><summary>v0.16.0</summary>
+<details open><summary>v0.18.1</summary>
+
+<b>Rust 1.97.0-nightly (67bcaa9c4 2026-05-01)</b>, Windows 10, Intel i7 9700K, "target-feature" set
+
+![benchmark atoi_simd 32](https://github.com/RoDmitry/atoi_simd_benchmark/raw/v0.18.1/atoi_simd%2032/report/lines.svg)
+
+![benchmark atoi_simd 64](https://github.com/RoDmitry/atoi_simd_benchmark/raw/v0.18.1/atoi_simd%2064/report/lines.svg)
+
+![benchmark atoi_simd 128](https://github.com/RoDmitry/atoi_simd_benchmark/raw/v0.18.1/atoi_simd%20128/report/lines.svg)
+
+![benchmark std 32](https://github.com/RoDmitry/atoi_simd_benchmark/raw/v0.18.1/std%2032/report/lines.svg)
+
+![benchmark std 64](https://github.com/RoDmitry/atoi_simd_benchmark/raw/v0.18.1/std%2064/report/lines.svg)
+
+![benchmark std 128](https://github.com/RoDmitry/atoi_simd_benchmark/raw/v0.18.1/std%20128/report/lines.svg)
+
+#### `atoi_simd::parse::<u64>()`
+
+![atoi_simd::parse::\<u64>()](https://github.com/RoDmitry/atoi_simd_benchmark/raw/v0.18.1/atoi_simd%2064/parse%20u64/report/lines.svg)
+
+#### `str::parse::<u64>()`
+
+![str::parse::\<u64>()](https://github.com/RoDmitry/atoi_simd_benchmark/raw/v0.18.1/std%2064/str%20u64/report/lines.svg)
+
+#### `atoi_simd::parse::<i64>()`
+
+![atoi_simd::parse::\<i64>()](https://github.com/RoDmitry/atoi_simd_benchmark/raw/v0.18.1/atoi_simd%2064/parse%20i64/report/lines.svg)
+
+#### `str::parse::<i64>()`
+
+![str::parse::\<i64>()](https://github.com/RoDmitry/atoi_simd_benchmark/raw/v0.18.1/std%2064/str%20i64/report/lines.svg)
+
+#### `atoi_simd::parse::<u128>()`
+
+![atoi_simd::parse::\<u128>()](https://github.com/RoDmitry/atoi_simd_benchmark/raw/v0.18.1/atoi_simd%20128/parse%20u128/report/lines.svg)
+
+#### `str::parse::<u128>()`
+
+![str::parse::\<u128>()](https://github.com/RoDmitry/atoi_simd_benchmark/raw/v0.18.1/std%20128/str%20u128/report/lines.svg)
+
+#### `atoi_simd::parse::<i128>()`
+
+![atoi_simd::parse::\<i128>()](https://github.com/RoDmitry/atoi_simd_benchmark/raw/v0.18.1/atoi_simd%20128/parse%20i128/report/lines.svg)
+
+#### `str::parse::<i128>()`
+
+![str::parse::\<i128>()](https://github.com/RoDmitry/atoi_simd_benchmark/raw/v0.18.1/std%20128/str%20i128/report/lines.svg)
+
+</details>
+
+<details><summary>v0.16.0</summary>
 
 <b>Rust 1.78</b>, Windows 10, Intel i7 9700K, "target-feature" set
 
