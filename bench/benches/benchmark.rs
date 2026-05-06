@@ -55,10 +55,10 @@ fn bench_32_std(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
     let str_neg = "-".to_owned() + str;
     let strs_neg = [str_neg.clone() + "2", str_neg.clone() + "1"];
 
-    bench_group.bench_with_input(BenchmarkId::new("parse u32", len), &strs, |b, val| {
+    bench_group.bench_with_input(BenchmarkId::new("parse u32 SKIP_ZEROES", len), &strs, |b, val| {
         b.iter(|| {
-            parse::<u32, false, false>(val[0].as_bytes()).unwrap()
-                - parse::<u32, false, false>(val[1].as_bytes()).unwrap()
+            parse::<u32, true, false>(val[0].as_bytes()).unwrap()
+                - parse::<u32, true, false>(val[1].as_bytes()).unwrap()
         })
     });
 
@@ -170,10 +170,10 @@ fn bench_64_std(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
     let str_neg = "-".to_owned() + str;
     let strs_neg = [str_neg.clone() + "2", str_neg.clone() + "1"];
 
-    bench_group.bench_with_input(BenchmarkId::new("parse u64", len), &strs, |b, val| {
+    bench_group.bench_with_input(BenchmarkId::new("parse u64 SKIP_ZEROES", len), &strs, |b, val| {
         b.iter(|| {
-            parse::<u64, false, false>(val[0].as_bytes()).unwrap()
-                - parse::<u64, false, false>(val[1].as_bytes()).unwrap()
+            parse::<u64, true, false>(val[0].as_bytes()).unwrap()
+                - parse::<u64, true, false>(val[1].as_bytes()).unwrap()
         })
     });
 
@@ -289,10 +289,10 @@ fn bench_128_std(bench_group: &mut BenchmarkGroup<WallTime>, str: &str) {
     let str_neg = "-".to_owned() + str;
     let strs_neg = [str_neg.clone() + "2", str_neg.clone() + "1"];
 
-    bench_group.bench_with_input(BenchmarkId::new("parse u128", len), &strs, |b, val| {
+    bench_group.bench_with_input(BenchmarkId::new("parse u128 SKIP_ZEROES", len), &strs, |b, val| {
         b.iter(|| {
-            parse::<u128, false, false>(val[0].as_bytes()).unwrap()
-                - parse::<u128, false, false>(val[1].as_bytes()).unwrap()
+            parse::<u128, true, false>(val[0].as_bytes()).unwrap()
+                - parse::<u128, true, false>(val[1].as_bytes()).unwrap()
         })
     });
 
