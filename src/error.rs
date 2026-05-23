@@ -12,7 +12,7 @@ pub enum AtoiSimdError<'a> {
 impl fmt::Display for AtoiSimdError<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Self::Empty => write!(f, "atoi_simd string is empty"),
+            Self::Empty => write!(f, "atoi_simd no digits to parse"),
             Self::Size(len, input) => {
                 write!(
                     f,
